@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bağlantı Sorunu - Mağaza Takip</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#1e3c72">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background-size: 400% 400%;
+            animation: gradientShift 6s ease-in-out infinite;
+        }
+        
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        .offline-container {
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+            animation: slideIn 0.8s ease-out;
+        }
+        
+        @keyframes slideIn {
+            0% {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .offline-icon {
+            font-size: 5rem;
+            margin-bottom: 2rem;
+            animation: iconPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes iconPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .offline-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .offline-subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 3rem;
+            color: rgba(255,255,255,0.8);
+        }
+        
+        .connection-info {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .info-item {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+        }
+        
+        .info-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: #ff6b6b;
+        }
+        
+        .info-label {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 0.25rem;
+        }
+        
+        .info-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .retry-section {
+            margin-bottom: 2rem;
+        }
+        
+        .retry-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+            margin: 0 0.5rem;
+        }
+        
+        .retry-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
+        }
+        
+        .home-btn {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+        }
+        
+        .home-btn:hover {
+            box-shadow: 0 6px 16px rgba(0, 123, 255, 0.4);
+        }
+        
+        .tips-section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: left;
+        }
+        
+        .tips-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .tips-list {
+            list-style: none;
+        }
+        
+        .tips-list li {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 0;
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.8);
+        }
+        
+        .tips-list li::before {
+            content: "✓";
+            margin-right: 0.75rem;
+            color: #20c997;
+            font-weight: bold;
+        }
+        
+        .footer-info {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            font-size: 0.875rem;
+            color: rgba(255,255,255,0.6);
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .offline-title {
+                font-size: 2rem;
+            }
+            
+            .offline-icon {
+                font-size: 4rem;
+            }
+            
+            .connection-info {
+                padding: 1.5rem;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+            
+            .retry-btn {
+                display: block;
+                width: 100%;
+                margin: 0.5rem 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">📵</div>
+        
+        <h1 class="offline-title">İnternet Bağlantısı Yok</h1>
+        <p class="offline-subtitle">Lütfen bağlantınızı kontrol edin ve tekrar deneyin</p>
+        
+        <div class="connection-info">
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-icon">📶</div>
+                    <div class="info-label">Sinyal Durumu</div>
+                    <div class="info-value" id="signal-status">Kontrol ediliyor...</div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-icon">🌐</div>
+                    <div class="info-label">Bağlantı Türü</div>
+                    <div class="info-value" id="connection-type">Bilinmiyor</div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-icon">⏰</div>
+                    <div class="info-label">Son Bağlantı</div>
+                    <div class="info-value" id="last-connection">Az önce</div>
+                </div>
+            </div>
+            
+            <div class="retry-section">
+                <button class="retry-btn" onclick="retryConnection()">
+                    🔄 Tekrar Dene
+                </button>
+                <button class="retry-btn home-btn" onclick="goHome()">
+                    🏠 Ana Sayfaya Dön
+                </button>
+            </div>
+        </div>
+        
+        <div class="tips-section">
+            <h3 class="tips-title">Deneyebileceğiniz Çözümler</h3>
+            <ul class="tips-list">
+                <li>WiFi bağlantınızı kontrol edin</li>
+                <li>Mobil veri açık olduğundan emin olun</li>
+                <li>Modem/router'ınızı yeniden başlatın</li>
+                <li>Farklı bir ağa bağlanmayı deneyin</li>
+                <li>Uçak modunu açıp kapatın</li>
+                <li>Tarayıcınızı yenileyin</li>
+            </ul>
+        </div>
+        
+        <div class="footer-info">
+            <p><strong>Mağaza Takip</strong> - İş Yönetim Sistemi</p>
+            <p>Bu sayfa çevrimdışı olarak çalışır ve bağlantı geri geldiğinde otomatik yönlendirilirsiniz.</p>
+        </div>
+    </div>
+    
+    <script>
+        // Network status detection
+        let isOnline = navigator.onLine;
+        let retryCount = 0;
+        const maxRetries = 5;
+        
+        function updateStatus() {
+            const signalStatus = document.getElementById('signal-status');
+            const connectionType = document.getElementById('connection-type');
+            const lastConnection = document.getElementById('last-connection');
+            
+            if (navigator.connection) {
+                const connection = navigator.connection;
+                connectionType.textContent = getConnectionTypeText(connection.type || connection.effectiveType);
+            }
+            
+            signalStatus.textContent = isOnline ? 'Bağlı' : 'Bağlantı Yok';
+            lastConnection.textContent = new Date().toLocaleTimeString();
+        }
+        
+        function getConnectionTypeText(type) {
+            const types = {
+                'wifi': 'WiFi',
+                'cellular': 'Mobil Veri',
+                '4g': '4G',
+                '3g': '3G',
+                '2g': '2G',
+                'ethernet': 'Ethernet',
+                'slow-2g': 'Yavaş Bağlantı',
+                'unknown': 'Bilinmiyor'
+            };
+            return types[type] || 'Bilinmiyor';
+        }
+        
+        async function checkConnection() {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                
+                const response = await fetch('/', {
+                    method: 'HEAD',
+                    cache: 'no-cache',
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                return response.ok;
+            } catch (error) {
+                return false;
+            }
+        }
+        
+        async function retryConnection() {
+            if (retryCount >= maxRetries) {
+                alert('Maksimum deneme sayısına ulaşıldı. Lütfen bağlantınızı kontrol edin.');
+                return;
+            }
+            
+            retryCount++;
+            const retryBtn = document.querySelector('.retry-btn');
+            retryBtn.textContent = '🔄 Kontrol ediliyor...';
+            retryBtn.disabled = true;
+            
+            const isConnected = await checkConnection();
+            
+            if (isConnected) {
+                retryBtn.textContent = '✅ Bağlantı başarılı!';
+                setTimeout(() => {
+                    window.location.href = '/anasayfa';
+                }, 1000);
+            } else {
+                retryBtn.textContent = `🔄 Tekrar Dene (${retryCount}/${maxRetries})`;
+                retryBtn.disabled = false;
+            }
+        }
+        
+        function goHome() {
+            window.location.href = '/anasayfa';
+        }
+        
+        // Auto-retry every 10 seconds
+        setInterval(async () => {
+            const isConnected = await checkConnection();
+            if (isConnected) {
+                window.location.href = '/anasayfa';
+            }
+        }, 10000);
+        
+        // Listen for online events
+        window.addEventListener('online', () => {
+            isOnline = true;
+            updateStatus();
+            setTimeout(() => {
+                window.location.href = '/anasayfa';
+            }, 1000);
+        });
+        
+        window.addEventListener('offline', () => {
+            isOnline = false;
+            updateStatus();
+        });
+        
+        // Initialize
+        updateStatus();
+        
+        // Check connection info if available
+        if (navigator.connection) {
+            navigator.connection.addEventListener('change', updateStatus);
+        }
+    </script>
+</body>
+</html>

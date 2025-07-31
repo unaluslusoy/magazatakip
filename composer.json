@@ -1,0 +1,12 @@
+{
+    "name": "magazatakip/public_html",
+    "autoload": {
+        "psr-4": {
+            "Magazatakip\\PublicHtml\\": "src/"
+        }
+    },
+    "require": {
+        "guzzlehttp/guzzle": "^7.9",
+        "vlucas/phpdotenv": "^5.6"
+    }
+}
