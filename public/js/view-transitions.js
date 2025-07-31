@@ -28,9 +28,6 @@ class SplashTransitions {
         this.loadingElement.innerHTML = `
             <div class="splash-overlay">
                 <div class="splash-content">
-                    <div class="splash-logo">
-                        <img src="/public/media/logos/default.svg" alt="Loading" class="splash-logo-img">
-                    </div>
                     <div class="splash-spinner">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Yükleniyor...</span>
@@ -200,6 +197,9 @@ class SplashTransitions {
             const link = e.target.closest('a[href]');
             if (!link || link.target === '_blank') return;
 
+            // Tab ve UI element'leri için splash loading'i skip et
+            if (this.shouldSkipSplash(link)) return;
+
             // Aynı origin kontrolü
             try {
                 const url = new URL(link.href, window.location.origin);
@@ -215,6 +215,80 @@ class SplashTransitions {
             e.preventDefault();
             this.navigateWithSplash(link.href);
         });
+    }
+
+    /**
+     * Splash loading'i skip etmeli mi kontrol et
+     */
+    shouldSkipSplash(link) {
+        // Tab linklerini skip et
+        if (link.hasAttribute('role') && link.getAttribute('role') === 'tab') {
+            console.log('🚫 Tab link skipped:', link.href);
+            return true;
+        }
+
+        // Bootstrap tab toggle
+        if (link.hasAttribute('data-bs-toggle') && 
+            (link.getAttribute('data-bs-toggle') === 'tab' || 
+             link.getAttribute('data-bs-toggle') === 'pill')) {
+            console.log('🚫 Bootstrap tab skipped:', link.href);
+            return true;
+        }
+
+        // KT menu triggers ve dropdowns
+        if (link.hasAttribute('data-kt-menu-trigger') || 
+            link.hasAttribute('data-kt-menu-toggle') ||
+            link.classList.contains('menu-toggle')) {
+            console.log('🚫 Menu trigger skipped:', link.href);
+            return true;
+        }
+
+        // Modal triggers
+        if (link.hasAttribute('data-bs-toggle') && 
+            link.getAttribute('data-bs-toggle') === 'modal') {
+            console.log('🚫 Modal trigger skipped:', link.href);
+            return true;
+        }
+
+        // Anchor linkler (#ile başlayan)
+        if (link.href.includes('#') && !link.href.includes('://')) {
+            console.log('🚫 Anchor link skipped:', link.href);
+            return true;
+        }
+
+        // JavaScript void linkler
+        if (link.href === 'javascript:void(0)' || 
+            link.href === 'javascript:;' ||
+            link.href === '#') {
+            console.log('🚫 JavaScript void link skipped:', link.href);
+            return true;
+        }
+
+        // Nav linkler (tab navigation)
+        if (link.classList.contains('nav-link') && 
+            link.closest('.nav-tabs, .nav-pills')) {
+            console.log('🚫 Nav tab skipped:', link.href);
+            return true;
+        }
+
+        // Dropdown linkler
+        if (link.classList.contains('dropdown-toggle') ||
+            link.hasAttribute('data-bs-toggle') && 
+            link.getAttribute('data-bs-toggle') === 'dropdown') {
+            console.log('🚫 Dropdown toggle skipped:', link.href);
+            return true;
+        }
+
+        // Collapse triggers
+        if (link.hasAttribute('data-bs-toggle') && 
+            link.getAttribute('data-bs-toggle') === 'collapse') {
+            console.log('🚫 Collapse trigger skipped:', link.href);
+            return true;
+        }
+
+        // Skip etme - sadece gerçek navigation linkleri için splash göster
+        console.log('✅ Navigation link approved:', link.href);
+        return false;
     }
 
     /**
