@@ -1,0 +1,2 @@
+# magazatakip
+Mağaza takip uygulaması
