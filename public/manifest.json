@@ -2,6 +2,7 @@
   "name": "Mağaza Takip Uygulaması",
   "short_name": "MağazaTakip",
   "description": "Mağaza envanter yönetiminden personel görev takibine kadar geniş bir yelpazede hizmet sunar.",
+  "version": "1.2.0",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

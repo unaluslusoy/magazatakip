@@ -1,5 +1,10 @@
-const CACHE_NAME = 'magaza-takip-cache-v2';
+const CACHE_NAME = 'magaza-takip-cache-v3';
+const APP_VERSION = '1.2.0';
 const OFFLINE_URL = '/offline.html';
+
+// Version management
+const VERSION_STORAGE_KEY = 'app-version';
+const UPDATE_CHECK_INTERVAL = 30 * 60 * 1000; // 30 dakika
 
 const CACHE_URLS = [
     '/',
@@ -23,30 +28,63 @@ const CACHE_URLS = [
     '/public/js/page-transitions.js',
     '/public/js/pwa-install.js',
     '/public/js/background-sync.js',
-    '/public/js/pull-to-refresh.js'
+    '/public/js/pull-to-refresh.js',
+    '/public/js/view-transitions.js',
+    '/public/js/modern-pull-to-refresh.js'
 ];
 
 self.addEventListener('install', function(event) {
-    console.log('Service Worker installing...');
+    console.log(`🔄 Service Worker v${APP_VERSION} installing...`);
+    
     event.waitUntil(
-        caches.open(CACHE_NAME).then(function(cache) {
-            console.log('Adding files to cache...');
-            // URL'leri tek tek ekle hata durumunda devam etsin
-            return Promise.allSettled(
-                CACHE_URLS.map(url => {
-                    return cache.add(url).catch(err => {
-                        console.warn('Failed to cache:', url, err);
-                        return null;
+        (async () => {
+            try {
+                // Önceki versiyon kontrolü
+                const previousVersion = await getStoredVersion();
+                const isUpdate = previousVersion && previousVersion !== APP_VERSION;
+                
+                if (isUpdate) {
+                    console.log(`📱 Update detected: ${previousVersion} → ${APP_VERSION}`);
+                    
+                    // Eski cache'leri temizle
+                    await clearOldCaches();
+                }
+
+                // Yeni cache oluştur
+                const cache = await caches.open(CACHE_NAME);
+                console.log('📦 Adding files to cache...');
+                
+                // URL'leri tek tek ekle hata durumunda devam etsin
+                await Promise.allSettled(
+                    CACHE_URLS.map(url => {
+                        return cache.add(url).catch(err => {
+                            console.warn('❌ Failed to cache:', url, err);
+                            return null;
+                        });
+                    })
+                );
+
+                // Versiyon bilgisini kaydet
+                await storeVersion(APP_VERSION);
+                
+                console.log(`✅ Service Worker v${APP_VERSION} installation completed`);
+                
+                // Update notification gönder
+                if (isUpdate) {
+                    await notifyClients('UPDATE_AVAILABLE', {
+                        version: APP_VERSION,
+                        previousVersion: previousVersion
                     });
-                })
-            );
-        }).then(function() {
-            console.log('Service Worker installation completed');
-            // Yeni service worker'ı hemen aktif et
-            return self.skipWaiting();
-        }).catch(function(error) {
-            console.error('Service Worker install failed:', error);
-        })
+                }
+                
+                // Yeni service worker'ı hemen aktif et
+                return self.skipWaiting();
+                
+            } catch (error) {
+                console.error('❌ Service Worker install failed:', error);
+                throw error;
+            }
+        })()
     );
 });
 if ('serviceWorker' in navigator) {
@@ -175,3 +213,125 @@ self.addEventListener('push', function(event) {
         );
     }
 });
+
+// ==============================================
+// VERSION MANAGEMENT & UPDATE HELPER FUNCTIONS
+// ==============================================
+
+/**
+ * Stored version'ı al
+ */
+async function getStoredVersion() {
+    try {
+        const cache = await caches.open('app-metadata');
+        const response = await cache.match(VERSION_STORAGE_KEY);
+        if (response) {
+            const data = await response.json();
+            return data.version;
+        }
+    } catch (error) {
+        console.warn('Version storage read error:', error);
+    }
+    return null;
+}
+
+/**
+ * Version bilgisini kaydet
+ */
+async function storeVersion(version) {
+    try {
+        const cache = await caches.open('app-metadata');
+        const data = { version, timestamp: Date.now() };
+        const response = new Response(JSON.stringify(data));
+        await cache.put(VERSION_STORAGE_KEY, response);
+        console.log(`💾 Version stored: ${version}`);
+    } catch (error) {
+        console.error('Version storage error:', error);
+    }
+}
+
+/**
+ * Eski cache'leri temizle
+ */
+async function clearOldCaches() {
+    try {
+        const cacheNames = await caches.keys();
+        const oldCaches = cacheNames.filter(name => 
+            name.startsWith('magaza-takip-cache-') && name !== CACHE_NAME
+        );
+        
+        await Promise.all(
+            oldCaches.map(cacheName => {
+                console.log(`🗑️ Deleting old cache: ${cacheName}`);
+                return caches.delete(cacheName);
+            })
+        );
+        
+        console.log(`✅ Cleaned ${oldCaches.length} old caches`);
+    } catch (error) {
+        console.error('Cache cleanup error:', error);
+    }
+}
+
+/**
+ * Tüm client'lara mesaj gönder
+ */
+async function notifyClients(type, data = {}) {
+    try {
+        const clients = await self.clients.matchAll({
+            includeUncontrolled: true,
+            type: 'window'
+        });
+        
+        clients.forEach(client => {
+            client.postMessage({
+                type,
+                data: {
+                    ...data,
+                    timestamp: Date.now()
+                }
+            });
+        });
+        
+        console.log(`📡 Notified ${clients.length} clients:`, type);
+    } catch (error) {
+        console.error('Client notification error:', error);
+    }
+}
+
+/**
+ * Update kontrolü yap
+ */
+async function checkForUpdates() {
+    try {
+        const response = await fetch('/api/version', {
+            cache: 'no-cache'
+        });
+        
+        if (response.ok) {
+            const serverData = await response.json();
+            const serverVersion = serverData.version;
+            
+            if (serverVersion && serverVersion !== APP_VERSION) {
+                console.log(`🔄 Server update detected: ${APP_VERSION} → ${serverVersion}`);
+                
+                // Client'lara update mevcut bilgisi gönder
+                await notifyClients('UPDATE_DETECTED', {
+                    currentVersion: APP_VERSION,
+                    availableVersion: serverVersion
+                });
+                
+                return true;
+            }
+        }
+    } catch (error) {
+        console.warn('Update check failed:', error);
+    }
+    
+    return false;
+}
+
+// Periodic update check
+setInterval(checkForUpdates, UPDATE_CHECK_INTERVAL);
+
+console.log(`🚀 Service Worker v${APP_VERSION} ready with update notifications!`);

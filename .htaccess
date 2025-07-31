@@ -7,6 +7,10 @@ AddType application/javascript .js
         Options -MultiViews -Indexes
     </IfModule>
     RewriteEngine On
+    
+    # API Routes
+    RewriteRule ^api/version/?$ api/version.php [L]
+    
     # Handle Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f

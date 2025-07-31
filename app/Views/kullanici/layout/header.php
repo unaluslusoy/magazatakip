@@ -55,6 +55,9 @@
                 '/public/js/pwa-install.js', 
                 '/public/js/background-sync.js',
                 '/public/js/pull-to-refresh.js',
+                '/public/js/view-transitions.js',
+                '/public/js/modern-pull-to-refresh.js',
+                '/public/js/app-update-manager.js',
                 '/public/js/pwa-features-demo.js',
                 '/public/js/token-registration.js'
             ];
