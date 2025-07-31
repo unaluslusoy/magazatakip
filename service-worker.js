@@ -167,8 +167,48 @@ importScripts('https://cdn.onesignal.com/sdks/OneSignalSDKWorker.js');
 
 // Update handling
 self.addEventListener('message', function(event) {
-    if (event.data && event.data.type === 'SKIP_WAITING') {
-        self.skipWaiting();
+    const { type } = event.data || {};
+    
+    try {
+        switch (type) {
+            case 'SKIP_WAITING':
+                console.log('⚡ Skip waiting mesajı alındı');
+                self.skipWaiting();
+                
+                // Response gönder
+                if (event.source) {
+                    event.source.postMessage({
+                        type: 'SKIP_WAITING_RESPONSE',
+                        success: true
+                    });
+                }
+                break;
+                
+            case 'GET_VERSION':
+                // Version bilgisi talep edildi
+                if (event.source) {
+                    event.source.postMessage({
+                        type: 'GET_VERSION_RESPONSE',
+                        version: APP_VERSION,
+                        cache: CACHE_NAME
+                    });
+                }
+                break;
+                
+            default:
+                console.log('Unknown message type:', type);
+        }
+    } catch (error) {
+        console.error('Message handler error:', error);
+        
+        // Error response gönder
+        if (event.source) {
+            event.source.postMessage({
+                type: `${type}_RESPONSE`,
+                success: false,
+                error: error.message
+            });
+        }
     }
 });
 

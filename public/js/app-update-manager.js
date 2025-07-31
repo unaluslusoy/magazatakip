@@ -314,11 +314,9 @@ class AppUpdateManager {
             this.showUpdateProgress();
             
             // Service Worker'a skip waiting mesajı gönder
-            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-                navigator.serviceWorker.controller.postMessage({
-                    type: 'SKIP_WAITING'
-                });
-            }
+            await this.sendMessageToServiceWorker({
+                type: 'SKIP_WAITING'
+            });
             
             // Cache'leri temizle
             if ('caches' in window) {
@@ -458,6 +456,56 @@ class AppUpdateManager {
      */
     getCurrentVersion() {
         return this.currentVersion;
+    }
+
+    /**
+     * Güvenli Service Worker messaging
+     */
+    async sendMessageToServiceWorker(message, timeout = 5000) {
+        return new Promise((resolve, reject) => {
+            // Service Worker desteği kontrolü
+            if (!('serviceWorker' in navigator)) {
+                console.warn('Service Worker desteklenmiyor');
+                resolve(false);
+                return;
+            }
+
+            // Controller kontrolü
+            if (!navigator.serviceWorker.controller) {
+                console.warn('Service Worker controller mevcut değil');
+                resolve(false);
+                return;
+            }
+
+            try {
+                // Timeout mekanizması
+                const timeoutId = setTimeout(() => {
+                    console.warn('Service Worker mesaj timeout');
+                    resolve(false);
+                }, timeout);
+
+                // Response listener
+                const handleMessage = (event) => {
+                    if (event.data && event.data.type === `${message.type}_RESPONSE`) {
+                        clearTimeout(timeoutId);
+                        navigator.serviceWorker.removeEventListener('message', handleMessage);
+                        resolve(true);
+                    }
+                };
+
+                // Event listener ekle
+                navigator.serviceWorker.addEventListener('message', handleMessage);
+
+                // Mesajı gönder
+                navigator.serviceWorker.controller.postMessage(message);
+                
+                console.log('📡 Service Worker mesajı gönderildi:', message.type);
+
+            } catch (error) {
+                console.error('Service Worker mesaj hatası:', error);
+                resolve(false);
+            }
+        });
     }
 }
 

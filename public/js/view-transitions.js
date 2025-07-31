@@ -199,8 +199,22 @@ class ViewTransitions {
             
         } catch (error) {
             console.error('❌ View transition hatası:', error);
+            
+            // Error tracking
+            if (window.errorHandler) {
+                window.errorHandler.logError('ViewTransition', error, { url });
+            }
+            
             // Fallback navigation
-            window.location.href = url;
+            console.log('🔄 Fallback navigation başlatılıyor...');
+            this.hideTransitionLoading();
+            
+            // Smooth fallback transition
+            document.body.style.opacity = '0.5';
+            setTimeout(() => {
+                window.location.href = url;
+            }, 150);
+            
         } finally {
             this.hideTransitionLoading();
         }
@@ -236,7 +250,17 @@ class ViewTransitions {
             
         } catch (error) {
             console.error('Content loading error:', error);
-            throw error;
+            
+            // Detaylı error logging
+            if (window.errorHandler) {
+                window.errorHandler.logError('ContentLoading', error, { 
+                    url, 
+                    responseStatus: error.status,
+                    userAgent: navigator.userAgent 
+                });
+            }
+            
+            throw new Error(`Content loading failed: ${error.message || 'Unknown error'}`);
         }
     }
 
@@ -276,6 +300,93 @@ class ViewTransitions {
                 oldMeta.setAttribute('content', newMeta.getAttribute('content'));
             }
         });
+    }
+
+    /**
+     * Scripts yeniden yükle
+     */
+    reloadScripts(newDoc) {
+        try {
+            // Yeni sayfadaki script tag'leri bul
+            const newScripts = newDoc.querySelectorAll('script[src]');
+            const existingScripts = new Set();
+            
+            // Mevcut script'leri kaydet
+            document.querySelectorAll('script[src]').forEach(script => {
+                existingScripts.add(script.src);
+            });
+            
+            // Yeni script'leri yükle
+            newScripts.forEach(scriptEl => {
+                if (!existingScripts.has(scriptEl.src)) {
+                    const newScript = document.createElement('script');
+                    newScript.src = scriptEl.src;
+                    newScript.async = true;
+                    
+                    // Script attributes'ları kopyala
+                    Array.from(scriptEl.attributes).forEach(attr => {
+                        if (attr.name !== 'src') {
+                            newScript.setAttribute(attr.name, attr.value);
+                        }
+                    });
+                    
+                    document.head.appendChild(newScript);
+                    console.log('🔄 Script reloaded:', scriptEl.src);
+                }
+            });
+            
+            // Inline script'leri güvenli şekilde çalıştır
+            const inlineScripts = newDoc.querySelectorAll('script:not([src])');
+            inlineScripts.forEach((script, index) => {
+                if (script.textContent.trim() && this.isScriptSafe(script.textContent)) {
+                    try {
+                        // Script'i sandboxed context'te çalıştır
+                        const func = new Function(script.textContent);
+                        func.call(window);
+                        console.log(`✅ Inline script ${index + 1} executed safely`);
+                    } catch (error) {
+                        console.warn(`❌ Inline script ${index + 1} execution failed:`, error);
+                    }
+                }
+            });
+            
+        } catch (error) {
+            console.warn('Script reloading failed:', error);
+        }
+    }
+
+    /**
+     * Script güvenlik kontrolü
+     */
+    isScriptSafe(scriptContent) {
+        // Tehlikeli pattern'leri kontrol et
+        const dangerousPatterns = [
+            /eval\s*\(/,
+            /Function\s*\(/,
+            /setTimeout\s*\(\s*["'`]/,
+            /setInterval\s*\(\s*["'`]/,
+            /document\.write/,
+            /innerHTML\s*=/,
+            /outerHTML\s*=/,
+            /location\s*=/,
+            /href\s*=/
+        ];
+
+        // Kötü amaçlı code pattern'leri tespit et
+        for (const pattern of dangerousPatterns) {
+            if (pattern.test(scriptContent)) {
+                console.warn('🚨 Potentially unsafe script detected:', pattern);
+                return false;
+            }
+        }
+
+        // Script boyut kontrolü (çok büyük script'leri engelle)
+        if (scriptContent.length > 50000) {
+            console.warn('🚨 Script too large, skipping execution');
+            return false;
+        }
+
+        return true;
     }
 
     /**

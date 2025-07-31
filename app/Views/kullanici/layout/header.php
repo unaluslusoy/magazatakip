@@ -4,13 +4,13 @@
     <base href="/anasayfa"/>
     <title>Mağaza Yönetim Paneli</title>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta property="og:locale" content="tr_TR" />
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Mağaza Takip">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     
     <!-- Ana tema rengi -->
     <meta name="theme-color" content="#FFFFFF">
