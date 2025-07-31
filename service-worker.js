@@ -1,5 +1,5 @@
-const CACHE_NAME = 'magaza-takip-cache-v3';
-const APP_VERSION = '1.2.0';
+const CACHE_NAME = 'magaza-takip-cache-v4';
+const APP_VERSION = '1.3.1';
 const OFFLINE_URL = '/offline.html';
 
 // Version management

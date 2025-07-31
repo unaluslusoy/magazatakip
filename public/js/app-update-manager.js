@@ -6,7 +6,7 @@
 
 class AppUpdateManager {
     constructor() {
-        this.currentVersion = '1.2.0';
+        this.currentVersion = '1.3.1';
         this.updateAvailable = false;
         this.updateData = null;
         
