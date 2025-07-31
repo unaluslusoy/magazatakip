@@ -244,6 +244,8 @@ class ViewTransitions {
      */
     async loadNewContent(url) {
         try {
+            console.log('🔄 Loading content from:', url);
+            
             const response = await fetch(url, {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
@@ -255,14 +257,21 @@ class ViewTransitions {
             }
 
             const html = await response.text();
+            console.log('📥 HTML received, length:', html.length);
+            
             const parser = new DOMParser();
             const newDoc = parser.parseFromString(html, 'text/html');
+            
+            // Debug: Document parsing
+            console.log('📋 New document title:', newDoc.title);
+            console.log('📦 Content container found:', !!newDoc.querySelector('#kt_app_content_container'));
 
             // Sayfa içeriğini güncelle
             this.updatePageContent(newDoc);
             
             // URL'yi güncelle
             window.history.pushState({}, '', url);
+            console.log('🔗 URL updated to:', url);
             
             // Page load event trigger et
             this.triggerPageLoadEvents();
@@ -287,16 +296,35 @@ class ViewTransitions {
      * Sayfa içeriğini güncelle
      */
     updatePageContent(newDoc) {
+        console.log('🔄 Starting page content update...');
+        
         // Title güncelle
+        const oldTitle = document.title;
         document.title = newDoc.title;
+        console.log('📝 Title updated:', oldTitle, '→', newDoc.title);
 
-        // Main content güncelle - PWA container yapısına göre
+        // Debug: Mevcut DOM yapısını kontrol et
         const oldContent = document.querySelector('#kt_app_content_container');
         const newContent = newDoc.querySelector('#kt_app_content_container');
         
+        console.log('🔍 DOM Debug:', {
+            currentPage: window.location.pathname,
+            oldContentExists: !!oldContent,
+            newContentExists: !!newContent,
+            oldContentHTML: oldContent ? oldContent.innerHTML.substring(0, 200) + '...' : 'NULL',
+            newContentHTML: newContent ? newContent.innerHTML.substring(0, 200) + '...' : 'NULL'
+        });
+        
         if (oldContent && newContent) {
             // Content'i güncelle
+            const oldHTML = oldContent.innerHTML;
             oldContent.innerHTML = newContent.innerHTML;
+            
+            console.log('📄 Content replaced:', {
+                oldLength: oldHTML.length,
+                newLength: newContent.innerHTML.length,
+                changed: oldHTML !== newContent.innerHTML
+            });
             
             // Transition class'ını uygula
             this.applyTransitionClass(oldContent, newContent);
@@ -305,16 +333,27 @@ class ViewTransitions {
         } else {
             console.warn('⚠️ Content containers not found:', { 
                 oldContent: !!oldContent, 
-                newContent: !!newContent 
+                newContent: !!newContent,
+                currentHTML: document.body.innerHTML.substring(0, 500) + '...'
             });
             
             // Fallback: tüm app-content'i güncelle
             const fallbackOld = document.querySelector('#kt_app_content');
             const fallbackNew = newDoc.querySelector('#kt_app_content');
             
+            console.log('🔄 Trying fallback selectors:', {
+                fallbackOldExists: !!fallbackOld,
+                fallbackNewExists: !!fallbackNew
+            });
+            
             if (fallbackOld && fallbackNew) {
                 fallbackOld.innerHTML = fallbackNew.innerHTML;
                 console.log('✅ Content updated via fallback selector');
+            } else {
+                // Son çare: full page reload
+                console.error('❌ No content selectors found, falling back to full reload');
+                window.location.reload();
+                return;
             }
         }
 
