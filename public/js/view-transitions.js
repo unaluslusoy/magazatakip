@@ -271,12 +271,27 @@ class ViewTransitions {
         // Title güncelle
         document.title = newDoc.title;
 
-        // Main content güncelle
-        const oldMain = document.querySelector('main, .container, #kt_app_content');
-        const newMain = newDoc.querySelector('main, .container, #kt_app_content');
+        // Main content güncelle - PWA container yapısına göre
+        const oldContent = document.querySelector('#kt_app_content_container');
+        const newContent = newDoc.querySelector('#kt_app_content_container');
         
-        if (oldMain && newMain) {
-            oldMain.innerHTML = newMain.innerHTML;
+        if (oldContent && newContent) {
+            oldContent.innerHTML = newContent.innerHTML;
+            console.log('✅ Page content updated successfully');
+        } else {
+            console.warn('⚠️ Content containers not found:', { 
+                oldContent: !!oldContent, 
+                newContent: !!newContent 
+            });
+            
+            // Fallback: tüm app-content'i güncelle
+            const fallbackOld = document.querySelector('#kt_app_content');
+            const fallbackNew = newDoc.querySelector('#kt_app_content');
+            
+            if (fallbackOld && fallbackNew) {
+                fallbackOld.innerHTML = fallbackNew.innerHTML;
+                console.log('✅ Content updated via fallback selector');
+            }
         }
 
         // Meta tags güncelle
