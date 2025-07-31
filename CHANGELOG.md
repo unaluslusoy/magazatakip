@@ -2,6 +2,30 @@
 
 Tüm önemli proje değişiklikleri bu dosyada belgelenecektir.
 
+## [v1.3.2] - 2024-12-21
+
+### 🧹 Kod Temizleme ve Basitleştirme
+
+#### 🏠 Home.php Basitleştirmesi
+- **Eski karmaşık yapı kaldırıldı**
+  - Welcome ekranı HTML/CSS kodu temizlendi
+  - LocalStorage auto-login JavaScript kodu kaldırıldı
+  - PWA meta etiketleri ve manifest linkleri temizlendi
+- **Sadece PHP yönlendirme mantığı**
+  - Oturum açmış kullanıcılar → `/anasayfa`
+  - Oturum açmamış kullanıcılar → `/auth/giris`
+  - Session çakışması düzeltildi (`session_status()` kontrolü)
+
+### 📊 PWA Geliştirmeleri
+- **Splash Loading Animations** - View Transitions yerine
+- **Akıllı Link Filtreleme** - Tab ve modal tıklamalarında splash göstermeme
+- **PWA İkon Güncellemeleri** - `/public/media/logos/default.svg` kullanımı
+
+### 🐛 Hata Düzeltmeleri
+- **Session Warning** - `session_start()` çift çağrı hatası
+- **Service Worker** - Chrome extension cache hatası
+- **Favicon 404** - Root dizine favicon kopyalandı
+
 ## [v1.2.0] - 2024-12-21
 
 ### ✨ Yeni Özellikler
