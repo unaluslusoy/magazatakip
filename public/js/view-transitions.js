@@ -196,7 +196,10 @@ class ViewTransitions {
      * Modern View Transition ile sayfa geçişi
      */
     async navigateWithTransition(url, element = null) {
+        console.log('🎭 Starting navigation to:', url);
+        
         if (!this.isSupported) {
+            console.log('⚠️ View Transitions not supported, using fallback');
             window.location.href = url;
             return;
         }
@@ -204,12 +207,14 @@ class ViewTransitions {
         try {
             // Transition türünü belirle
             const transitionType = element?.dataset.transition || 'default';
+            console.log('🎨 Transition type:', transitionType);
             
             // Loading state göster
             this.showTransitionLoading();
 
             // Modern View Transition başlat
             await document.startViewTransition(async () => {
+                console.log('📦 View transition started, loading content...');
                 // Yeni içeriği yükle
                 await this.loadNewContent(url);
             });

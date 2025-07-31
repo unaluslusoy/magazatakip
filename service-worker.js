@@ -54,9 +54,19 @@ self.addEventListener('install', function(event) {
                 const cache = await caches.open(CACHE_NAME);
                 console.log('📦 Adding files to cache...');
                 
-                // URL'leri tek tek ekle hata durumunda devam etsin
+                // URL'leri filtrele ve tek tek ekle
+                const validUrls = CACHE_URLS.filter(url => {
+                    // Chrome extension ve invalid URL'leri filtrele
+                    return !url.startsWith('chrome-extension:') && 
+                           !url.startsWith('moz-extension:') &&
+                           !url.includes('extension://') &&
+                           url.startsWith('/') || url.startsWith('http');
+                });
+                
+                console.log(`📦 Caching ${validUrls.length} valid URLs...`);
+                
                 await Promise.allSettled(
-                    CACHE_URLS.map(url => {
+                    validUrls.map(url => {
                         return cache.add(url).catch(err => {
                             console.warn('❌ Failed to cache:', url, err);
                             return null;
