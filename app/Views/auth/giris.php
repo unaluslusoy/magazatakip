@@ -31,9 +31,9 @@ require_once 'app/Views/layouts/header.php';
         </div>
         <!--begin::Aside-->
         <!--begin::Body-->
-        <div class="d-flex flex-column-fluid flex-lg-row-auto justify-content-center justify-content-lg-end p-12">
+        <div class="flex-column-fluid flex-lg-row-auto justify-content-center justify-content-lg-end p-12">
             <!--begin::Wrapper-->
-            <div class="bg-body d-flex flex-column flex-center rounded-4 w-md-600px p-10">
+            <div class="bg-body  flex-column flex-center rounded-4 w-md-750px p-10">
                 <!--begin::Content-->
                 <div class="d-flex flex-center flex-column align-items-stretch h-lg-100 w-md-400px">
                     <!--begin::Wrapper-->
@@ -45,7 +45,7 @@ require_once 'app/Views/layouts/header.php';
                             <!--begin::Heading-->
                             <div class="text-center mb-11">
                                 <!--begin::Title-->
-                                <h1 class="text-gray-900 fw-bolder mb-3">Giriş Yap</h1>
+                                <h1 class="text-gray-900 fw-bolder mb-3">Oturum Aç</h1>
                                 <!--end::Title-->
                             </div>
                             <!--begin::Heading-->
@@ -58,10 +58,18 @@ require_once 'app/Views/layouts/header.php';
                             <!--end::Input group=-->
                             <div class="fv-row mb-3">
                                 <label for="password"></label>
-                                <input type="password" placeholder="Şifre" class="form-control" name="password" id="password" required>
+                                <div class="position-relative">
+                                    <input type="password" placeholder="Şifre" class="form-control" name="password" id="password" required>
+                                    <span class="btn btn-sm btn-icon position-absolute translate-middle-y top-50 end-0 me-n2" id="toggle-password" style="cursor: pointer;">
+                                        <i class="bi bi-eye-slash fs-2" id="password-eye"></i>
+                                        <i class="bi bi-eye fs-2 d-none" id="password-eye-open"></i>
+                                    </span>
+                                </div>
                             </div>
                             <!--end::Input group=-->
                             <!--begin::Wrapper-->
+
+                            <br>
                             <div class="d-flex flex-stack flex-wrap gap-3 fs-base fw-semibold mb-8">
                                 <div>
                                     <input type="checkbox" class="form-check-input" name="remember" id="remember">
@@ -97,7 +105,7 @@ require_once 'app/Views/layouts/header.php';
                                 <?php endif; ?>
                                 <button type="submit" id="kt_sign_in_submit" class="btn btn-primary">
                                     <!--begin::Indicator label-->
-                                    <span class="indicator-label">Giriş</span>
+                                    <span class="indicator-label">Giriş Yap</span>
                                     <!--end::Indicator label-->
                                     <!--begin::Indicator progress-->
                                     <span class="indicator-progress">Lütfen bekleyiniz...
@@ -124,32 +132,63 @@ require_once 'app/Views/layouts/header.php';
     </div>
 
 <script>
-    // Sayfa yüklendiğinde çalışacak fonksiyon
     document.addEventListener('DOMContentLoaded', function() {
+        // Parola göster/gizle fonksiyonu
+        const togglePassword = document.getElementById('toggle-password');
+        const passwordInput = document.getElementById('password');
+        const eyeIcon = document.getElementById('password-eye');
+        const eyeOpenIcon = document.getElementById('password-eye-open');
+
+        togglePassword.addEventListener('click', function() {
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.classList.add('d-none');
+                eyeOpenIcon.classList.remove('d-none');
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.classList.remove('d-none');
+                eyeOpenIcon.classList.add('d-none');
+            }
+        });
+
+        // Otomatik giriş kontrolü
         if (localStorage.getItem('rememberMe') === 'true') {
-            document.getElementById('email').value = localStorage.getItem('email');
-            document.getElementById('password').value = localStorage.getItem('password');
-            document.getElementById('rememberMe').checked = true;
+            const savedEmail = localStorage.getItem('email');
+            const savedPassword = localStorage.getItem('password');
+            
+            if (savedEmail && savedPassword) {
+                document.getElementById('email').value = savedEmail;
+                document.getElementById('password').value = savedPassword;
+                document.getElementById('remember').checked = true;
+                
+                // Otomatik giriş yap
+                setTimeout(function() {
+                    document.getElementById('kt_sign_in_form').submit();
+                }, 1000);
+            }
         }
 
         // Form submit olduğunda çalışacak fonksiyon
-        document.getElementById('loginForm').addEventListener('submit', function() {
-            if (document.getElementById('rememberMe').checked) {
+        document.getElementById('kt_sign_in_form').addEventListener('submit', function() {
+            if (document.getElementById('remember').checked) {
                 localStorage.setItem('email', document.getElementById('email').value);
                 localStorage.setItem('password', document.getElementById('password').value);
-                localStorage.setItem('rememberMe', true);
+                localStorage.setItem('rememberMe', 'true');
             } else {
                 localStorage.removeItem('email');
                 localStorage.removeItem('password');
                 localStorage.removeItem('rememberMe');
             }
         });
-    });
-    document.addEventListener('DOMContentLoaded', function() {
-        // OneSignal entegrasyonunuzun bu noktada yapılmış olduğunu varsayıyoruz
-        OneSignal.getUserId().then(function(userId) {
-            document.getElementById('cihaz_token').value = userId;
-        });
+
+        // OneSignal entegrasyonu
+        if (typeof OneSignal !== 'undefined') {
+            OneSignal.getUserId().then(function(userId) {
+                if (userId) {
+                    document.getElementById('cihaz_token').value = userId;
+                }
+            });
+        }
 
         // İşletim sistemi tespiti
         var userAgent = navigator.userAgent || navigator.vendor || window.opera;

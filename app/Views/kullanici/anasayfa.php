@@ -243,12 +243,12 @@ require_once 'app/Views/kullanici/layout/navbar.php';
                                         <span class="fs-6 fs-lg-base">Profil Görüntüle</span>
                                     </a>
                                 </div>
-                                <div class="col-lg-4 col-md-6 col-12">
+                                <!--<div class="col-lg-4 col-md-6 col-12">
                                     <a href="/profil/guncelle" class="btn btn-flex btn-outline btn-text-gray-700 btn-active-light-warning w-100 py-4 py-lg-3">
                                         <i class="ki-outline ki-setting-2 fs-1 fs-lg-2 me-2"></i>
                                         <span class="fs-6 fs-lg-base">Profili Düzenle</span>
                                     </a>
-                                </div>
+                                </div>-->
                                 <div class="col-lg-4 col-md-6 col-12">
                                     <a href="/auth/logout" class="btn btn-flex btn-outline btn-text-gray-700 btn-active-light-danger w-100 py-4 py-lg-3">
                                         <i class="ki-outline ki-exit-right fs-1 fs-lg-2 me-2"></i>

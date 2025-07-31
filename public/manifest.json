@@ -12,13 +12,13 @@
   "categories": ["business", "productivity"],
   "screenshots": [
     {
-      "src": "/public/images/screenshot-wide.png",
+      "src": "/public/media/logos/default.svg",
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide"
     },
     {
-      "src": "/public/images/screenshot-narrow.png", 
+      "src": "/public/media/logos/default.svg", 
       "sizes": "720x1280",
       "type": "image/png",
       "form_factor": "narrow"
@@ -32,7 +32,7 @@
       "url": "/isemri/olustur",
       "icons": [
         {
-          "src": "https://magazatakip.com.tr/public/media/logos/default.svg",
+          "src": "/public/media/logos/default.svg",
           "sizes": "any",
           "type": "image/svg+xml"
         }
@@ -45,7 +45,7 @@
       "url": "/isemri/listesi",
       "icons": [
         {
-          "src": "https://magazatakip.com.tr/public/media/logos/default.svg",
+          "src": "/public/media/logos/default.svg",
           "sizes": "any",
           "type": "image/svg+xml"
         }
@@ -58,7 +58,7 @@
       "url": "/ciro/ekle",
       "icons": [
         {
-          "src": "https://magazatakip.com.tr/public/media/logos/default.svg",
+          "src": "/public/media/logos/default.svg",
           "sizes": "any",
           "type": "image/svg+xml"
         }
@@ -71,7 +71,7 @@
       "url": "/musteri/listesi",
       "icons": [
         {
-          "src": "https://magazatakip.com.tr/public/media/logos/default.svg",
+          "src": "/public/media/logos/default.svg",
           "sizes": "any",
           "type": "image/svg+xml"
         }
@@ -84,7 +84,7 @@
       "url": "/rapor/ciro",
       "icons": [
         {
-          "src": "https://magazatakip.com.tr/public/media/logos/default.svg",
+          "src": "/public/media/logos/default.svg",
           "sizes": "any",
           "type": "image/svg+xml"
         }
@@ -109,7 +109,7 @@
   },
   "icons": [
     {
-      "src": "https://magazatakip.com.tr/public/media/logos/default.svg",
+      "src": "/public/media/logos/default.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
