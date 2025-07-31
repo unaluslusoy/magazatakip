@@ -1,157 +1,191 @@
 /**
- * Modern View Transitions API Implementation
- * Performans odaklı sayfa geçişleri - Sıfır bağımlılık
- * v1.2.0
+ * Splash Loading Animations
+ * Basit ve etkili sayfa geçiş sistemi
+ * v1.3.2
  */
 
-class ViewTransitions {
+class SplashTransitions {
     constructor() {
-        this.isSupported = 'startViewTransition' in document;
-        this.fallbackEnabled = true;
-        this.animationDuration = 300;
+        this.isLoading = false;
+        this.loadingElement = null;
         
-        console.log('🎭 View Transitions API destekleniyor:', this.isSupported);
         this.init();
+        console.log('🎬 Splash Loading Animations aktif!');
     }
 
     init() {
-        // View Transitions desteği varsa modern API'yi kullan
-        if (this.isSupported) {
-            this.setupModernTransitions();
-        } else {
-            console.log('🔄 Fallback transition sistemi aktif');
-            this.setupFallbackTransitions();
-        }
-
-        // Link'lerde otomatik transition
+        this.createLoadingElement();
         this.setupLinkTransitions();
-        
-        // Form submission'larda transition
         this.setupFormTransitions();
     }
 
     /**
-     * Modern View Transitions API
+     * Loading splash element oluştur
      */
-    setupModernTransitions() {
-        // CSS tanımlamaları ekle
-        this.injectViewTransitionCSS();
-        
-        // Page navigation events
-        window.addEventListener('beforeunload', () => {
-            this.prepareForTransition();
-        });
+    createLoadingElement() {
+        this.loadingElement = document.createElement('div');
+        this.loadingElement.id = 'splash-loading';
+        this.loadingElement.innerHTML = `
+            <div class="splash-overlay">
+                <div class="splash-content">
+                    <div class="splash-logo">
+                        <img src="/public/media/logos/default.svg" alt="Loading" class="splash-logo-img">
+                    </div>
+                    <div class="splash-spinner">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Yükleniyor...</span>
+                        </div>
+                    </div>
+                    <div class="splash-text">
+                        <span class="loading-text">Sayfa yükleniyor...</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        this.injectSplashCSS();
+        document.body.appendChild(this.loadingElement);
+        this.hideLoading(); // Başlangıçta gizle
     }
 
     /**
-     * Modern tarayıcılar için CSS View Transitions
+     * Splash loading CSS'i inject et
      */
-    injectViewTransitionCSS() {
+    injectSplashCSS() {
         const style = document.createElement('style');
         style.textContent = `
-            /* View Transitions Root */
-            ::view-transition {
+            #splash-loading {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 10000;
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.3s ease-in-out;
                 pointer-events: none;
             }
 
-            /* Header ve Footer sabit - transition'a dahil etme */
-            #kt_app_header,
-            #kt_app_footer,
-            .app-header,
-            .app-footer {
-                view-transition-name: none;
+            #splash-loading.show {
+                opacity: 1;
+                visibility: visible;
+                pointer-events: all;
             }
 
-            /* Sadece Content Container transition yapsın */
-            #kt_app_content_container {
-                view-transition-name: main-content;
+            .splash-overlay {
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(135deg, 
+                    rgba(255, 255, 255, 0.95) 0%, 
+                    rgba(248, 249, 250, 0.98) 100%);
+                backdrop-filter: blur(10px);
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
 
-            /* Content geçiş animasyonları */
-            ::view-transition-old(main-content) {
-                animation: slide-out-left 0.3s ease-in-out;
+            .splash-content {
+                text-align: center;
+                animation: splashFadeIn 0.5s ease-out;
             }
 
-            ::view-transition-new(main-content) {
-                animation: slide-in-right 0.3s ease-in-out;
+            .splash-logo {
+                margin-bottom: 24px;
             }
 
-            /* Root transition'ı disable et (sadece content için) */
-            ::view-transition-old(root),
-            ::view-transition-new(root) {
-                animation: none;
+            .splash-logo-img {
+                width: 80px;
+                height: 80px;
+                animation: logoFloat 2s ease-in-out infinite;
+                filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
             }
 
-            /* Content için özel geçiş türleri */
-            #kt_app_content_container.page-transition-fade {
-                view-transition-name: content-fade;
+            .splash-spinner {
+                margin-bottom: 16px;
             }
 
-            ::view-transition-old(content-fade) {
-                animation: fade-out 0.2s ease-out;
+            .splash-spinner .spinner-border {
+                width: 3rem;
+                height: 3rem;
+                border-width: 0.3em;
             }
 
-            ::view-transition-new(content-fade) {
-                animation: fade-in 0.2s ease-in;
+            .splash-text {
+                font-size: 16px;
+                font-weight: 500;
+                color: #374151;
+                animation: textPulse 1.5s ease-in-out infinite;
             }
 
-            /* Profil sayfası özel geçişi */
-            #kt_app_content_container.profile-transition {
-                view-transition-name: content-profile;
-            }
-
-            ::view-transition-old(content-profile) {
-                animation: slide-out-right 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            }
-
-            ::view-transition-new(content-profile) {
-                animation: slide-in-left 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            }
-
-            /* Keyframe animasyonları */
-            @keyframes slide-out-left {
-                from { transform: translateX(0); opacity: 1; }
-                to { transform: translateX(-100%); opacity: 0; }
-            }
-
-            @keyframes slide-in-right {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-
-            @keyframes slide-out-right {
-                from { transform: translateX(0); opacity: 1; }
-                to { transform: translateX(100%); opacity: 0; }
-            }
-
-            @keyframes slide-in-left {
-                from { transform: translateX(-100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-
-            @keyframes fade-out {
-                from { opacity: 1; }
-                to { opacity: 0; }
-            }
-
-            @keyframes fade-in {
-                from { opacity: 0; }
-                to { opacity: 1; }
-            }
-
-            /* Mobil optimizasyonları */
-            @media (max-width: 768px) {
-                ::view-transition-old(root),
-                ::view-transition-new(root) {
-                    animation-duration: 0.25s;
+            /* Animasyonlar */
+            @keyframes splashFadeIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
                 }
             }
 
-            /* Reduced motion desteği */
+            @keyframes logoFloat {
+                0%, 100% {
+                    transform: translateY(0);
+                }
+                50% {
+                    transform: translateY(-10px);
+                }
+            }
+
+            @keyframes textPulse {
+                0%, 100% {
+                    opacity: 0.7;
+                }
+                50% {
+                    opacity: 1;
+                }
+            }
+
+            /* Dark mode */
+            @media (prefers-color-scheme: dark) {
+                .splash-overlay {
+                    background: linear-gradient(135deg, 
+                        rgba(17, 24, 39, 0.95) 0%, 
+                        rgba(31, 41, 55, 0.98) 100%);
+                }
+                
+                .splash-text {
+                    color: #e5e7eb;
+                }
+            }
+
+            /* Mobile optimizasyon */
+            @media (max-width: 768px) {
+                .splash-logo-img {
+                    width: 60px;
+                    height: 60px;
+                }
+                
+                .splash-text {
+                    font-size: 14px;
+                }
+                
+                .splash-spinner .spinner-border {
+                    width: 2.5rem;
+                    height: 2.5rem;
+                }
+            }
+
+            /* Reduced motion */
             @media (prefers-reduced-motion: reduce) {
-                ::view-transition-old(root),
-                ::view-transition-new(root) {
+                #splash-loading,
+                .splash-content,
+                .splash-logo-img,
+                .splash-text {
                     animation: none;
+                    transition: none;
                 }
             }
         `;
@@ -159,7 +193,7 @@ class ViewTransitions {
     }
 
     /**
-     * Link'ler için otomatik transition
+     * Link'ler için otomatik loading
      */
     setupLinkTransitions() {
         document.addEventListener('click', (e) => {
@@ -174,82 +208,64 @@ class ViewTransitions {
                 return;
             }
 
+            // Aynı sayfa ise skip
+            if (link.href === window.location.href) return;
+
+            console.log('🔗 Link clicked, starting navigation to:', link.href);
             e.preventDefault();
-            this.navigateWithTransition(link.href, link);
+            this.navigateWithSplash(link.href);
         });
     }
 
     /**
-     * Form'lar için transition
+     * Form'lar için loading
      */
     setupFormTransitions() {
         document.addEventListener('submit', (e) => {
             const form = e.target;
-            if (!form.classList.contains('use-transition')) return;
+            if (!form.classList.contains('use-splash')) return;
 
-            e.preventDefault();
-            this.submitFormWithTransition(form);
+            console.log('📝 Form submitted with splash loading');
+            this.showLoading('Form gönderiliyor...');
+            
+            // Form normal şekilde submit olsun, loading otomatik gizlensin
+            setTimeout(() => {
+                if (this.isLoading) {
+                    this.hideLoading();
+                }
+            }, 5000); // 5 saniye timeout
         });
     }
 
     /**
-     * Modern View Transition ile sayfa geçişi
+     * Splash ile sayfa geçişi
      */
-    async navigateWithTransition(url, element = null) {
-        console.log('🎭 Starting navigation to:', url);
-        
-        if (!this.isSupported) {
-            console.log('⚠️ View Transitions not supported, using fallback');
-            window.location.href = url;
-            return;
-        }
-
+    async navigateWithSplash(url) {
         try {
-            // Transition türünü belirle
-            const transitionType = element?.dataset.transition || 'default';
-            console.log('🎨 Transition type:', transitionType);
+            console.log('🎬 Starting splash navigation to:', url);
             
-            // Loading state göster
-            this.showTransitionLoading();
-
-            // Modern View Transition başlat
-            await document.startViewTransition(async () => {
-                console.log('📦 View transition started, loading content...');
-                // Yeni içeriği yükle
-                await this.loadNewContent(url);
-            });
-
-            console.log('✅ View transition tamamlandı:', url);
+            // Loading göster
+            this.showLoading();
+            
+            // İçerik yükle
+            await this.loadContent(url);
+            
+            console.log('✅ Navigation completed successfully');
             
         } catch (error) {
-            console.error('❌ View transition hatası:', error);
+            console.error('❌ Navigation error:', error);
             
-            // Error tracking
-            if (window.errorHandler) {
-                window.errorHandler.logError('ViewTransition', error, { url });
-            }
-            
-            // Fallback navigation
-            console.log('🔄 Fallback navigation başlatılıyor...');
-            this.hideTransitionLoading();
-            
-            // Smooth fallback transition
-            document.body.style.opacity = '0.5';
-            setTimeout(() => {
-                window.location.href = url;
-            }, 150);
-            
-        } finally {
-            this.hideTransitionLoading();
+            // Hata durumunda normal navigation
+            window.location.href = url;
         }
     }
 
     /**
-     * Yeni içerik yükleme
+     * İçerik yükleme
      */
-    async loadNewContent(url) {
+    async loadContent(url) {
         try {
-            console.log('🔄 Loading content from:', url);
+            console.log('📦 Fetching content from:', url);
             
             const response = await fetch(url, {
                 headers: {
@@ -262,345 +278,171 @@ class ViewTransitions {
             }
 
             const html = await response.text();
-            console.log('📥 HTML received, length:', html.length);
+            console.log('📥 Content received, length:', html.length);
             
+            // Parse HTML
             const parser = new DOMParser();
             const newDoc = parser.parseFromString(html, 'text/html');
             
-            // Debug: Document parsing
-            console.log('📋 New document title:', newDoc.title);
-            console.log('📦 Content container found:', !!newDoc.querySelector('#kt_app_content_container'));
-
-            // Sayfa içeriğini güncelle
-            this.updatePageContent(newDoc);
+            // Content güncelle
+            this.updateContent(newDoc);
             
-            // URL'yi güncelle
+            // URL güncelle
             window.history.pushState({}, '', url);
             console.log('🔗 URL updated to:', url);
             
-            // Page load event trigger et
-            this.triggerPageLoadEvents();
+            // Loading gizle
+            this.hideLoading();
+            
+            // Başarı feedback'i
+            this.showSuccessFeedback();
             
         } catch (error) {
-            console.error('Content loading error:', error);
-            
-            // Detaylı error logging
-            if (window.errorHandler) {
-                window.errorHandler.logError('ContentLoading', error, { 
-                    url, 
-                    responseStatus: error.status,
-                    userAgent: navigator.userAgent 
-                });
-            }
-            
-            throw new Error(`Content loading failed: ${error.message || 'Unknown error'}`);
+            console.error('Content loading failed:', error);
+            throw error;
         }
     }
 
     /**
      * Sayfa içeriğini güncelle
      */
-    updatePageContent(newDoc) {
-        console.log('🔄 Starting page content update...');
+    updateContent(newDoc) {
+        console.log('🔄 Updating page content...');
         
         // Title güncelle
-        const oldTitle = document.title;
         document.title = newDoc.title;
-        console.log('📝 Title updated:', oldTitle, '→', newDoc.title);
-
-        // Debug: Mevcut DOM yapısını kontrol et
+        
+        // Content container güncelle
         const oldContent = document.querySelector('#kt_app_content_container');
         const newContent = newDoc.querySelector('#kt_app_content_container');
         
-        console.log('🔍 DOM Debug:', {
-            currentPage: window.location.pathname,
-            oldContentExists: !!oldContent,
-            newContentExists: !!newContent,
-            oldContentHTML: oldContent ? oldContent.innerHTML.substring(0, 200) + '...' : 'NULL',
-            newContentHTML: newContent ? newContent.innerHTML.substring(0, 200) + '...' : 'NULL'
-        });
-        
         if (oldContent && newContent) {
-            // Content'i güncelle
-            const oldHTML = oldContent.innerHTML;
             oldContent.innerHTML = newContent.innerHTML;
-            
-            console.log('📄 Content replaced:', {
-                oldLength: oldHTML.length,
-                newLength: newContent.innerHTML.length,
-                changed: oldHTML !== newContent.innerHTML
-            });
-            
-            // Transition class'ını uygula
-            this.applyTransitionClass(oldContent, newContent);
-            
-            console.log('✅ Page content updated successfully');
+            console.log('✅ Content updated successfully');
         } else {
-            console.warn('⚠️ Content containers not found:', { 
-                oldContent: !!oldContent, 
-                newContent: !!newContent,
-                currentHTML: document.body.innerHTML.substring(0, 500) + '...'
-            });
-            
-            // Fallback: tüm app-content'i güncelle
+            // Fallback: app-content güncelle
             const fallbackOld = document.querySelector('#kt_app_content');
             const fallbackNew = newDoc.querySelector('#kt_app_content');
             
-            console.log('🔄 Trying fallback selectors:', {
-                fallbackOldExists: !!fallbackOld,
-                fallbackNewExists: !!fallbackNew
-            });
-            
             if (fallbackOld && fallbackNew) {
                 fallbackOld.innerHTML = fallbackNew.innerHTML;
-                console.log('✅ Content updated via fallback selector');
+                console.log('✅ Content updated via fallback');
             } else {
-                // Son çare: full page reload
-                console.error('❌ No content selectors found, falling back to full reload');
-                window.location.reload();
-                return;
+                throw new Error('Content containers not found');
             }
         }
-
-        // Meta tags güncelle
-        this.updateMetaTags(newDoc);
         
-        // Scripts yeniden yükle
-        this.reloadScripts(newDoc);
+        // Page load event trigger
+        this.triggerPageEvents();
     }
 
     /**
-     * Meta tags güncelle
+     * Loading göster
      */
-    updateMetaTags(newDoc) {
-        const metaSelectors = ['meta[name="description"]', 'meta[property^="og:"]'];
+    showLoading(text = 'Sayfa yükleniyor...') {
+        if (this.isLoading) return;
         
-        metaSelectors.forEach(selector => {
-            const oldMeta = document.querySelector(selector);
-            const newMeta = newDoc.querySelector(selector);
-            
-            if (oldMeta && newMeta) {
-                oldMeta.setAttribute('content', newMeta.getAttribute('content'));
-            }
-        });
+        this.isLoading = true;
+        
+        // Loading text güncelle
+        const textElement = this.loadingElement.querySelector('.loading-text');
+        if (textElement) {
+            textElement.textContent = text;
+        }
+        
+        // Göster
+        this.loadingElement.classList.add('show');
+        document.body.style.overflow = 'hidden'; // Scroll engelle
+        
+        console.log('🎬 Splash loading shown:', text);
     }
 
     /**
-     * Scripts yeniden yükle
+     * Loading gizle
      */
-    reloadScripts(newDoc) {
-        try {
-            // Yeni sayfadaki script tag'leri bul
-            const newScripts = newDoc.querySelectorAll('script[src]');
-            const existingScripts = new Set();
-            
-            // Mevcut script'leri kaydet
-            document.querySelectorAll('script[src]').forEach(script => {
-                existingScripts.add(script.src);
-            });
-            
-            // Yeni script'leri yükle
-            newScripts.forEach(scriptEl => {
-                if (!existingScripts.has(scriptEl.src)) {
-                    const newScript = document.createElement('script');
-                    newScript.src = scriptEl.src;
-                    newScript.async = true;
-                    
-                    // Script attributes'ları kopyala
-                    Array.from(scriptEl.attributes).forEach(attr => {
-                        if (attr.name !== 'src') {
-                            newScript.setAttribute(attr.name, attr.value);
-                        }
-                    });
-                    
-                    document.head.appendChild(newScript);
-                    console.log('🔄 Script reloaded:', scriptEl.src);
-                }
-            });
-            
-            // Inline script'leri güvenli şekilde çalıştır
-            const inlineScripts = newDoc.querySelectorAll('script:not([src])');
-            inlineScripts.forEach((script, index) => {
-                if (script.textContent.trim() && this.isScriptSafe(script.textContent)) {
-                    try {
-                        // Script'i sandboxed context'te çalıştır
-                        const func = new Function(script.textContent);
-                        func.call(window);
-                        console.log(`✅ Inline script ${index + 1} executed safely`);
-                    } catch (error) {
-                        console.warn(`❌ Inline script ${index + 1} execution failed:`, error);
-                    }
-                }
-            });
-            
-        } catch (error) {
-            console.warn('Script reloading failed:', error);
-        }
+    hideLoading() {
+        if (!this.isLoading) return;
+        
+        this.isLoading = false;
+        this.loadingElement.classList.remove('show');
+        document.body.style.overflow = ''; // Scroll restore
+        
+        console.log('🎬 Splash loading hidden');
     }
 
     /**
-     * Script güvenlik kontrolü
+     * Başarı feedback'i
      */
-    isScriptSafe(scriptContent) {
-        // Tehlikeli pattern'leri kontrol et
-        const dangerousPatterns = [
-            /eval\s*\(/,
-            /Function\s*\(/,
-            /setTimeout\s*\(\s*["'`]/,
-            /setInterval\s*\(\s*["'`]/,
-            /document\.write/,
-            /innerHTML\s*=/,
-            /outerHTML\s*=/,
-            /location\s*=/,
-            /href\s*=/
-        ];
-
-        // Kötü amaçlı code pattern'leri tespit et
-        for (const pattern of dangerousPatterns) {
-            if (pattern.test(scriptContent)) {
-                console.warn('🚨 Potentially unsafe script detected:', pattern);
-                return false;
-            }
-        }
-
-        // Script boyut kontrolü (çok büyük script'leri engelle)
-        if (scriptContent.length > 50000) {
-            console.warn('🚨 Script too large, skipping execution');
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Content container'a transition class uygula
-     */
-    applyTransitionClass(oldContent, newContent) {
-        try {
-            // Mevcut transition class'larını temizle
-            oldContent.classList.remove('page-transition-fade', 'profile-transition');
+    showSuccessFeedback() {
+        // Kısa süre için success state göster
+        const originalText = this.loadingElement.querySelector('.loading-text').textContent;
+        const textElement = this.loadingElement.querySelector('.loading-text');
+        
+        if (textElement) {
+            textElement.textContent = '✅ Yüklendi!';
+            textElement.style.color = '#10b981';
             
-            // URL'e göre transition type'ını belirle
-            const currentUrl = window.location.pathname;
-            
-            if (currentUrl.includes('/profil')) {
-                oldContent.classList.add('profile-transition');
-                console.log('🎭 Profile transition applied');
-            } else if (currentUrl.includes('/anasayfa') || currentUrl === '/') {
-                oldContent.classList.add('page-transition-fade');
-                console.log('🎭 Fade transition applied');
-            } else {
-                // Default transition
-                oldContent.classList.add('page-transition-fade');
-                console.log('🎭 Default fade transition applied');
-            }
-            
-            // Transition sonrası class'ları temizle
             setTimeout(() => {
-                oldContent.classList.remove('page-transition-fade', 'profile-transition');
+                textElement.textContent = originalText;
+                textElement.style.color = '';
             }, 500);
-            
-        } catch (error) {
-            console.warn('Transition class application failed:', error);
         }
     }
 
     /**
-     * Page load events trigger
+     * Page events trigger
      */
-    triggerPageLoadEvents() {
-        // DOM ready event
-        const event = new CustomEvent('pageTransitionComplete', {
+    triggerPageEvents() {
+        // Custom event dispatch
+        const event = new CustomEvent('pageLoaded', {
             detail: { url: window.location.href }
         });
         document.dispatchEvent(event);
 
-        // Existing scripts re-initialize
+        // KTApp re-init
         if (window.KTApp) {
             window.KTApp.init();
+        }
+        
+        console.log('📡 Page events triggered');
+    }
+
+    /**
+     * Manual navigation
+     */
+    static navigate(url, text = 'Sayfa yükleniyor...') {
+        const instance = window.splashTransitions;
+        if (instance) {
+            instance.navigateWithSplash(url, text);
+        } else {
+            window.location.href = url;
         }
     }
 
     /**
-     * Loading state yönetimi
+     * Manual loading control
      */
-    showTransitionLoading() {
-        const loader = document.createElement('div');
-        loader.id = 'view-transition-loader';
-        loader.innerHTML = `
-            <div class="d-flex justify-content-center">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Yükleniyor...</span>
-                </div>
-            </div>
-        `;
-        loader.style.cssText = `
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 9999;
-            background: rgba(255,255,255,0.9);
-            padding: 20px;
-            border-radius: 8px;
-            backdrop-filter: blur(5px);
-        `;
-        document.body.appendChild(loader);
+    static showLoading(text) {
+        const instance = window.splashTransitions;
+        if (instance) {
+            instance.showLoading(text);
+        }
     }
 
-    hideTransitionLoading() {
-        const loader = document.getElementById('view-transition-loader');
-        if (loader) loader.remove();
-    }
-
-    /**
-     * Fallback transitions (eski tarayıcılar için)
-     */
-    setupFallbackTransitions() {
-        const style = document.createElement('style');
-        style.textContent = `
-            .page-transition-active {
-                transition: all 0.3s ease-in-out;
-            }
-            
-            .page-fade-out {
-                opacity: 0;
-                transform: translateX(-20px);
-            }
-            
-            .page-fade-in {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
-    /**
-     * Programmatik transition başlatma
-     */
-    static navigate(url, options = {}) {
-        const instance = window.viewTransitions || new ViewTransitions();
-        return instance.navigateWithTransition(url);
-    }
-
-    /**
-     * Transition türü ayarlama
-     */
-    static setTransitionType(element, type) {
-        if (element) {
-            element.dataset.transition = type;
+    static hideLoading() {
+        const instance = window.splashTransitions;
+        if (instance) {
+            instance.hideLoading();
         }
     }
 }
 
 // Global instance oluştur
-window.viewTransitions = new ViewTransitions();
+window.splashTransitions = new SplashTransitions();
 
 // Export for modules
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = ViewTransitions;
+    module.exports = SplashTransitions;
 }
 
-console.log('🎭 View Transitions API hazır! Modern sayfa geçişleri aktif.');
-console.log('🎭 View Transitions API hazır! Modern sayfa geçişleri aktif.');
+console.log('🎬 Splash Loading Animations hazır! Basit ve etkili sayfa geçişleri aktif.');

@@ -60,7 +60,7 @@ require_once 'app/Views/kullanici/layout/navbar.php';
                                         </div>
                                         <!--end::Quick Info-->
                                     </div>
-                                    
+
                                     <!--begin::Actions-->
 
                                     <!--end::Actions-->
