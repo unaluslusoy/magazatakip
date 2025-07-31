@@ -54,38 +54,57 @@ class ViewTransitions {
                 pointer-events: none;
             }
 
-            /* Sayfa geçiş animasyonları */
-            ::view-transition-old(root) {
+            /* Header ve Footer sabit - transition'a dahil etme */
+            #kt_app_header,
+            #kt_app_footer,
+            .app-header,
+            .app-footer {
+                view-transition-name: none;
+            }
+
+            /* Sadece Content Container transition yapsın */
+            #kt_app_content_container {
+                view-transition-name: main-content;
+            }
+
+            /* Content geçiş animasyonları */
+            ::view-transition-old(main-content) {
                 animation: slide-out-left 0.3s ease-in-out;
             }
 
-            ::view-transition-new(root) {
+            ::view-transition-new(main-content) {
                 animation: slide-in-right 0.3s ease-in-out;
             }
 
-            /* Özel geçiş türleri */
-            .page-transition-fade {
-                view-transition-name: page-fade;
+            /* Root transition'ı disable et (sadece content için) */
+            ::view-transition-old(root),
+            ::view-transition-new(root) {
+                animation: none;
             }
 
-            ::view-transition-old(page-fade) {
+            /* Content için özel geçiş türleri */
+            #kt_app_content_container.page-transition-fade {
+                view-transition-name: content-fade;
+            }
+
+            ::view-transition-old(content-fade) {
                 animation: fade-out 0.2s ease-out;
             }
 
-            ::view-transition-new(page-fade) {
+            ::view-transition-new(content-fade) {
                 animation: fade-in 0.2s ease-in;
             }
 
             /* Profil sayfası özel geçişi */
-            .profile-transition {
-                view-transition-name: profile-slide;
+            #kt_app_content_container.profile-transition {
+                view-transition-name: content-profile;
             }
 
-            ::view-transition-old(profile-slide) {
+            ::view-transition-old(content-profile) {
                 animation: slide-out-right 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             }
 
-            ::view-transition-new(profile-slide) {
+            ::view-transition-new(content-profile) {
                 animation: slide-in-left 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             }
 
@@ -276,7 +295,12 @@ class ViewTransitions {
         const newContent = newDoc.querySelector('#kt_app_content_container');
         
         if (oldContent && newContent) {
+            // Content'i güncelle
             oldContent.innerHTML = newContent.innerHTML;
+            
+            // Transition class'ını uygula
+            this.applyTransitionClass(oldContent, newContent);
+            
             console.log('✅ Page content updated successfully');
         } else {
             console.warn('⚠️ Content containers not found:', { 
@@ -405,6 +429,39 @@ class ViewTransitions {
     }
 
     /**
+     * Content container'a transition class uygula
+     */
+    applyTransitionClass(oldContent, newContent) {
+        try {
+            // Mevcut transition class'larını temizle
+            oldContent.classList.remove('page-transition-fade', 'profile-transition');
+            
+            // URL'e göre transition type'ını belirle
+            const currentUrl = window.location.pathname;
+            
+            if (currentUrl.includes('/profil')) {
+                oldContent.classList.add('profile-transition');
+                console.log('🎭 Profile transition applied');
+            } else if (currentUrl.includes('/anasayfa') || currentUrl === '/') {
+                oldContent.classList.add('page-transition-fade');
+                console.log('🎭 Fade transition applied');
+            } else {
+                // Default transition
+                oldContent.classList.add('page-transition-fade');
+                console.log('🎭 Default fade transition applied');
+            }
+            
+            // Transition sonrası class'ları temizle
+            setTimeout(() => {
+                oldContent.classList.remove('page-transition-fade', 'profile-transition');
+            }, 500);
+            
+        } catch (error) {
+            console.warn('Transition class application failed:', error);
+        }
+    }
+
+    /**
      * Page load events trigger
      */
     triggerPageLoadEvents() {
@@ -501,4 +558,5 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = ViewTransitions;
 }
 
+console.log('🎭 View Transitions API hazır! Modern sayfa geçişleri aktif.');
 console.log('🎭 View Transitions API hazır! Modern sayfa geçişleri aktif.');
