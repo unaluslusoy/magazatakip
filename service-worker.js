@@ -1,4 +1,4 @@
-const CACHE_NAME = 'magaza-takip-cache-v4';
+const CACHE_NAME = 'magaza-takip-cache-v5';
 const APP_VERSION = '1.3.1';
 const OFFLINE_URL = '/offline.html';
 

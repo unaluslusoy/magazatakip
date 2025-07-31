@@ -24,7 +24,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/public/images/apple-touch-icon.png">
     
     <!-- Primary App Icon for PWA -->
-    <link rel="apple-touch-startup-image" href="https://magazatakip.com.tr/public/media/logos/default.svg">
+    <link rel="apple-touch-startup-image" href="/public/media/logos/default.svg">
     <meta name="apple-mobile-web-app-title" content="Mağaza Takip">
     <meta name="application-name" content="Mağaza Takip">
     <link rel="apple-touch-icon" sizes="152x152" href="/public/images/apple-touch-icon-152x152.png">
@@ -42,24 +42,20 @@
         // DOM ready kontrolü
         document.addEventListener('DOMContentLoaded', function() {
             // Script loading sırası kontrolü
+            // Cache busting timestamp
+            const cacheVersion = '?v=' + Date.now();
+            
             const scriptsToLoad = [
-                '/public/js/dom-safety.js',
-                '/public/js/compatibility-fix.js',
-                '/public/js/error-handler.js',
-                '/public/js/pwa-analytics.js',
-                '/auth-guard.js',
-                '/public/js/network-monitor.js',
-                '/public/js/splash-screen.js',
-                '/public/js/business-loader.js',
-                '/public/js/page-transitions.js',
-                '/public/js/pwa-install.js', 
-                '/public/js/background-sync.js',
-                '/public/js/pull-to-refresh.js',
-                '/public/js/view-transitions.js',
-                '/public/js/modern-pull-to-refresh.js',
-                '/public/js/app-update-manager.js',
-                '/public/js/pwa-features-demo.js',
-                '/public/js/token-registration.js'
+                '/public/js/error-handler.js' + cacheVersion,
+                '/public/js/pwa-analytics.js' + cacheVersion,
+                '/auth-guard.js' + cacheVersion,
+                '/public/js/network-monitor.js' + cacheVersion,
+                '/public/js/splash-screen.js' + cacheVersion,
+                '/public/js/view-transitions.js' + cacheVersion,
+                '/public/js/modern-pull-to-refresh.js' + cacheVersion,
+                '/public/js/app-update-manager.js' + cacheVersion,
+                '/public/js/pwa-install.js' + cacheVersion,
+                '/public/js/background-sync.js' + cacheVersion
             ];
             
             function loadScriptSequentially(index) {
