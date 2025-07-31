@@ -1,4 +1,4 @@
-const CACHE_NAME = 'magaza-takip-cache-v5';
+const CACHE_NAME = 'magaza-takip-cache-v6';
 const APP_VERSION = '1.3.1';
 const OFFLINE_URL = '/offline.html';
 
@@ -17,6 +17,13 @@ const CACHE_URLS = [
     '/public/plugins/global/plugins.bundle.js',
     '/public/images/icons/icon-192x192.png',
     '/public/images/icons/icon-512x512.png',
+    '/public/images/icons/icon-192x192-maskable.png',
+    '/public/images/icons/icon-512x512-maskable.png',
+    '/public/images/apple-touch-icon.png',
+    '/public/images/apple-touch-icon-152x152.png',
+    '/public/images/apple-touch-icon-144x144.png',
+    '/public/images/apple-touch-icon-120x120.png',
+    '/favicon.ico',
     '/public/media/logos/default.svg',
     'https://magazatakip.com.tr/public/media/logos/default.svg',
     '/public/media/logos/default-dark.svg',
