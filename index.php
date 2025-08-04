@@ -4,28 +4,14 @@ require_once 'core/Router.php';
 require_once 'core/Controller.php';
 require_once 'core/Database.php';
 require_once 'app/helpers/url_helper.php';
-require_once 'error_handler.php';
 require_once 'config/database.php';
 
 
 use core\Router;
 use app\Models\Kullanici;
 
-use Dotenv\Dotenv;
 
-// Dotenv'i yükle
-$dotenv = Dotenv::createImmutable(__DIR__);
-$dotenv->load();
-
-
-// Hata raporlama ayarları
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
-// Hata günlüğü ayarları
-ini_set('log_errors', 1);
-ini_set('error_log', __DIR__ . '/logs/php_errors.log');
+// Production ayarları
 
 // Oturum ayarları
 session_start();

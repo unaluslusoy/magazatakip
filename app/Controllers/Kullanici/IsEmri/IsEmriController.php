@@ -182,14 +182,24 @@ class IsEmriController extends Controller {
         
         // Filtre parametreleri
         $filters = [
-            'durum' => $params['durum'] ?? null,
-            'derece' => $params['derece'] ?? null,
-            'tarih_baslangic' => $params['tarih_baslangic'] ?? null,
-            'tarih_bitis' => $params['tarih_bitis'] ?? null
+            'durum' => $_GET['durum'] ?? $params['durum'] ?? null,
+            'derece' => $_GET['derece'] ?? $params['derece'] ?? null,
+            'kategori' => $_GET['kategori'] ?? $params['kategori'] ?? null,
+            'tarih_baslangic' => $_GET['tarih_baslangic'] ?? $params['tarih_baslangic'] ?? null,
+            'tarih_bitis' => $_GET['tarih_bitis'] ?? $params['tarih_bitis'] ?? null
         ];
         
-        // Filtrelenmiş iş emirlerini al
-        $isEmirleri = $this->filterIsEmirleri($isEmriModel, $magaza_id, $filters);
+        // Sayfalama parametreleri
+        $sayfaBasinaKayit = 10;
+        $mevcutSayfa = (int)($_GET['sayfa'] ?? 1);
+        $offset = ($mevcutSayfa - 1) * $sayfaBasinaKayit;
+        
+        // Toplam kayıt sayısını al
+        $toplamKayit = $this->getToplamKayitSayisi($magaza_id, $filters);
+        $toplamSayfa = ceil($toplamKayit / $sayfaBasinaKayit);
+        
+        // Filtrelenmiş iş emirlerini al (sayfalama ile)
+        $isEmirleri = $this->filterIsEmirleriWithPagination($isEmriModel, $magaza_id, $filters, $offset, $sayfaBasinaKayit);
         
         // Derece seçenekleri
         $dereceler = ['ACİL', 'KRİTİK', 'YÜKSEK', 'ORTA', 'DÜŞÜK', 'İNCELENİYOR'];
@@ -198,14 +208,58 @@ class IsEmriController extends Controller {
             'isEmirleri' => $isEmirleri, 
             'seciliDurum' => $filters['durum'],
             'seciliDerece' => $filters['derece'],
+            'seciliKategori' => $filters['kategori'],
             'dereceler' => $dereceler,
             'tarih_baslangic' => $filters['tarih_baslangic'],
-            'tarih_bitis' => $filters['tarih_bitis']
+            'tarih_bitis' => $filters['tarih_bitis'],
+            'toplamSayfa' => $toplamSayfa,
+            'mevcutSayfa' => $mevcutSayfa,
+            'toplamKayit' => $toplamKayit,
+            'sayfaBasinaKayit' => $sayfaBasinaKayit
         ]);
     }
 
-    private function filterIsEmirleri($isEmriModel, $magaza_id, $filters) {
-        // Veritabanı bağlantısını doğrudan Database sınıfından al
+    private function getToplamKayitSayisi($magaza_id, $filters) {
+        $db = Database::getInstance()->getConnection();
+
+        $query = "SELECT COUNT(*) FROM istekler WHERE magaza_id = :magaza_id";
+        $params = [':magaza_id' => $magaza_id];
+
+        // Durum filtresi
+        if (!empty($filters['durum'])) {
+            $query .= " AND durum = :durum";
+            $params[':durum'] = $filters['durum'];
+        }
+
+        // Derece filtresi
+        if (!empty($filters['derece'])) {
+            $query .= " AND derece = :derece";
+            $params[':derece'] = $filters['derece'];
+        }
+
+        // Kategori filtresi
+        if (!empty($filters['kategori'])) {
+            $query .= " AND kategori = :kategori";
+            $params[':kategori'] = $filters['kategori'];
+        }
+
+        // Tarih aralığı filtresi
+        if (!empty($filters['tarih_baslangic'])) {
+            $query .= " AND tarih >= :tarih_baslangic";
+            $params[':tarih_baslangic'] = $filters['tarih_baslangic'];
+        }
+
+        if (!empty($filters['tarih_bitis'])) {
+            $query .= " AND tarih <= :tarih_bitis";
+            $params[':tarih_bitis'] = $filters['tarih_bitis'];
+        }
+
+        $stmt = $db->prepare($query);
+        $stmt->execute($params);
+        return (int)$stmt->fetchColumn();
+    }
+
+    private function filterIsEmirleriWithPagination($isEmriModel, $magaza_id, $filters, $offset, $limit) {
         $db = Database::getInstance()->getConnection();
 
         $query = "SELECT * FROM istekler WHERE magaza_id = :magaza_id";
@@ -223,6 +277,12 @@ class IsEmriController extends Controller {
             $params[':derece'] = $filters['derece'];
         }
 
+        // Kategori filtresi
+        if (!empty($filters['kategori'])) {
+            $query .= " AND kategori = :kategori";
+            $params[':kategori'] = $filters['kategori'];
+        }
+
         // Tarih aralığı filtresi
         if (!empty($filters['tarih_baslangic'])) {
             $query .= " AND tarih >= :tarih_baslangic";
@@ -234,11 +294,28 @@ class IsEmriController extends Controller {
             $params[':tarih_bitis'] = $filters['tarih_bitis'];
         }
 
-        $query .= " ORDER BY id DESC";
+        $query .= " ORDER BY id DESC LIMIT :limit OFFSET :offset";
+        $params[':limit'] = $limit;
+        $params[':offset'] = $offset;
 
         $stmt = $db->prepare($query);
-        $stmt->execute($params);
+        
+        // LIMIT ve OFFSET için PDO::PARAM_INT kullan
+        foreach ($params as $key => $value) {
+            if ($key === ':limit' || $key === ':offset') {
+                $stmt->bindValue($key, $value, \PDO::PARAM_INT);
+            } else {
+                $stmt->bindValue($key, $value);
+            }
+        }
+        
+        $stmt->execute();
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    private function filterIsEmirleri($isEmriModel, $magaza_id, $filters) {
+        // Eski metod - geriye uyumluluk için
+        return $this->filterIsEmirleriWithPagination($isEmriModel, $magaza_id, $filters, 0, 1000);
     }
 
     public function duzenle($params = []) {

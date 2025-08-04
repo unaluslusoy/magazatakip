@@ -36,6 +36,20 @@
                                     <textarea name="aciklama" id="aciklama" class="form-control form-control-solid" required><?= htmlspecialchars($isEmri['aciklama']) ?></textarea>
                                 </div>
 
+                                <div class="fv-row mb-7">
+                                    <label for="kategori" class="fs-6 fw-semibold form-label mt-3">Kategori</label>
+                                    <select name="kategori" id="kategori" class="form-select form-control form-control-solid">
+                                        <option value="">Kategori Seçiniz</option>
+                                        <option value="Elektrik" <?= ($isEmri['kategori'] ?? '') == 'Elektrik' ? 'selected' : '' ?>>Elektrik</option>
+                                        <option value="Su Tesisatı" <?= ($isEmri['kategori'] ?? '') == 'Su Tesisatı' ? 'selected' : '' ?>>Su Tesisatı</option>
+                                        <option value="Klima" <?= ($isEmri['kategori'] ?? '') == 'Klima' ? 'selected' : '' ?>>Klima</option>
+                                        <option value="Bilgisayar" <?= ($isEmri['kategori'] ?? '') == 'Bilgisayar' ? 'selected' : '' ?>>Bilgisayar</option>
+                                        <option value="Temizlik" <?= ($isEmri['kategori'] ?? '') == 'Temizlik' ? 'selected' : '' ?>>Temizlik</option>
+                                        <option value="Güvenlik" <?= ($isEmri['kategori'] ?? '') == 'Güvenlik' ? 'selected' : '' ?>>Güvenlik</option>
+                                        <option value="Diğer" <?= ($isEmri['kategori'] ?? '') == 'Diğer' ? 'selected' : '' ?>>Diğer</option>
+                                    </select>
+                                </div>
+
                                 <div class="row row-cols-1 row-cols-sm-2 rol-cols-md-1 row-cols-lg-2">
                                     <div class="col">
                                         <div class="fv-row mb-7 fv-plugins-icon-container">

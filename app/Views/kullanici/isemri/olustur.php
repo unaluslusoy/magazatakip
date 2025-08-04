@@ -103,6 +103,20 @@
                                     </div>
                                 </div>
 
+                                <div class="fv-row mb-7">
+                                    <label for="kategori" class="fs-6 fw-semibold form-label mt-3">Kategori</label>
+                                    <select name="kategori" id="kategori" class="form-select form-control form-control-solid">
+                                        <option value="">Kategori Seçiniz</option>
+                                        <option value="Elektrik">Elektrik</option>
+                                        <option value="Su Tesisatı">Su Tesisatı</option>
+                                        <option value="Klima">Klima</option>
+                                        <option value="Bilgisayar">Bilgisayar</option>
+                                        <option value="Temizlik">Temizlik</option>
+                                        <option value="Güvenlik">Güvenlik</option>
+                                        <option value="Diğer">Diğer</option>
+                                    </select>
+                                </div>
+
                                 <div class="row row-cols-1 row-cols-sm-2 rol-cols-md-1 row-cols-lg-2">
                                     <div class="col">
                                         <div class="fv-row mb-7 fv-plugins-icon-container">

@@ -15,7 +15,7 @@ require_once 'app/Views/kullanici/layout/navbar.php';
                     <div class="card-body px-3 px-lg-6">
                     <div class="row g-3 g-lg-4">
                         <div class="col-lg-4 col-md-6 col-12">
-                            <a href="/isemri/listesi" class="card card-bordered hover-elevate-up h-100" data-bs-toggle="tooltip" title="Henüz başlamamış iş emirlerinizi görüntüleyin">
+                            <a href="/isemri/listesi?durum=Yeni&derece=&kategori=&tarih_baslangic=&tarih_bitis=" class="card card-bordered hover-elevate-up h-100" data-bs-toggle="tooltip" title="Henüz başlamamış iş emirlerinizi görüntüleyin">
                                 <div class="card-body d-flex flex-column">
                                     <div class="d-flex align-items-center mb-3">
                                         <div class="symbol symbol-45px me-3">
@@ -38,7 +38,7 @@ require_once 'app/Views/kullanici/layout/navbar.php';
                         </div>
 
                         <div class="col-lg-4 col-md-6 col-12">
-                            <a href="/isemri/listesi" class="card card-bordered hover-elevate-up h-100" data-bs-toggle="tooltip" title="Şu anda devam eden iş emirlerinizi görüntüleyin">
+                            <a href="/isemri/listesi?durum=Devam+Ediyor&derece=&kategori=&tarih_baslangic=&tarih_bitis=" class="card card-bordered hover-elevate-up h-100" data-bs-toggle="tooltip" title="Şu anda devam eden iş emirlerinizi görüntüleyin">
                                 <div class="card-body d-flex flex-column">
                                     <div class="d-flex align-items-center mb-3">
                                         <div class="symbol symbol-45px me-3">
@@ -61,7 +61,7 @@ require_once 'app/Views/kullanici/layout/navbar.php';
                         </div>
 
                         <div class="col-lg-4 col-md-6 col-12">
-                    <a href="/isemri/listesi" class="card card-bordered hover-elevate-up h-100" data-bs-toggle="tooltip" title="Tamamlanmış iş emirlerinizi görüntüleyin">
+                    <a href="/isemri/listesi?durum=Tamamlandı&derece=&kategori=&tarih_baslangic=&tarih_bitis=" class="card card-bordered hover-elevate-up h-100" data-bs-toggle="tooltip" title="Tamamlanmış iş emirlerinizi görüntüleyin">
                         <div class="card-body d-flex flex-column">
                             <div class="d-flex align-items-center mb-3">
                                 <div class="symbol symbol-45px me-3">
@@ -120,12 +120,7 @@ require_once 'app/Views/kullanici/layout/navbar.php';
                                         <span class="fs-6 fs-lg-base">İş Emri Listesi</span>
                                     </a>
                                 </div>
-                                <div class="col-lg-4 col-md-6 col-12">
-                                    <a href="/musteri/listesi" class="btn btn-flex btn-outline btn-text-gray-700 btn-active-light-primary w-100 py-4 py-lg-3">
-                                        <i class="ki-outline ki-people fs-1 fs-lg-2 me-2"></i>
-                                        <span class="fs-6 fs-lg-base">Müşteriler</span>
-                                    </a>
-                                </div>
+                             
                             </div>
                         </div>
                     </div>
@@ -157,12 +152,7 @@ require_once 'app/Views/kullanici/layout/navbar.php';
                                         <span class="fs-6 fs-lg-base">Ciro Ekle</span>
                                     </a>
                                 </div>
-                                <div class="col-lg-4 col-md-6 col-12">
-                                    <a href="/fatura_talep/olustur" class="btn btn-flex btn-outline btn-text-gray-700 btn-active-light-success w-100 py-4 py-lg-3">
-                                        <i class="ki-outline ki-document fs-1 fs-lg-2 me-2"></i>
-                                        <span class="fs-6 fs-lg-base">Fatura Talebi</span>
-                                    </a>
-                                </div>
+                               
                                 <div class="col-lg-4 col-md-6 col-12">
                                     <a href="/gider/listesi" class="btn btn-flex btn-outline btn-text-gray-700 btn-active-light-success w-100 py-4 py-lg-3">
                                         <i class="ki-outline ki-chart-line-down fs-1 fs-lg-2 me-2"></i>
@@ -175,49 +165,7 @@ require_once 'app/Views/kullanici/layout/navbar.php';
                 </div>
             </div>
 
-            <!-- Raporlar ve Analiz -->
-            <div class="row mt-3 mt-lg-5">
-                <div class="col-12">
-                    <div class="card card-bordered">
-                        <div class="card-header px-3 px-lg-6">
-                            <div class="d-flex align-items-center">
-                                <div class="symbol symbol-40px me-3">
-                                    <span class="symbol-label bg-light-info">
-                                        <i class="ki-outline ki-chart-simple text-info fs-2"></i>
-                                    </span>
-                                </div>
-                                <div>
-                                    <h3 class="card-title fs-4 fs-lg-3 mb-1">Raporlar & Analiz</h3>
-                                    <p class="text-muted fs-7 mb-0">İş performansı ve istatistikler</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body px-3 px-lg-6">
-                            <div class="row g-3 g-lg-3">
-                                <div class="col-lg-4 col-md-6 col-12">
-                                    <a href="/rapor/ciro" class="btn btn-flex btn-outline btn-text-gray-700 btn-active-light-info w-100 py-4 py-lg-3">
-                                        <i class="ki-outline ki-chart-pie-simple fs-1 fs-lg-2 me-2"></i>
-                                        <span class="fs-6 fs-lg-base">Ciro Raporu</span>
-                                    </a>
-                                </div>
-                                <div class="col-lg-4 col-md-6 col-12">
-                                    <a href="/rapor/isemri" class="btn btn-flex btn-outline btn-text-gray-700 btn-active-light-info w-100 py-4 py-lg-3">
-                                        <i class="ki-outline ki-graph-up fs-1 fs-lg-2 me-2"></i>
-                                        <span class="fs-6 fs-lg-base">İş Performansı</span>
-                                    </a>
-                                </div>
-                                <div class="col-lg-4 col-md-6 col-12">
-                                    <a href="/rapor/genel" class="btn btn-flex btn-outline btn-text-gray-700 btn-active-light-info w-100 py-4 py-lg-3">
-                                        <i class="ki-outline ki-element-7 fs-1 fs-lg-2 me-2"></i>
-                                        <span class="fs-6 fs-lg-base">Genel Özet</span>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+           
             <!-- Hesap ve Profil -->
             <div class="row mt-3 mt-lg-5">
                 <div class="col-12">

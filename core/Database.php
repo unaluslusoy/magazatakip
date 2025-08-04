@@ -10,12 +10,12 @@ class Database {
     private PDO $conn;
 
     private function __construct() {
-        $host = $_ENV['DB_HOST'] ?? 'localhost';
-        $dbname = $_ENV['DB_NAME'] ?? 'magazatakip_pg';
-        $username = $_ENV['DB_USER'] ?? 'magazatakip_pg';
-        $password = $_ENV['DB_PASS'] ?? 'Magaza.123!';
-        $port = $_ENV['DB_PORT'] ?? 3306;
-        $charset = $_ENV['DB_CHARSET'] ?? 'utf8mb4';
+        $host = 'localhost';
+        $dbname = 'magazatakip_pg';
+        $username = 'magazatakip_pg';
+        $password = 'Magaza.123!';
+        $port = 3306;
+        $charset = 'utf8mb4';
 
         $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset={$charset}";
         $options = [
