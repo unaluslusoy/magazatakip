@@ -3,7 +3,7 @@
 namespace app\Controllers\Admin;
 use core\Controller;
 use app\Models\OneSignalAyarlar;
-use app\Middleware\AuthMiddleware;
+use app\Middleware\AdminMiddleware;
 
 class OneSignalController extends Controller
 {
@@ -11,7 +11,8 @@ class OneSignalController extends Controller
 
     public function __construct()
     {
-        AuthMiddleware::handle();
+        // 🔒 GÜVENLIK: Admin erişim kontrolü
+        AdminMiddleware::handle();
         $this->ayarlarModel = new OneSignalAyarlar();
     }
 

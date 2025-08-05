@@ -4,8 +4,14 @@ namespace app\Controllers\Admin;
 
 use core\Controller;
 use app\Models\GeriBildirim;
+use app\Middleware\AdminMiddleware;
 
 class GeriBildirimController extends Controller {
+    
+    public function __construct() {
+        // 🔒 GÜVENLIK: Admin erişim kontrolü
+        AdminMiddleware::handle();
+    }
 
     public function index() {
         $geriBildirimModel = new GeriBildirim();

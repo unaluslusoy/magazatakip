@@ -6,12 +6,6 @@ class Kullanici extends Model {
     protected $table = 'kullanicilar';
     protected $bildirimTable = 'bildirimler';
 
-    public function getByEmail($email) {
-        $stmt = $this->db->prepare("SELECT * FROM {$this->table} WHERE email = :email");
-        $stmt->execute(['email' => $email]);
-        return $stmt->fetch(\PDO::FETCH_ASSOC);
-    }
-
     public function getByToken($token) {
         $stmt = $this->db->prepare("SELECT * FROM {$this->table} WHERE token = :token");
         $stmt->execute(['token' => $token]);
@@ -29,14 +23,49 @@ class Kullanici extends Model {
     }
 
     public function get($id) {
-        $stmt = $this->db->prepare("SELECT kullanicilar.*, magazalar.ad AS magaza_isim FROM {$this->table} LEFT JOIN magazalar ON kullanicilar.magaza_id = magazalar.id WHERE kullanicilar.id = :id");
-        $stmt->execute(['id' => $id]);
-        return $stmt->fetch(\PDO::FETCH_ASSOC);
+        // Debug: ID'nin türünü kontrol et
+        if (is_array($id)) {
+            error_log("HATA: get() metoduna array ID geldi: " . print_r($id, true));
+            return false;
+        }
+        
+        // ID'yi integer'a dönüştür
+        $id = intval($id);
+        if ($id <= 0) {
+            error_log("HATA: Geçersiz ID: " . $id);
+            return false;
+        }
+        
+        try {
+            $stmt = $this->db->prepare("SELECT kullanicilar.*, magazalar.ad AS magaza_isim FROM {$this->table} LEFT JOIN magazalar ON kullanicilar.magaza_id = magazalar.id WHERE kullanicilar.id = :id");
+            $stmt->execute(['id' => $id]);
+            $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+            
+            error_log("Kullanıcı sorgu sonucu ID $id: " . ($result ? 'BULUNDU' : 'BULUNAMADI'));
+            return $result;
+        } catch (Exception $e) {
+            error_log("Veritabanı hatası get($id): " . $e->getMessage());
+            return false;
+        }
     }
 
     public function create($data): bool
     {
         return parent::create($data);
+    }
+
+    /**
+     * Email'e göre kullanıcı getir
+     */
+    public function getByEmail($email) {
+        try {
+            $stmt = $this->db->prepare("SELECT * FROM {$this->table} WHERE email = :email");
+            $stmt->execute(['email' => $email]);
+            return $stmt->fetch(\PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Veritabanı hatası getByEmail($email): " . $e->getMessage());
+            return false;
+        }
     }
 
     public function update($id, $data): bool

@@ -5,12 +5,15 @@ namespace app\Controllers\Kullanici\Ciro;
 use app\Models\Kullanici\Ciro\CiroModel;
 use app\Models\Kullanici;
 use app\Models\Magaza;
+use app\Middleware\AuthMiddleware;
+use core\Controller;
 
-class CiroController {
+class CiroController extends Controller {
 
     private $ciroModel;
 
     public function __construct() {
+        // 🔒 GÜVENLIK: Kullanıcı erişim kontrolü
         AuthMiddleware::handle();
         $this->ciroModel = new Ciro();
     }

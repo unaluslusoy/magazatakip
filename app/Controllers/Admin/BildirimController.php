@@ -5,12 +5,15 @@ use core\Controller;
 use app\Models\OneSignalAyarlar;
 use app\Models\Kullanici;
 use app\Services\BildirimService;
-use app\Middleware\AuthMiddleware;
-
+use app\Middleware\AdminMiddleware;
 use app\Models\Bildirim;
 
 class BildirimController extends Controller
 {
+    public function __construct() {
+        // 🔒 GÜVENLIK: Admin erişim kontrolü
+        AdminMiddleware::handle();
+    }
     private $bildirimModel;
     private $ayarlarModel;
     private $kullaniciModel;

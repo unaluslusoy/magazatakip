@@ -4,15 +4,17 @@ namespace app\Controllers\Kullanici;
 use core\Controller;
 use app\Models\Kullanici;
 use app\Models\Personel;
+use app\Middleware\AuthMiddleware;
 use Exception;
 
 class ProfilController extends Controller {
+    
+    public function __construct() {
+        // 🔒 GÜVENLIK: Kullanıcı erişim kontrolü
+        AuthMiddleware::handle();
+    }
+    
     public function index() {
-        // Kullanıcı oturum kontrolü
-        if (!isset($_SESSION['user_id'])) {
-            header('Location: /auth/giris');
-            exit();
-        }
         
         try {
             // Kullanıcı bilgilerini veritabanından al

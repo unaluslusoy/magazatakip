@@ -6,6 +6,7 @@ $router->get('', 'HomeController@index');
 $router->get('auth/giris', 'Auth\GirisController@index');
 $router->post('auth/giris', 'Auth\GirisController@login');
 $router->get('auth/logout', 'Auth\GirisController@logout');
+$router->post('auth/logout', 'Auth\GirisController@logout');
 $router->get('auth/kayit', 'Auth\KayitController@index');
 $router->post('auth/kayit', 'Auth\KayitController@register');
 $router->get('anasayfa', 'AnasayfaController@index');

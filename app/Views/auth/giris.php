@@ -151,34 +151,30 @@ require_once 'app/Views/layouts/header.php';
             }
         });
 
-        // Otomatik giriş kontrolü
-        if (localStorage.getItem('rememberMe') === 'true') {
+        // GÜVENLI: Sadece email'i hatırla, şifreyi ASLA localStorage'da saklama
+        if (localStorage.getItem('rememberEmail') === 'true') {
             const savedEmail = localStorage.getItem('email');
-            const savedPassword = localStorage.getItem('password');
             
-            if (savedEmail && savedPassword) {
+            if (savedEmail) {
                 document.getElementById('email').value = savedEmail;
-                document.getElementById('password').value = savedPassword;
                 document.getElementById('remember').checked = true;
-                
-                // Otomatik giriş yap
-                setTimeout(function() {
-                    document.getElementById('kt_sign_in_form').submit();
-                }, 1000);
+                // Şifreyi otomatik doldurmuyoruz - güvenlik riski
+                document.getElementById('password').focus(); // Kullanıcı şifreyi manuel girmeli
             }
         }
 
         // Form submit olduğunda çalışacak fonksiyon
         document.getElementById('kt_sign_in_form').addEventListener('submit', function() {
             if (document.getElementById('remember').checked) {
+                // Sadece email'i hatırla
                 localStorage.setItem('email', document.getElementById('email').value);
-                localStorage.setItem('password', document.getElementById('password').value);
-                localStorage.setItem('rememberMe', 'true');
+                localStorage.setItem('rememberEmail', 'true');
             } else {
+                // Tüm bilgileri temizle
                 localStorage.removeItem('email');
-                localStorage.removeItem('password');
-                localStorage.removeItem('rememberMe');
+                localStorage.removeItem('rememberEmail');
             }
+            // Şifreyi ASLA localStorage'da saklama!
         });
 
         // OneSignal entegrasyonu

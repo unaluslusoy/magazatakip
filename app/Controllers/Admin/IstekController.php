@@ -4,9 +4,14 @@ namespace app\Controllers\Admin;
 use app\Models\Istek;
 use core\Controller;
 use app\Models\Personel;
+use app\Middleware\AdminMiddleware;
 
 class IstekController extends Controller
 {
+    public function __construct() {
+        // 🔒 GÜVENLIK: Admin erişim kontrolü
+        AdminMiddleware::handle();
+    }
     public function liste() {
         $istekModel = new Istek();
         $istekler = $istekModel->getAll();

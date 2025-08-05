@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Logout Debug</title>
+</head>
+<body>
+    <h2>Admin Logout Debug Sayfası</h2>
+    
+    <h3>Test Butonları:</h3>
+    <button onclick="testLogout1()">Test 1: /auth/logout</button><br><br>
+    <button onclick="testLogout2()">Test 2: /admin/logout</button><br><br>
+    <button onclick="testLogout3()">Test 3: AuthManager</button><br><br>
+    
+    <div id="result"></div>
+    
+    <script>
+        function log(message) {
+            document.getElementById('result').innerHTML += '<p>' + message + '</p>';
+            console.log(message);
+        }
+        
+        function testLogout1() {
+            log('Test 1: /auth/logout çalıştırılıyor...');
+            fetch('/auth/logout', {
+                method: 'GET',
+                credentials: 'same-origin'
+            }).then(response => {
+                log('Response status: ' + response.status);
+                if (response.ok) {
+                    log('✅ Auth logout başarılı');
+                    setTimeout(() => {
+                        window.location.href = '/auth/giris';
+                    }, 1000);
+                } else {
+                    log('❌ Auth logout başarısız');
+                }
+            }).catch(error => {
+                log('❌ Hata: ' + error);
+            });
+        }
+        
+        function testLogout2() {
+            log('Test 2: /admin/logout çalıştırılıyor...');
+            fetch('/admin/logout', {
+                method: 'GET',
+                credentials: 'same-origin'
+            }).then(response => {
+                log('Response status: ' + response.status);
+                if (response.ok) {
+                    log('✅ Admin logout başarılı');
+                    setTimeout(() => {
+                        window.location.href = '/auth/giris';
+                    }, 1000);
+                } else {
+                    log('❌ Admin logout başarısız');
+                }
+            }).catch(error => {
+                log('❌ Hata: ' + error);
+            });
+        }
+        
+        function testLogout3() {
+            log('Test 3: AuthManager test...');
+            fetch('/api/logout', {
+                method: 'POST',
+                credentials: 'same-origin'
+            }).then(response => {
+                log('Response status: ' + response.status);
+                return response.json();
+            }).then(data => {
+                log('Response: ' + JSON.stringify(data));
+                if (data.status === 'logged_out') {
+                    log('✅ AuthManager logout başarılı');
+                    setTimeout(() => {
+                        window.location.href = '/auth/giris';
+                    }, 1000);
+                }
+            }).catch(error => {
+                log('❌ Hata: ' + error);
+            });
+        }
+    </script>
+</body>
+</html>

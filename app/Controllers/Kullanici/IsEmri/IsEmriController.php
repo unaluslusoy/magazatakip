@@ -6,8 +6,14 @@ use app\Models\Kullanici;
 use app\Models\Magaza;
 use core\Controller;
 use core\Database;
+use app\Middleware\AuthMiddleware;
 
 class IsEmriController extends Controller {
+    
+    public function __construct() {
+        // 🔒 GÜVENLIK: Kullanıcı erişim kontrolü
+        AuthMiddleware::handle();
+    }
     public function olustur() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {

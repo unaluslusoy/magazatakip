@@ -127,4 +127,18 @@ class Personel extends Model {
         $stmt->execute(['kullanici_id' => $kullanici_id]);
         return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
+
+    /**
+     * Belirli kullanıcı ID'sine sahip personellerin atamalarını temizle
+     */
+    public function clearKullaniciAtamalari($kullanici_id) {
+        try {
+            $stmt = $this->db->prepare("UPDATE {$this->table} SET kullanici_id = NULL WHERE kullanici_id = :kullanici_id");
+            $stmt->execute(['kullanici_id' => $kullanici_id]);
+            return true;
+        } catch (Exception $e) {
+            error_log("Personel kullanici atama temizleme hatası: " . $e->getMessage());
+            return false;
+        }
+    }
 }

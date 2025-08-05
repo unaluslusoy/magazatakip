@@ -2,8 +2,10 @@
 <html lang="tr">
 <head>
     <base href="/"/>
+ 
 	<title>Mağaza Yönetim Paneli</title>
 	<meta charset="utf-8" />
+    <meta name="theme-color" content="#FFFFFF">
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<meta property="og:locale" content="tr_TR" />
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,12 +15,11 @@
     <link rel="manifest" href="/public/manifest.json">
     <link rel="shortcut icon" href="/public/media/logos/favicon.ico" />
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
-	<link href="/public/plugins/custom/datatables/datatables.bundle.css" rel="stylesheet" type="text/css" />
-	<link href="/public/plugins/custom/vis-timeline/vis-timeline.bundle.css" rel="stylesheet" type="text/css" />
-	<link href="/public/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" />
-	<link href="/public/css/style.bundle.css" rel="stylesheet" type="text/css" />
-    <link href="/public/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css"/>
-    <script src="/public/plugins/global/plugins.bundle.js"></script>
+	<link href="/public/plugins/custom/datatables/datatables.bundle.css?v=<?php echo time(); ?>" rel="stylesheet" type="text/css" />
+	<link href="/public/plugins/custom/vis-timeline/vis-timeline.bundle.css?v=<?php echo time(); ?>" rel="stylesheet" type="text/css" />
+	<link href="/public/plugins/global/plugins.bundle.css?v=<?php echo time(); ?>" rel="stylesheet" type="text/css" />
+	<link href="/public/css/style.bundle.css?v=<?php echo time(); ?>" rel="stylesheet" type="text/css" />
+    <script src="/public/plugins/global/plugins.bundle.js?v=<?php echo time(); ?>"></script>
 	<script> if (window.top != window.self) { window.top.location.replace(window.self.location.href); }</script>
     <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
     <script src="/public/js/token-registration.js"></script>

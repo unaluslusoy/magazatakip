@@ -2,13 +2,17 @@
 namespace app\Controllers;
 
 use app\Models\NotificationModel;
+use core\Controller;
+use app\Middleware\AuthMiddleware;
 
-class NotificationController extends BaseController
+class NotificationController extends Controller
 {
     protected $notificationModel;
 
     public function __construct()
     {
+        // 🔒 GÜVENLIK: Kullanıcı erişim kontrolü
+        AuthMiddleware::handle();
         $this->notificationModel = new NotificationModel();
     }
 

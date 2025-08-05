@@ -4,8 +4,14 @@ namespace app\Controllers;
 
 use app\Models\Istek;
 use core\Controller;
+use app\Middleware\AuthMiddleware;
 
 class IstekController extends Controller {
+    
+    public function __construct() {
+        // 🔒 GÜVENLIK: Kullanıcı erişim kontrolü
+        AuthMiddleware::handle();
+    }
     public function olustur() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data = [

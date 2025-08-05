@@ -3,8 +3,14 @@ namespace app\Controllers\Admin;
 
 use app\Models\Magaza;
 use core\Controller;
+use app\Middleware\AdminMiddleware;
 
 class MagazaController extends Controller {
+    
+    public function __construct() {
+        // 🔒 GÜVENLIK: Admin erişim kontrolü
+        AdminMiddleware::handle();
+    }
     public function liste() {
         $magazaModel = new Magaza();
         $magazalar = $magazaModel->getAll();

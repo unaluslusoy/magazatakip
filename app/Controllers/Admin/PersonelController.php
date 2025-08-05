@@ -4,10 +4,15 @@ namespace app\Controllers\Admin;
 
 use core\Controller;
 use app\Models\Personel;
-use app\Models\Departman;
-use app\Models\Pozisyon;
+
+use app\Middleware\AdminMiddleware;
 
 class PersonelController extends Controller {
+    
+    public function __construct() {
+        // 🔒 GÜVENLIK: Admin erişim kontrolü
+        AdminMiddleware::handle();
+    }
 
     public function index() {
         $personelModel = new Personel();
@@ -19,6 +24,31 @@ class PersonelController extends Controller {
         $personelModel = new Personel();
         $personeller = $personelModel->getAll();
         $this->view('admin/personel_listesi', ['personeller' => $personeller]);
+    }
+
+    /**
+     * JSON API için personel listesi
+     */
+    public function listeJson() {
+        header('Content-Type: application/json; charset=utf-8');
+        
+        try {
+            $personelModel = new Personel();
+            $personeller = $personelModel->getAll();
+            
+            echo json_encode([
+                'success' => true,
+                'data' => $personeller ?: [],
+                'message' => 'Personel listesi başarıyla getirildi'
+            ], JSON_UNESCAPED_UNICODE);
+
+        } catch (Exception $e) {
+            error_log("PersonelController::listeJson Exception: " . $e->getMessage());
+            echo json_encode([
+                'success' => false,
+                'message' => 'Sunucu hatası: ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
+        }
     }
 
     public function detay($id) {
@@ -127,11 +157,7 @@ class PersonelController extends Controller {
             header('Location: /admin/personel');
         } else {
             $personel = $personelModel->get($id);
-            $departmanModel = new Departman();
-            $pozisyonModel = new Pozisyon();
-            $departmanlar = $departmanModel->getAll();
-            $pozisyonlar = $pozisyonModel->getAll();
-            $this->view('admin/personel_guncelle', ['personel' => $personel, 'departmanlar' => $departmanlar, 'pozisyonlar' => $pozisyonlar]);
+            $this->view('admin/personel_guncelle', ['personel' => $personel]);
         }
     }
 
@@ -144,5 +170,273 @@ class PersonelController extends Controller {
             'confirmButtonText' => 'Tamam'
         ];
         header('Location: /admin/personeller');
+    }
+
+    /**
+     * API - Personel verilerini getir (JSON)
+     */
+    public function apiGet($id) {
+        header('Content-Type: application/json; charset=utf-8');
+        
+        try {
+            $id = intval($id);
+            if ($id <= 0) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Geçersiz personel ID\'si'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            $personelModel = new Personel();
+            $personel = $personelModel->get($id);
+            
+            if (!$personel) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Personel bulunamadı'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            echo json_encode([
+                'success' => true,
+                'data' => $personel,
+                'message' => 'Personel detayları başarıyla getirildi'
+            ], JSON_UNESCAPED_UNICODE);
+
+        } catch (Exception $e) {
+            error_log("PersonelController::apiGet Exception: " . $e->getMessage());
+            echo json_encode([
+                'success' => false,
+                'message' => 'Sunucu hatası: ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    /**
+     * API - Personel güncelle (JSON)
+     */
+    public function apiUpdate($id) {
+        header('Content-Type: application/json; charset=utf-8');
+        
+        try {
+            $id = intval($id);
+            if ($id <= 0) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Geçersiz personel ID\'si'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            $input = json_decode(file_get_contents('php://input'), true);
+            
+            if (!$input) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Geçersiz JSON verisi'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            if (empty($input['ad']) || empty($input['eposta'])) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Ad ve email alanları zorunludur'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            if (!filter_var($input['eposta'], FILTER_VALIDATE_EMAIL)) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Geçersiz email adresi'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            $personelModel = new Personel();
+            $existingPersonel = $personelModel->get($id);
+            if (!$existingPersonel) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Personel bulunamadı'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            $data = [
+                'ad' => htmlspecialchars($input['ad'], ENT_QUOTES, 'UTF-8'),
+                'soyad' => htmlspecialchars($input['soyad'] ?? '', ENT_QUOTES, 'UTF-8'),
+                'eposta' => filter_var($input['eposta'], FILTER_SANITIZE_EMAIL),
+                'telefon' => htmlspecialchars($input['telefon'] ?? '', ENT_QUOTES, 'UTF-8'),
+                'pozisyon' => htmlspecialchars($input['pozisyon'] ?? '', ENT_QUOTES, 'UTF-8'),
+                'ise_baslama_tarihi' => $input['ise_baslama_tarihi'] ?? null
+            ];
+
+            $result = $personelModel->update($id, $data);
+
+            if ($result) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Personel başarıyla güncellendi'
+                ], JSON_UNESCAPED_UNICODE);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Personel güncellenirken hata oluştu'
+                ], JSON_UNESCAPED_UNICODE);
+            }
+
+        } catch (Exception $e) {
+            error_log("PersonelController::apiUpdate Exception: " . $e->getMessage());
+            echo json_encode([
+                'success' => false,
+                'message' => 'Sunucu hatası: ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    /**
+     * API - Personel listesi (JSON)
+     */
+    public function apiList() {
+        header('Content-Type: application/json; charset=utf-8');
+        
+        try {
+            $personelModel = new Personel();
+            $personeller = $personelModel->getAll();
+            
+            echo json_encode([
+                'success' => true,
+                'data' => $personeller ?: [],
+                'message' => 'Personel listesi başarıyla getirildi'
+            ], JSON_UNESCAPED_UNICODE);
+
+        } catch (Exception $e) {
+            error_log("PersonelController::apiList Exception: " . $e->getMessage());
+            echo json_encode([
+                'success' => false,
+                'message' => 'Sunucu hatası: ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    /**
+     * API - Personel oluştur (JSON)
+     */
+    public function apiCreate() {
+        header('Content-Type: application/json; charset=utf-8');
+        
+        try {
+            $input = json_decode(file_get_contents('php://input'), true);
+            
+            if (!$input) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Geçersiz JSON verisi'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            if (empty($input['ad']) || empty($input['email'])) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Ad ve email alanları zorunludur'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            if (!filter_var($input['email'], FILTER_VALIDATE_EMAIL)) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Geçersiz email adresi'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            $personelModel = new Personel();
+            
+            // Email kontrolü
+            $existingPersonel = $personelModel->getByEmail($input['email']);
+            if ($existingPersonel) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Bu email adresi zaten kayıtlı'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            $data = [
+                'ad' => htmlspecialchars($input['ad'], ENT_QUOTES, 'UTF-8'),
+                'soyad' => htmlspecialchars($input['soyad'] ?? '', ENT_QUOTES, 'UTF-8'),
+                'eposta' => filter_var($input['email'], FILTER_SANITIZE_EMAIL),
+                'telefon' => htmlspecialchars($input['telefon'] ?? '', ENT_QUOTES, 'UTF-8'),
+                'pozisyon' => htmlspecialchars($input['pozisyon'] ?? '', ENT_QUOTES, 'UTF-8'),
+                'ise_baslama_tarihi' => $input['ise_baslama_tarihi'] ?? null
+            ];
+
+            $result = $personelModel->create($data);
+
+            if ($result) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Personel başarıyla oluşturuldu'
+                ], JSON_UNESCAPED_UNICODE);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Personel oluşturulurken hata oluştu'
+                ], JSON_UNESCAPED_UNICODE);
+            }
+
+        } catch (Exception $e) {
+            error_log("PersonelController::apiCreate Exception: " . $e->getMessage());
+            echo json_encode([
+                'success' => false,
+                'message' => 'Sunucu hatası: ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    /**
+     * API - Personel sil (JSON)
+     */
+    public function apiDelete($id) {
+        header('Content-Type: application/json; charset=utf-8');
+        
+        try {
+            $id = intval($id);
+            if ($id <= 0) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Geçersiz personel ID\'si'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            $personelModel = new Personel();
+            $result = $personelModel->delete($id);
+
+            if ($result) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Personel başarıyla silindi'
+                ], JSON_UNESCAPED_UNICODE);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Personel silinirken hata oluştu'
+                ], JSON_UNESCAPED_UNICODE);
+            }
+
+        } catch (Exception $e) {
+            error_log("PersonelController::apiDelete Exception: " . $e->getMessage());
+            echo json_encode([
+                'success' => false,
+                'message' => 'Sunucu hatası: ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
+        }
     }
 }

@@ -146,7 +146,7 @@
 						<!--end::Menu item-->
 						<!--begin::Menu item-->
 						<div class="menu-item px-5">
-							<a class="menu-link px-5" href="/admin/logout">Çıkış Yap</a>
+							                            <a class="menu-link px-5" href="#" onclick="performLogout()" style="cursor: pointer;">Çıkış Yap</a>
 
 						</div>
 						<!--end::Menu item-->
@@ -178,3 +178,60 @@
 		<div id="kt_app_content" class="app-content flex-column-fluid">
 			<!--begin::Content container-->
 			<div id="kt_app_content_container" class="app-container container-fluid">
+
+<script>
+// Admin layout için logout ve temizlik fonksiyonları
+function clearRememberMe() {
+    localStorage.removeItem('email');
+    localStorage.removeItem('rememberEmail');
+}
+
+function performLogout() {
+    console.log('🚪 Admin logout başlatıldı');
+    
+    // Loader göster
+    if (window.businessLoader) {
+        window.businessLoader.showWithMessage('Çıkış yapılıyor...');
+    }
+    
+    // Kapsamlı client-side temizlik
+    performCompleteLogout();
+}
+
+function performCompleteLogout() {
+    console.log('🧹 Kapsamlı logout temizliği');
+    
+    // 1. LocalStorage temizle
+    if (window.localStorage) {
+        const keysToRemove = ['email', 'rememberEmail', 'auth_token', 'user_data', 'session_info'];
+        keysToRemove.forEach(key => {
+            localStorage.removeItem(key);
+            console.log('Temizlendi:', key);
+        });
+    }
+    
+    // 2. SessionStorage temizle
+    if (window.sessionStorage) {
+        sessionStorage.clear();
+        console.log('SessionStorage temizlendi');
+    }
+    
+    // 3. Tüm auth cookie'lerini temizle
+    const authCookies = ['remember_me', 'auth_token', 'user_session', 'PHPSESSID'];
+    authCookies.forEach(cookieName => {
+        document.cookie = cookieName + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+        document.cookie = cookieName + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=" + window.location.hostname;
+        console.log('Cookie temizlendi:', cookieName);
+    });
+    
+    // 4. AuthGuard'ı durdurun
+    if (window.authGuard) {
+        window.authGuard.clearSession();
+        console.log('AuthGuard session temizlendi');
+    }
+    
+    // 5. Basit logout endpoint'ini kullan (daha güvenilir)
+    console.log('📡 Server logout çağrısı');
+    window.location.replace('/logout.php');
+}
+</script>

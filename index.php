@@ -38,47 +38,48 @@ spl_autoload_register(function ($class) {
 
 
 
-// Oturum süresi kontrolü
-$oturum_suresi = 1800; // 30 dakika
-if (isset($_SESSION['LAST_ACTIVITY']) && (time() - $_SESSION['LAST_ACTIVITY'] > $oturum_suresi)) {
-    // Son aktivite zamanı belirlenen süreden uzunsa oturumu sonlandır
-    session_unset();
-    session_destroy();
-    header('Location: /auth/giris');
-    exit();
-}
-$_SESSION['LAST_ACTIVITY'] = time(); // Son aktivite zamanını güncelle
+// AuthManager ile merkezi authentication kontrolü
+use core\AuthManager;
 
-// Kullanıcı oturumunu kontrol et
-if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_me'])) {
-    $kullaniciModel = new Kullanici();
-    $user = $kullaniciModel->getByToken($_COOKIE['remember_me']);
-
-    if ($user) {
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['is_admin'] = $user['yonetici'];
-        $_SESSION['user_name'] = $user['ad'];
-        $_SESSION['user_email'] = $user['email'];
-        $_SESSION['user_role'] = $user['yonetici'];
-        $_SESSION['last_activity'] = time();
-    }
-}
-
-// Eğer kullanıcı oturum açmışsa ve giriş sayfasına veya ana sayfaya gidiyorsa, panele yönlendir
+$authManager = AuthManager::getInstance();
 $currentUri = trim($_SERVER['REQUEST_URI'], '/');
-if (isset($_SESSION['user_id']) && ($currentUri === '' || $currentUri === 'auth/giris')) {
-    if ($_SESSION['is_admin']) {
-        header('Location: /admin');
-    } else {
-        header('Location: /anasayfa');
+
+// Kullanıcı giriş yapmışsa ve ana sayfa/giriş sayfasındaysa yönlendir
+if ($currentUri === '') {
+    // Sadece ana sayfa (/) için remember token kontrolü yap
+    $authResult = $authManager->authenticate();
+    
+    if ($authResult['authenticated']) {
+        $user = $authResult['user'];
+        $redirectUrl = $user['yonetici'] ? '/admin' : '/anasayfa';
+        header('Location: ' . $redirectUrl);
+        exit();
     }
-    exit();
+} elseif ($currentUri === 'auth/giris') {
+    // Giriş sayfasında sadece aktif session kontrolü yap
+    if ($authManager->getCurrentUser() !== null) {
+        $user = $authManager->getCurrentUser();
+        $redirectUrl = $user['yonetici'] ? '/admin' : '/anasayfa';
+        header('Location: ' . $redirectUrl);
+        exit();
+    }
 }
 
-$router = new Router();
-require_once 'routes/web.php';
-require_once 'routes/admin.php';
-require_once 'routes/todo.php';
-require_once 'routes/modul.php';
+// API istekleri için ayrı routing
+$requestUri = $_SERVER['REQUEST_URI'];
+$parsedUrl = parse_url($requestUri);
+$path = $parsedUrl['path'];
 
-$router->dispatch($_SERVER['REQUEST_URI']);
+if (strpos($path, '/api/') === 0) {
+    // API routes
+    $apiRouter = require_once 'routes/api.php';
+    $apiRouter->dispatch($_SERVER['REQUEST_URI']);
+} else {
+    // Normal web routes
+    $router = new Router();
+    require_once 'routes/web.php';
+    require_once 'routes/admin.php';
+    require_once 'routes/todo.php';
+    require_once 'routes/modul.php';
+    $router->dispatch($_SERVER['REQUEST_URI']);
+}

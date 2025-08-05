@@ -12,6 +12,14 @@ class Router {
         $this->routes['POST'][$uri] = $controller;
     }
 
+    public function put($uri, $controller) {
+        $this->routes['PUT'][$uri] = $controller;
+    }
+
+    public function delete($uri, $controller) {
+        $this->routes['DELETE'][$uri] = $controller;
+    }
+
     private function parseUri($uri) {
         // URI'den query string'i çıkar
         $uri = strtok($uri, '?');
@@ -51,13 +59,26 @@ class Router {
     public function dispatch($uri) {
         $method = $_SERVER['REQUEST_METHOD'];
         
+        // PUT ve DELETE istekleri için HTTP_X_HTTP_METHOD_OVERRIDE header'ını kontrol et
+        if (isset($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE'])) {
+            $method = strtoupper($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE']);
+        }
+        
         // Query string'i çıkar
         $cleanUri = strtok($uri, '?');
         
         $match = $this->match($method, $cleanUri);
 
         if ($match) {
-            $controllerAction = explode('@', $match['controller']);
+            $controller = $match['controller'];
+            $parameters = $match['parameters'];
+            
+            if (is_callable($controller)) {
+                call_user_func_array($controller, $parameters);
+                return;
+            }
+            
+            $controllerAction = explode('@', $controller);
             $controllerName = "app\\Controllers\\" . $controllerAction[0];
             $action = $controllerAction[1] ?? 'index';
             
@@ -86,9 +107,9 @@ class Router {
             }
             
             // Parametreleri ve GET parametrelerini birleştir
-            $allParameters = $match['parameters'];
+            $allParameters = $parameters;
             
-            call_user_func_array([$controller, $action], [$allParameters]);
+            call_user_func_array([$controller, $action], $allParameters);
         } else {
             // Hata sayfasına yönlendir veya özel bir hata işleme mekanizması kullan
             header("HTTP/1.0 404 Not Found");

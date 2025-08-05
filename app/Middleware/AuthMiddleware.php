@@ -2,50 +2,79 @@
 
 namespace app\Middleware;
 
-class AuthMiddleware {
-    public static function handle() {
-        if (session_status() == PHP_SESSION_NONE) {
-            session_start();
-        }
+use core\AuthManager;
 
-        // Oturumun son aktivite zamanını kontrol et
-        if (isset($_SESSION['LAST_ACTIVITY']) && (time() - $_SESSION['LAST_ACTIVITY'] > 50000)) {
-            // Son aktivite belirli bir süreden uzun süre önce olduysa oturumu sonlandır
-            session_unset();     // tüm oturum verilerini temizle
-            session_destroy();   // oturumu sonlandır
-            header('Location: /auth/giris'); // Kullanıcıyı giriş sayfasına yönlendir
+/**
+ * Yeniden düzenlenmiş AuthMiddleware
+ * Artık centralized AuthManager kullanıyor
+ */
+class AuthMiddleware {
+    
+    /**
+     * Güçlendirilmiş Authentication kontrolü
+     */
+    public static function handle() {
+        $authManager = AuthManager::getInstance();
+        $authResult = $authManager->authenticate();
+        
+        // 1. Kimlik doğrulama kontrolü
+        if (!$authResult['authenticated']) {
+            self::forceLogout('Authentication gerekli');
+            return;
+        }
+        
+        // 2. Session geçerliliğini kontrol et
+        $currentUser = $authManager->getCurrentUser();
+        if (!$currentUser || empty($currentUser['id'])) {
+            self::forceLogout('Session geçersiz');
+            return;
+        }
+        
+        // 3. Security headers ekle
+        header('X-Frame-Options: SAMEORIGIN');
+        header('X-Content-Type-Options: nosniff');
+        header('X-XSS-Protection: 1; mode=block');
+        
+        // 4. Authenticated kullanıcı için aktiviteyi güncelle
+        $authManager->updateActivity();
+        
+        // 5. Log user access
+        error_log("User access: " . $currentUser['email'] . " - " . $_SERVER['REQUEST_URI']);
+    }
+    
+    /**
+     * Zorla logout ve yönlendirme
+     */
+    private static function forceLogout($reason) {
+        $authManager = AuthManager::getInstance();
+        $authManager->logout();
+        
+        error_log("Force logout: $reason - IP: " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
+        
+        // Cache-buster ile giriş sayfasına yönlendir
+        header('Location: /auth/giris?t=' . time());
+        exit();
+    }
+    
+    /**
+     * Route bazlı erişim kontrolü
+     */
+    public static function checkRoute($route) {
+        $authManager = AuthManager::getInstance();
+        $authResult = $authManager->authenticate();
+        
+        if (!$authResult['authenticated']) {
+            header('Location: /auth/giris');
             exit();
         }
-
-        // Son aktivite zamanını güncelle
-        $_SESSION['LAST_ACTIVITY'] = time();
-
-        // Kullanıcı giriş kontrolü
-        if (!isset($_SESSION['user_id'])) {
-            // Cookie kontrolü
-            if (!isset($_COOKIE['remember_me'])) {
-                header('Location: /auth/giris'); // Kullanıcı oturum açmamışsa giriş sayfasına yönlendir
+        
+        // Route erişim kontrolü
+        $accessResult = $authManager->checkRouteAccess($route);
+        if (!$accessResult['allowed']) {
+            if (isset($accessResult['redirect'])) {
+                header('Location: ' . $accessResult['redirect']);
                 exit();
-            } else {
-                // Çerezleri kontrol et ve oturumu yenile
-                $token = $_COOKIE['remember_me'];
-                $kullaniciModel = new \App\Models\Kullanici();
-                $user = $kullaniciModel->getByToken($token);
-
-                if ($user) {
-                    $_SESSION['user_id'] = $user['id'];
-                    $_SESSION['is_admin'] = $user['yonetici'];
-                    $_SESSION['user_name'] = $user['ad'];
-                    $_SESSION['user_email'] = $user['email'];
-                    $_SESSION['user_role'] = $user['rol'];
-                    $_SESSION['last_activity'] = time();
-                } else {
-                    header('Location: /auth/giris'); // Geçersiz token, giriş sayfasına yönlendir
-                    exit();
-                }
             }
         }
     }
-
-
 }

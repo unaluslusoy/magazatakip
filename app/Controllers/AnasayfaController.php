@@ -5,15 +5,16 @@ namespace app\Controllers;
 use app\Models\Kullanici;
 use core\Controller;
 use app\Models\Kullanici\IsEmri\IsEmriModel;
+use app\Middleware\AuthMiddleware;
 
 class AnasayfaController extends Controller {
+    
+    public function __construct() {
+        // 🔒 GÜVENLIK: Kullanıcı erişim kontrolü
+        AuthMiddleware::handle();
+    }
+    
     public function index() {
-        // Session ve authentication kontrolü
-        if (!isset($_SESSION['user_id']) || empty($_SESSION['user_id'])) {
-            // Session yok, login sayfasına yönlendir
-            header('Location: /auth/giris');
-            exit();
-        }
 
         $kullanici_id = $_SESSION['user_id'];
         $kullaniciModel = new Kullanici();

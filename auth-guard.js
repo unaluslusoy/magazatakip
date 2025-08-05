@@ -107,10 +107,8 @@ class AuthGuard {
     }
     
     hasValidSession() {
-        // Basic session kontrolü - gerçek implementasyon projeye göre değişir
-        return document.cookie.includes('PHPSESSID') || 
-               localStorage.getItem('user_token') || 
-               sessionStorage.getItem('user_id');
+        // Güvenli session kontrolü - sadece server-side session'a güvenir
+        return document.cookie.includes('PHPSESSID');
     }
     
     async checkServerSession() {
@@ -330,38 +328,41 @@ class AuthGuard {
             window.businessLoader.showWithMessage('Çıkış yapılıyor...');
         }
         
-        // Logout API çağrısı
-        this.sendLogout();
-        
         // Session temizle
         this.clearSession();
         
-        // Login sayfasına yönlendir
+        // Logout API çağrısı (async - parallel)
+        this.sendLogout();
+        
+        // Direkt giriş sayfasına yönlendir (server da zaten logout yapacak)
         setTimeout(() => {
             window.location.href = '/auth/giris';
-        }, 1000);
+        }, 500);
     }
     
     async sendLogout() {
         try {
-            await fetch('/api/logout', {
-                method: 'POST',
+            // PHP route'unu kullan - daha güvenilir
+            await fetch('/auth/logout', {
+                method: 'GET',
                 credentials: 'same-origin'
             });
         } catch (error) {
-            console.warn('Logout API failed:', error);
+            console.warn('Logout failed:', error);
+            // Hata olsa bile çıkış yapmaya devam et
         }
     }
     
     clearSession() {
-        // Local storage temizle
-        localStorage.clear();
-        sessionStorage.clear();
+        // Sadece remember_me cookie'sini temizle (güvenlik için)
+        document.cookie = "remember_me=;expires=" + new Date().toUTCString() + ";path=/";
         
-        // Cookies temizle (mümkün olduğunca)
-        document.cookie.split(";").forEach(function(c) { 
-            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
-        });
+        // Diğer uygulama verilerini temizle (kullanıcı verileri hariç)
+        localStorage.removeItem('email');
+        localStorage.removeItem('rememberEmail');
+        
+        // Session storage'ı temizle
+        sessionStorage.clear();
     }
     
     // Public API

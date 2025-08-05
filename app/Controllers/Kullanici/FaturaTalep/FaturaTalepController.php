@@ -2,8 +2,15 @@
 namespace app\Controllers\Kullanici\FaturaTalep;
 
 use app\Models\Kullanici;
+use core\Controller;
+use app\Middleware\AuthMiddleware;
 
-class FaturaTalepController {
+class FaturaTalepController extends Controller {
+    
+    public function __construct() {
+        // 🔒 GÜVENLIK: Kullanıcı erişim kontrolü
+        AuthMiddleware::handle();
+    }
     public function olustur() {
         // Fatura talep oluşturma işlemleri
     }

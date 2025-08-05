@@ -643,7 +643,7 @@
                             <a class="menu-link px-5" href="/profil">Profil</a>
                         </div>
                         <div class="menu-item px-5">
-                            <a class="menu-link px-5" href="/auth/logout" onclick="clearRememberMe()">Çıkış Yap</a>
+                            <a class="menu-link px-5" href="#" onclick="performLogout()" style="cursor: pointer;">Çıkış Yap</a>
                         </div>
                         <!--End::Menu item-->
                     </div>
@@ -666,7 +666,20 @@
 // "Beni hatırla" verilerini temizleme fonksiyonu
 function clearRememberMe() {
     localStorage.removeItem('email');
-    localStorage.removeItem('password');
-    localStorage.removeItem('rememberMe');
+    localStorage.removeItem('rememberEmail');
+}
+
+// Güvenli çıkış işlemi
+function performLogout() {
+    // Client-side temizlik
+    clearRememberMe();
+    
+    // AuthGuard varsa onu kullan, yoksa direkt git
+    if (window.authGuard) {
+        window.authGuard.logout();
+    } else {
+        // Fallback - direkt server logout
+        window.location.href = '/auth/logout';
+    }
 }
 </script>

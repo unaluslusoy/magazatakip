@@ -2,6 +2,7 @@
 namespace app\Controllers\Admin;
 
 use core\Controller;
+use app\Middleware\AdminMiddleware;
 use app\Models\AdminFaturaTalep;
 use app\Models\Magaza;
 use app\Middleware\AuthMiddleware;
@@ -14,7 +15,8 @@ class FaturaTalepController extends Controller
     private $whatsAppService;
     public function __construct()
     {
-        AuthMiddleware::handle();
+        // 🔒 GÜVENLIK: Admin erişim kontrolü
+        AdminMiddleware::handle();
         $this->faturaTalepModel = new AdminFaturaTalep();
         $this->magazaModel = new Magaza();
         $this->whatsAppService = new WhatsAppService();
