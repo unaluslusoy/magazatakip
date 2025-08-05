@@ -67,6 +67,14 @@ $router->post('admin/personel/api-create', 'Admin\PersonelController@apiCreate')
 $router->get('admin/personeller/api-list', 'Admin\PersonelController@apiList');
 $router->delete('admin/personel/api-delete/{id}', 'Admin\PersonelController@apiDelete');
 
+// Timeline Routes
+$router->get('admin/timeline', 'Admin\TimelineController@index');
+$router->get('admin/timeline/emergency', 'Admin\TimelineController@emergency');
+$router->get('api/timeline/list', 'Admin\TimelineController@apiList');
+$router->post('api/timeline/create', 'Admin\TimelineController@apiCreate');
+$router->post('api/timeline/rollback', 'Admin\TimelineController@apiRollback');
+$router->post('api/timeline/auto-backup', 'Admin\TimelineController@apiAutoBackup');
+
 $router->get('admin/geri_bildirimler', 'Admin\GeriBildirimController@index');
 $router->get('admin/geri_bildirimler/ekle', 'Admin\GeriBildirimController@ekle');
 $router->post('admin/geri_bildirimler/ekle', 'Admin\GeriBildirimController@ekle');

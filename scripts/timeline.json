@@ -1,0 +1,20 @@
+[
+    {
+        "id": "20250805_170615",
+        "timestamp": "2025-08-05 17:06:15",
+        "description": "🎯 Timeline sistemi tamamlandı - Rollback hazır",
+        "type": "manual",
+        "status": "active",
+        "rollback_count": 0,
+        "created_by": "system"
+    },
+    {
+        "id": "20250805_170526",
+        "timestamp": "2025-08-05 17:05:26",
+        "description": "🚀 Timeline sistemi kurulumu - v2.0.0",
+        "type": "manual",
+        "status": "active",
+        "rollback_count": 0,
+        "created_by": "system"
+    }
+]
