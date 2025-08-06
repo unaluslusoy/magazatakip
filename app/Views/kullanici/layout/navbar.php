@@ -15,528 +15,7 @@
             
             <!--begin::Navbar-->
             <div class="app-navbar flex-shrink-0">
-                <!--begin::Notifications-->
-                <div class="app-navbar-item ms-1 ms-md-4">
-                    <!--begin::Menu- wrapper-->
-                    <div class="btn btn-icon btn-custom btn-icon-muted btn-active-light btn-active-color-primary w-40px h-40px w-lg-35px h-lg-35px" data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-attach="parent" data-kt-menu-placement="bottom-end" id="kt_menu_item_wow">
-                        <i class="ki-outline ki-notification-status fs-2"></i>
-                    </div>
-                    <!--begin::Menu-->
-                    <div class="menu menu-sub menu-sub-dropdown menu-column w-350px w-lg-375px" data-kt-menu="true" id="kt_menu_notifications">
-                        <!--begin::Heading-->
-                        <div class="d-flex flex-column bgi-no-repeat rounded-top" style="background-image:url('/public/media/misc/menu-header-bg.jpg')">
-                            <!--begin::Title-->
-                            <h3 class="text-white fw-semibold px-9 mt-10 mb-6">
-                                Bildirimler <span class="fs-8 opacity-75 ps-3">24 Okunmamış</span>
-                            </h3>
-                            <!--end::Title-->
-
-                            <!--begin::Tabs-->
-                            <ul class="nav nav-line-tabs nav-line-tabs-2x nav-stretch fw-semibold px-9" role="tablist">
-                                <li class="nav-item" role="presentation">
-                                    <a class="nav-link text-white opacity-75 opacity-state-100 pb-4" data-bs-toggle="tab" href="#kt_topbar_notifications_1" aria-selected="false" tabindex="-1" role="tab">Alerts</a>
-                                </li>
-
-                                <li class="nav-item" role="presentation">
-                                    <a class="nav-link text-white opacity-75 opacity-state-100 pb-4 active" data-bs-toggle="tab" href="#kt_topbar_notifications_2" aria-selected="true" role="tab">Updates</a>
-                                </li>
-
-                                <li class="nav-item" role="presentation">
-                                    <a class="nav-link text-white opacity-75 opacity-state-100 pb-4" data-bs-toggle="tab" href="#kt_topbar_notifications_3" aria-selected="false" tabindex="-1" role="tab">Logs</a>
-                                </li>
-                            </ul>
-                            <!--end::Tabs-->
-                        </div>
-                        <!--end::Heading-->
-                        <!--begin::Tab content-->
-                        <div class="tab-content">
-                            <!--begin::Tab panel-->
-                            <div class="tab-pane fade" id="kt_topbar_notifications_1" role="tabpanel">
-                                <!--begin::Items-->
-                                <div class="scroll-y mh-325px my-5 px-8">
-                                    <!--begin::Item-->
-                                    <div class="d-flex flex-stack py-4">
-                                        <!--begin::Section-->
-                                        <div class="d-flex align-items-center">
-                                            <!--begin::Symbol-->
-                                            <div class="symbol symbol-35px me-4">
-                                            <span class="symbol-label bg-light-primary">
-                                                <i class="ki-outline ki-abstract-28 fs-2 text-primary"></i>
-                                            </span>
-                                            </div>
-                                            <!--end::Symbol-->
-                                            <!--begin::Title-->
-                                            <div class="mb-0 me-2">
-                                                <a href="#" class="fs-6 text-gray-800 text-hover-primary fw-bold">Project Alice</a>
-                                                <div class="text-gray-500 fs-7">Phase 1 development</div>
-                                            </div>
-                                            <!--end::Title-->
-                                        </div>
-                                        <!--end::Section-->
-
-                                        <!--begin::Label-->
-                                        <span class="badge badge-light fs-8">1 hr</span>
-                                        <!--end::Label-->
-                                    </div>
-                                    <!--end::Item-->
-                                    <!--begin::Item-->
-                                    <div class="d-flex flex-stack py-4">
-                                        <!--begin::Section-->
-                                        <div class="d-flex align-items-center">
-                                            <!--begin::Symbol-->
-                                            <div class="symbol symbol-35px me-4">
-                                            <span class="symbol-label bg-light-danger">
-                                                <i class="ki-outline ki-information fs-2 text-danger"></i>
-                                            </span>
-                                            </div>
-                                            <!--end::Symbol-->
-
-                                            <!--begin::Title-->
-                                            <div class="mb-0 me-2">
-                                                <a href="#" class="fs-6 text-gray-800 text-hover-primary fw-bold">HR Confidential</a>
-                                                <div class="text-gray-500 fs-7">Confidential staff documents</div>
-                                            </div>
-                                            <!--end::Title-->
-                                        </div>
-                                        <!--end::Section-->
-
-                                        <!--begin::Label-->
-                                        <span class="badge badge-light fs-8">2 hrs</span>
-                                        <!--end::Label-->
-                                    </div>
-                                    <!--end::Item-->
-                                    <!--begin::Item-->
-                                    <div class="d-flex flex-stack py-4">
-                                        <!--begin::Section-->
-                                        <div class="d-flex align-items-center">
-                                            <!--begin::Symbol-->
-                                            <div class="symbol symbol-35px me-4">
-                                            <span class="symbol-label bg-light-warning">
-                                                <i class="ki-outline ki-briefcase fs-2 text-warning"></i>
-                                            </span>
-                                            </div>
-                                            <!--end::Symbol-->
-
-                                            <!--begin::Title-->
-                                            <div class="mb-0 me-2">
-                                                <a href="#" class="fs-6 text-gray-800 text-hover-primary fw-bold">Company HR</a>
-                                                <div class="text-gray-500 fs-7">Corporeate staff profiles</div>
-                                            </div>
-                                            <!--end::Title-->
-                                        </div>
-                                        <!--end::Section-->
-
-                                        <!--begin::Label-->
-                                        <span class="badge badge-light fs-8">5 hrs</span>
-                                        <!--end::Label-->
-                                    </div>
-                                    <!--end::Item-->
-                                    <!--begin::Item-->
-                                    <div class="d-flex flex-stack py-4">
-                                        <!--begin::Section-->
-                                        <div class="d-flex align-items-center">
-                                            <!--begin::Symbol-->
-                                            <div class="symbol symbol-35px me-4">
-                                            <span class="symbol-label bg-light-success">
-                                                <i class="ki-outline ki-abstract-12 fs-2 text-success"></i>
-                                            </span>
-                                            </div>
-                                            <!--end::Symbol-->
-
-                                            <!--begin::Title-->
-                                            <div class="mb-0 me-2">
-                                                <a href="#" class="fs-6 text-gray-800 text-hover-primary fw-bold">Project Redux</a>
-                                                <div class="text-gray-500 fs-7">New frontend admin theme</div>
-                                            </div>
-                                            <!--end::Title-->
-                                        </div>
-                                        <!--end::Section-->
-
-                                        <!--begin::Label-->
-                                        <span class="badge badge-light fs-8">2 days</span>
-                                        <!--end::Label-->
-                                    </div>
-                                    <!--end::Item-->
-                                    <!--begin::Item-->
-                                    <div class="d-flex flex-stack py-4">
-                                        <!--begin::Section-->
-                                        <div class="d-flex align-items-center">
-                                            <!--begin::Symbol-->
-                                            <div class="symbol symbol-35px me-4">
-                                                <span class="symbol-label bg-light-primary">
-                                                    <i class="ki-outline ki-colors-square fs-2 text-primary"></i>
-                                                </span>
-                                            </div>
-                                            <!--end::Symbol-->
-
-                                            <!--begin::Title-->
-                                            <div class="mb-0 me-2">
-                                                <a href="#" class="fs-6 text-gray-800 text-hover-primary fw-bold">Project Breafing</a>
-                                                <div class="text-gray-500 fs-7">Product launch status update</div>
-                                            </div>
-                                            <!--end::Title-->
-                                        </div>
-                                        <!--end::Section-->
-
-                                        <!--begin::Label-->
-                                        <span class="badge badge-light fs-8">21 Jan</span>
-                                        <!--end::Label-->
-                                    </div>
-                                    <!--end::Item-->
-                                    <!--begin::Item-->
-                                    <div class="d-flex flex-stack py-4">
-                                        <!--begin::Section-->
-                                        <div class="d-flex align-items-center">
-                                            <!--begin::Symbol-->
-                                            <div class="symbol symbol-35px me-4">
-                                                    <span class="symbol-label bg-light-info">
-                                                        <i class="ki-outline ki-picture fs-2 text-info"></i>
-                                                    </span>
-                                            </div>
-                                            <!--end::Symbol-->
-
-                                            <!--begin::Title-->
-                                            <div class="mb-0 me-2">
-                                                <a href="#" class="fs-6 text-gray-800 text-hover-primary fw-bold">Banner Assets</a>
-                                                <div class="text-gray-500 fs-7">Collection of banner images</div>
-                                            </div>
-                                            <!--end::Title-->
-                                        </div>
-                                        <!--end::Section-->
-
-                                        <!--begin::Label-->
-                                        <span class="badge badge-light fs-8">21 Jan</span>
-                                        <!--end::Label-->
-                                    </div>
-                                    <!--end::Item-->
-                                    <!--begin::Item-->
-                                    <div class="d-flex flex-stack py-4">
-                                        <!--begin::Section-->
-                                        <div class="d-flex align-items-center">
-                                            <!--begin::Symbol-->
-                                            <div class="symbol symbol-35px me-4">
-                                            <span class="symbol-label bg-light-warning">
-                                                <i class="ki-outline ki-color-swatch fs-2 text-warning"></i>
-                                            </span>
-                                            </div>
-                                            <!--end::Symbol-->
-
-                                            <!--begin::Title-->
-                                            <div class="mb-0 me-2">
-                                                <a href="#" class="fs-6 text-gray-800 text-hover-primary fw-bold">Icon Assets</a>
-                                                <div class="text-gray-500 fs-7">Collection of SVG icons</div>
-                                            </div>
-                                            <!--end::Title-->
-                                        </div>
-                                        <!--end::Section-->
-
-                                        <!--begin::Label-->
-                                        <span class="badge badge-light fs-8">20 March</span>
-                                        <!--end::Label-->
-                                    </div>
-                                    <!--end::Item-->
-
-                                </div>
-                                <!--end::Items-->
-
-                                <!--begin::View more-->
-                                <div class="py-3 text-center border-top">
-                                    <a href="/metronic8/demo1/pages/user-profile/activity.html" class="btn btn-color-gray-600 btn-active-color-primary">
-                                        View All
-                                        <i class="ki-outline ki-arrow-right fs-5"></i>                </a>
-                                </div>
-                                <!--end::View more-->
-                            </div>
-                            <!--end::Tab panel-->
-
-                            <!--begin::Tab panel-->
-                            <div class="tab-pane fade show active" id="kt_topbar_notifications_2" role="tabpanel">
-                                <!--begin::Wrapper-->
-                                <div class="d-flex flex-column px-9">
-                                    <!--begin::Section-->
-                                    <div class="pt-10 pb-0">
-                                        <!--begin::Title-->
-                                        <h3 class="text-gray-900 text-center fw-bold">
-                                            Get Pro Access
-                                        </h3>
-                                        <!--end::Title-->
-
-                                        <!--begin::Text-->
-                                        <div class="text-center text-gray-600 fw-semibold pt-1">
-                                            Outlines keep you honest. They stoping you from amazing poorly about drive
-                                        </div>
-                                        <!--end::Text-->
-
-                                        <!--begin::Action-->
-                                        <div class="text-center mt-5 mb-9">
-                                            <a href="#" class="btn btn-sm btn-primary px-6" data-bs-toggle="modal" data-bs-target="#kt_modal_upgrade_plan">Upgrade</a>
-                                        </div>
-                                        <!--end::Action-->
-                                    </div>
-                                    <!--end::Section-->
-
-                                    <!--begin::Illustration-->
-                                    <div class="text-center px-4">
-                                        <img class="mw-100 mh-200px" alt="image" src="/public/media/illustrations/sketchy-1/1.png">
-                                    </div>
-                                    <!--end::Illustration-->
-                                </div>
-                                <!--end::Wrapper-->
-                            </div>
-                            <!--end::Tab panel-->
-
-                            <!--begin::Tab panel-->
-                            <div class="tab-pane fade" id="kt_topbar_notifications_3" role="tabpanel">
-                                <!--begin::Items-->
-                                <div class="scroll-y mh-325px my-5 px-8">
-                                    <!--begin::Item-->
-                                    <div class="d-flex flex-stack py-4">
-                                        <!--begin::Section-->
-                                        <div class="d-flex align-items-center me-2">
-                                            <!--begin::Code-->
-                                            <span class="w-70px badge badge-light-success me-4">200 OK</span>
-                                            <!--end::Code-->
-
-                                            <!--begin::Title-->
-                                            <a href="#" class="text-gray-800 text-hover-primary fw-semibold">New order</a>
-                                            <!--end::Title-->
-                                        </div>
-                                        <!--end::Section-->
-
-                                        <!--begin::Label-->
-                                        <span class="badge badge-light fs-8">Just now</span>
-                                        <!--end::Label-->
-                                    </div>
-                                    <!--end::Item-->
-                                    <!--begin::Item-->
-                                    <div class="d-flex flex-stack py-4">
-                                        <!--begin::Section-->
-                                        <div class="d-flex align-items-center me-2">
-                                            <!--begin::Code-->
-                                            <span class="w-70px badge badge-light-danger me-4">500 ERR</span>
-                                            <!--end::Code-->
-
-                                            <!--begin::Title-->
-                                            <a href="#" class="text-gray-800 text-hover-primary fw-semibold">New customer</a>
-                                            <!--end::Title-->
-                                        </div>
-                                        <!--end::Section-->
-
-                                        <!--begin::Label-->
-                                        <span class="badge badge-light fs-8">2 hrs</span>
-                                        <!--end::Label-->
-                                    </div>
-                                    <!--end::Item-->
-                                    <!--begin::Item-->
-                                    <div class="d-flex flex-stack py-4">
-                                        <!--begin::Section-->
-                                        <div class="d-flex align-items-center me-2">
-                                            <!--begin::Code-->
-                                            <span class="w-70px badge badge-light-success me-4">200 OK</span>
-                                            <!--end::Code-->
-
-                                            <!--begin::Title-->
-                                            <a href="#" class="text-gray-800 text-hover-primary fw-semibold">Payment process</a>
-                                            <!--end::Title-->
-                                        </div>
-                                        <!--end::Section-->
-
-                                        <!--begin::Label-->
-                                        <span class="badge badge-light fs-8">5 hrs</span>
-                                        <!--end::Label-->
-                                    </div>
-                                    <!--end::Item-->
-                                    <!--begin::Item-->
-                                    <div class="d-flex flex-stack py-4">
-                                        <!--begin::Section-->
-                                        <div class="d-flex align-items-center me-2">
-                                            <!--begin::Code-->
-                                            <span class="w-70px badge badge-light-warning me-4">300 WRN</span>
-                                            <!--end::Code-->
-
-                                            <!--begin::Title-->
-                                            <a href="#" class="text-gray-800 text-hover-primary fw-semibold">Search query</a>
-                                            <!--end::Title-->
-                                        </div>
-                                        <!--end::Section-->
-
-                                        <!--begin::Label-->
-                                        <span class="badge badge-light fs-8">2 days</span>
-                                        <!--end::Label-->
-                                    </div>
-                                    <!--end::Item-->
-                                    <!--begin::Item-->
-                                    <div class="d-flex flex-stack py-4">
-                                        <!--begin::Section-->
-                                        <div class="d-flex align-items-center me-2">
-                                            <!--begin::Code-->
-                                            <span class="w-70px badge badge-light-success me-4">200 OK</span>
-                                            <!--end::Code-->
-
-                                            <!--begin::Title-->
-                                            <a href="#" class="text-gray-800 text-hover-primary fw-semibold">API connection</a>
-                                            <!--end::Title-->
-                                        </div>
-                                        <!--end::Section-->
-
-                                        <!--begin::Label-->
-                                        <span class="badge badge-light fs-8">1 week</span>
-                                        <!--end::Label-->
-                                    </div>
-                                    <!--end::Item-->
-                                    <!--begin::Item-->
-                                    <div class="d-flex flex-stack py-4">
-                                        <!--begin::Section-->
-                                        <div class="d-flex align-items-center me-2">
-                                            <!--begin::Code-->
-                                            <span class="w-70px badge badge-light-success me-4">200 OK</span>
-                                            <!--end::Code-->
-
-                                            <!--begin::Title-->
-                                            <a href="#" class="text-gray-800 text-hover-primary fw-semibold">Database restore</a>
-                                            <!--end::Title-->
-                                        </div>
-                                        <!--end::Section-->
-
-                                        <!--begin::Label-->
-                                        <span class="badge badge-light fs-8">Mar 5</span>
-                                        <!--end::Label-->
-                                    </div>
-                                    <!--end::Item-->
-                                    <!--begin::Item-->
-                                    <div class="d-flex flex-stack py-4">
-                                        <!--begin::Section-->
-                                        <div class="d-flex align-items-center me-2">
-                                            <!--begin::Code-->
-                                            <span class="w-70px badge badge-light-warning me-4">300 WRN</span>
-                                            <!--end::Code-->
-
-                                            <!--begin::Title-->
-                                            <a href="#" class="text-gray-800 text-hover-primary fw-semibold">System update</a>
-                                            <!--end::Title-->
-                                        </div>
-                                        <!--end::Section-->
-
-                                        <!--begin::Label-->
-                                        <span class="badge badge-light fs-8">May 15</span>
-                                        <!--end::Label-->
-                                    </div>
-                                    <!--end::Item-->
-                                    <!--begin::Item-->
-                                    <div class="d-flex flex-stack py-4">
-                                        <!--begin::Section-->
-                                        <div class="d-flex align-items-center me-2">
-                                            <!--begin::Code-->
-                                            <span class="w-70px badge badge-light-warning me-4">300 WRN</span>
-                                            <!--end::Code-->
-
-                                            <!--begin::Title-->
-                                            <a href="#" class="text-gray-800 text-hover-primary fw-semibold">Server OS update</a>
-                                            <!--end::Title-->
-                                        </div>
-                                        <!--end::Section-->
-
-                                        <!--begin::Label-->
-                                        <span class="badge badge-light fs-8">Apr 3</span>
-                                        <!--end::Label-->
-                                    </div>
-                                    <!--end::Item-->
-                                    <!--begin::Item-->
-                                    <div class="d-flex flex-stack py-4">
-                                        <!--begin::Section-->
-                                        <div class="d-flex align-items-center me-2">
-                                            <!--begin::Code-->
-                                            <span class="w-70px badge badge-light-warning me-4">300 WRN</span>
-                                            <!--end::Code-->
-
-                                            <!--begin::Title-->
-                                            <a href="#" class="text-gray-800 text-hover-primary fw-semibold">API rollback</a>
-                                            <!--end::Title-->
-                                        </div>
-                                        <!--end::Section-->
-
-                                        <!--begin::Label-->
-                                        <span class="badge badge-light fs-8">Jun 30</span>
-                                        <!--end::Label-->
-                                    </div>
-                                    <!--end::Item-->
-                                    <!--begin::Item-->
-                                    <div class="d-flex flex-stack py-4">
-                                        <!--begin::Section-->
-                                        <div class="d-flex align-items-center me-2">
-                                            <!--begin::Code-->
-                                            <span class="w-70px badge badge-light-danger me-4">500 ERR</span>
-                                            <!--end::Code-->
-
-                                            <!--begin::Title-->
-                                            <a href="#" class="text-gray-800 text-hover-primary fw-semibold">Refund process</a>
-                                            <!--end::Title-->
-                                        </div>
-                                        <!--end::Section-->
-
-                                        <!--begin::Label-->
-                                        <span class="badge badge-light fs-8">Jul 10</span>
-                                        <!--end::Label-->
-                                    </div>
-                                    <!--end::Item-->
-                                    <!--begin::Item-->
-                                    <div class="d-flex flex-stack py-4">
-                                        <!--begin::Section-->
-                                        <div class="d-flex align-items-center me-2">
-                                            <!--begin::Code-->
-                                            <span class="w-70px badge badge-light-danger me-4">500 ERR</span>
-                                            <!--end::Code-->
-
-                                            <!--begin::Title-->
-                                            <a href="#" class="text-gray-800 text-hover-primary fw-semibold">Withdrawal process</a>
-                                            <!--end::Title-->
-                                        </div>
-                                        <!--end::Section-->
-
-                                        <!--begin::Label-->
-                                        <span class="badge badge-light fs-8">Sep 10</span>
-                                        <!--end::Label-->
-                                    </div>
-                                    <!--end::Item-->
-                                    <!--begin::Item-->
-                                    <div class="d-flex flex-stack py-4">
-                                        <!--begin::Section-->
-                                        <div class="d-flex align-items-center me-2">
-                                            <!--begin::Code-->
-                                            <span class="w-70px badge badge-light-danger me-4">500 ERR</span>
-                                            <!--end::Code-->
-
-                                            <!--begin::Title-->
-                                            <a href="#" class="text-gray-800 text-hover-primary fw-semibold">Mail tasks</a>
-                                            <!--end::Title-->
-                                        </div>
-                                        <!--end::Section-->
-
-                                        <!--begin::Label-->
-                                        <span class="badge badge-light fs-8">Dec 10</span>
-                                        <!--end::Label-->
-                                    </div>
-                                    <!--end::Item-->
-
-                                </div>
-                                <!--end::Items-->
-
-                                <!--begin::View more-->
-                                <div class="py-3 text-center border-top">
-                                    <a href="/metronic8/demo1/pages/user-profile/activity.html" class="btn btn-color-gray-600 btn-active-color-primary">
-                                        View All
-                                        <i class="ki-outline ki-arrow-right fs-5"></i>                </a>
-                                </div>
-                                <!--end::View more-->
-                            </div>
-                            <!--end::Tab panel-->
-                        </div>
-                        <!--end::Tab content-->
-                    </div>
-                    <!--end::Menu-->
-                    <!--end::Menu wrapper-->
-                </div>
-                <!--end::Notifications-->
+               
                 <!--begin::Theme mode-->
                 <div class="app-navbar-item ms-1 ms-md-4">
 
@@ -588,6 +67,59 @@
                     <!--end::Menu-->
                 </div>
                 <!--end::Theme mode-->
+                
+                <!--begin::Bildirim menu-->
+                <div class="app-navbar-item ms-1 ms-md-4" id="kt_header_bildirim_menu_toggle">
+                    <!--begin::Menu wrapper-->
+                    <div class="cursor-pointer symbol symbol-40px symbol-lg-35px position-relative" data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-attach="parent" data-kt-menu-placement="bottom-end">
+                        <a href="/kullanici/bildirimler" class="btn btn-icon btn-custom btn-icon-muted btn-active-light btn-active-color-primary w-40px h-40px w-lg-35px h-lg-35px position-relative">
+                            <i class="ki-outline ki-notification-on fs-1"></i>
+                            <!--begin::Bildirim sayacı-->
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="bildirim-sayaci" style="display: none; z-index: 1000; font-size: 0.7rem; min-width: 16px; height: 16px; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                                <span id="bildirim-sayi">0</span>
+                            </span>
+                            <!--end::Bildirim sayacı-->
+                        </a>
+                    </div>
+                    <!--begin::Bildirim dropdown menu-->
+                    <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg menu-state-color fw-semibold py-4 fs-6 w-350px" data-kt-menu="true" id="bildirim-dropdown">
+                        <!--begin::Menu header-->
+                        <div class="menu-item px-3">
+                            <div class="menu-content d-flex align-items-center px-3">
+                                <div class="symbol symbol-50px me-3">
+                                    <div class="symbol-label bg-light-primary">
+                                        <i class="ki-outline ki-notification-on text-primary fs-2"></i>
+                                    </div>
+                                </div>
+                                <div class="d-flex flex-column">
+                                    <div class="fw-bold d-flex align-items-center fs-5">
+                                        Bildirimler
+                                    </div>
+                                    <a href="/kullanici/bildirimler" class="fw-semibold text-muted text-hover-primary fs-7">
+                                        Tümünü görüntüle
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <!--end::Menu header-->
+                        
+                        <!--begin::Menu separator-->
+                        <div class="separator my-2"></div>
+                        <!--end::Menu separator-->
+                        
+                        <!--begin::Bildirim listesi-->
+                        <div id="bildirim-liste" class="px-3">
+                            <div class="text-center py-4">
+                                <i class="ki-outline ki-notification-off fs-3x text-muted mb-3"></i>
+                                <div class="text-muted">Yeni bildirim bulunmuyor</div>
+                            </div>
+                        </div>
+                        <!--end::Bildirim listesi-->
+                    </div>
+                    <!--end::Bildirim dropdown menu-->
+                </div>
+                <!--end::Bildirim menu-->
+                
                 <!--begin::User menu-->
                 <div class="app-navbar-item ms-1 ms-md-4" id="kt_header_user_menu_toggle">
                     <!--begin::Menu wrapper-->
@@ -642,6 +174,11 @@
                         <div class="menu-item px-5 my-1">
                             <a class="menu-link px-5" href="/profil">Profil</a>
                         </div>
+                        <div class="menu-item px-5 my-1">
+                            <a class="menu-link px-5" href="/kullanici/bildirimler">
+                                <i class="ki-outline ki-notification-on me-2"></i>Bildirimlerim
+                            </a>
+                        </div>
                         <div class="menu-item px-5">
                             <a class="menu-link px-5" href="#" onclick="performLogout()" style="cursor: pointer;">Çıkış Yap</a>
                         </div>
@@ -682,4 +219,225 @@ function performLogout() {
         window.location.href = '/auth/logout';
     }
 }
+
+// Bildirim sistemi
+document.addEventListener('DOMContentLoaded', function() {
+    let bildirimSayaci = document.getElementById('bildirim-sayaci');
+    let bildirimSayi = document.getElementById('bildirim-sayi');
+    let bildirimListe = document.getElementById('bildirim-liste');
+    let yanipSonmeInterval;
+    let pulseInterval;
+    let lastCount = 0;
+    
+    // Okunmamış bildirim sayısını al
+    function getUnreadCount() {
+        fetch('/kullanici/bildirimler/unread-count')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const count = data.count;
+                    bildirimSayi.textContent = count;
+                    
+                    if (count > 0) {
+                        bildirimSayaci.style.display = 'block';
+                        
+                        // Yeni bildirim geldiğinde pulse efekti
+                        if (count > lastCount && lastCount > 0) {
+                            startPulse();
+                        }
+                        
+                        startBlinking();
+                    } else {
+                        bildirimSayaci.style.display = 'none';
+                        stopBlinking();
+                        stopPulse();
+                    }
+                    
+                    lastCount = count;
+                }
+            })
+            .catch(error => {
+                console.error('Bildirim sayısı alınırken hata:', error);
+            });
+    }
+    
+    // Yanıp sönme efekti
+    function startBlinking() {
+        if (yanipSonmeInterval) return;
+        
+        yanipSonmeInterval = setInterval(() => {
+            bildirimSayaci.style.opacity = bildirimSayaci.style.opacity === '0.5' ? '1' : '0.5';
+        }, 800);
+    }
+    
+    function stopBlinking() {
+        if (yanipSonmeInterval) {
+            clearInterval(yanipSonmeInterval);
+            yanipSonmeInterval = null;
+            bildirimSayaci.style.opacity = '1';
+        }
+    }
+    
+    // Pulse efekti (yeni bildirim geldiğinde)
+    function startPulse() {
+        bildirimSayaci.classList.add('animate');
+        
+        setTimeout(() => {
+            stopPulse();
+        }, 3000);
+    }
+    
+    function stopPulse() {
+        bildirimSayaci.classList.remove('animate');
+    }
+    
+    // Sayfa yüklendiğinde bildirim sayısını al
+    getUnreadCount();
+    
+    // Her 30 saniyede bir güncelle
+    setInterval(getUnreadCount, 30000);
+    
+    // Bildirim ikonuna tıklandığında sayacı gizle
+    document.querySelector('#kt_header_bildirim_menu_toggle a').addEventListener('click', function() {
+        bildirimSayaci.style.display = 'none';
+        stopBlinking();
+        stopPulse();
+    });
+    
+    // Sayfa görünür olduğunda bildirim sayısını güncelle
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            getUnreadCount();
+        }
+    });
+    
+    // Bildirim sesi çal (opsiyonel)
+    function playNotificationSound() {
+        try {
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT');
+            audio.volume = 0.3;
+            audio.play().catch(e => console.log('Ses çalınamadı:', e));
+        } catch (e) {
+            console.log('Ses dosyası yüklenemedi:', e);
+        }
+    }
+    
+    // Yeni bildirim geldiğinde ses çal
+    let previousCount = 0;
+    setInterval(() => {
+        const currentCount = parseInt(bildirimSayi.textContent) || 0;
+        if (currentCount > previousCount && previousCount > 0) {
+            playNotificationSound();
+        }
+        previousCount = currentCount;
+    }, 5000);
+});
 </script>
+
+<style>
+/* Bildirim sayacı stilleri */
+#bildirim-sayaci {
+    transition: opacity 0.3s ease;
+    z-index: 1000;
+    font-size: 0.75rem;
+    font-weight: bold;
+    min-width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+#bildirim-sayaci.animate {
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+}
+
+/* Mobil optimizasyonları */
+@media (max-width: 768px) {
+    #bildirim-sayaci {
+        font-size: 0.65rem;
+        min-width: 14px;
+        height: 14px;
+    }
+    
+    .app-navbar-item {
+        margin-left: 0.5rem !important;
+    }
+    
+    .btn-icon {
+        width: 35px !important;
+        height: 35px !important;
+    }
+    
+    .symbol {
+        width: 35px !important;
+        height: 35px !important;
+    }
+    
+    #bildirim-dropdown {
+        width: 300px !important;
+        max-width: 90vw;
+    }
+}
+
+/* Bildirim dropdown stilleri */
+#bildirim-dropdown {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.bildirim-item {
+    padding: 12px;
+    border-bottom: 1px solid #e4e6ea;
+    transition: background-color 0.2s ease;
+}
+
+.bildirim-item:hover {
+    background-color: #f8f9fa;
+}
+
+.bildirim-item:last-child {
+    border-bottom: none;
+}
+
+.bildirim-baslik {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #181c32;
+    margin-bottom: 4px;
+}
+
+.bildirim-mesaj {
+    font-size: 0.8rem;
+    color: #6c7293;
+    line-height: 1.4;
+}
+
+.bildirim-tarih {
+    font-size: 0.75rem;
+    color: #a1a5b7;
+    margin-top: 4px;
+}
+
+.bildirim-yeni {
+    background-color: #fff3cd;
+    border-left: 3px solid #ffc107;
+}
+</style>

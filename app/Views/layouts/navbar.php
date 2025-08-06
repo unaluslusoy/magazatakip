@@ -1,3 +1,102 @@
+<?php
+// Kullanıcı bilgilerini veritabanından çek
+if (isset($_SESSION['user_id'])) {
+    $kullaniciModel = new \app\Models\Kullanici();
+    $kullanici = $kullaniciModel->get($_SESSION['user_id']);
+    
+    // Personel bilgilerini de çek (varsa)
+    $personelModel = new \app\Models\Personel();
+    $personel = $personelModel->getByKullaniciId($_SESSION['user_id']);
+    
+    // Kullanıcı adı ve soyadını belirle (öncelik sırası: veritabanı > session)
+    $userName = '';
+    $userSurname = '';
+    $userEmail = '';
+    
+    // Önce session'dan al (geçici çözüm)
+    $userName = trim($_SESSION['user_name'] ?? '');
+    $userSurname = trim($_SESSION['user_surname'] ?? '');
+    $userEmail = trim($_SESSION['user_email'] ?? '');
+    
+    // Veritabanından da kontrol et
+    if ($kullanici) {
+        if (empty($userName) && !empty($kullanici['ad'])) {
+            $userName = trim($kullanici['ad']);
+        }
+        if (empty($userSurname) && !empty($kullanici['soyad'])) {
+            $userSurname = trim($kullanici['soyad']);
+        }
+        if (empty($userEmail) && !empty($kullanici['email'])) {
+            $userEmail = trim($kullanici['email']);
+        }
+    }
+    
+    // Debug: Veritabanından gelen verileri logla
+    error_log("DB Debug - kullanici: " . json_encode($kullanici));
+    error_log("DB Debug - personel: " . json_encode($personel));
+    
+    // Kullanıcı görseli kontrolü
+    $userImage = null;
+    if ($personel && !empty($personel['foto'])) {
+        $userImage = $personel['foto'];
+    } elseif ($kullanici && !empty($kullanici['profil_foto'])) {
+        $userImage = $kullanici['profil_foto'];
+    }
+    
+    // Baş harfleri oluştur
+    $initials = '';
+    
+    // Ad ve soyadı temizle
+    $cleanName = trim($userName);
+    $cleanSurname = trim($userSurname);
+    
+    // Ad varsa ilk harfini al (Türkçe karakter desteği ile)
+    if (!empty($cleanName)) {
+        $firstChar = mb_substr($cleanName, 0, 1, 'UTF-8');
+        $initials .= mb_strtoupper($firstChar, 'UTF-8');
+    }
+    
+    // Soyad varsa ilk harfini al (Türkçe karakter desteği ile)
+    if (!empty($cleanSurname)) {
+        $firstChar = mb_substr($cleanSurname, 0, 1, 'UTF-8');
+        $initials .= mb_strtoupper($firstChar, 'UTF-8');
+    }
+    
+    // Eğer hem ad hem soyad boşsa, e-posta adresinden al
+    if (empty($initials) && !empty($userEmail)) {
+        $emailParts = explode('@', $userEmail);
+        if (!empty($emailParts[0])) {
+            $firstChar = mb_substr($emailParts[0], 0, 1, 'UTF-8');
+            $initials = mb_strtoupper($firstChar, 'UTF-8');
+        }
+    }
+    
+    // Hala boşsa varsayılan değer
+    if (empty($initials)) {
+        // Session'dan kullanıcı adını kontrol et
+        $sessionName = trim($_SESSION['user_name'] ?? '');
+        if (!empty($sessionName)) {
+            $firstChar = mb_substr($sessionName, 0, 1, 'UTF-8');
+            $initials = mb_strtoupper($firstChar, 'UTF-8');
+        } else {
+            $initials = 'U'; // User
+        }
+    }
+    
+    // Debug: Baş harfler oluşturma sürecini logla
+    error_log("Initials Debug - cleanName: '$cleanName', cleanSurname: '$cleanSurname', userEmail: '$userEmail', final initials: '$initials'");
+    
+    // Debug bilgisi (geliştirme aşamasında)
+    error_log("Navbar Debug - userName: '$userName', userSurname: '$userSurname', userEmail: '$userEmail', initials: '$initials'");
+} else {
+    // Session yoksa varsayılan değerler
+    $userName = $_SESSION['user_name'] ?? '';
+    $userSurname = $_SESSION['user_surname'] ?? '';
+    $userEmail = $_SESSION['user_email'] ?? '';
+    $userImage = null;
+    $initials = 'U';
+}
+?>
 <!--begin::Header-->
 <div id="kt_app_header" class="app-header" data-kt-sticky="false" data-kt-sticky-activate="{default: false, lg: false}" data-kt-sticky-name="app-header-sticky" data-kt-sticky-offset="{default: '200px', lg: '300px'}">
 	<!--begin::Header container-->
@@ -11,8 +110,8 @@
 			<!--end::Mobile toggle-->
 			<!--begin::Logo image-->
 			<a href="/admin">
-				<img alt="Logo" src="/public/media/logos/demo63.svg" class="h-25px theme-light-show" />
-				<img alt="Logo" src="/public/media/logos/demo63-dark.svg" class="h-25px theme-dark-show" />
+				<img alt="Logo" src="/public/media/logos/default.svg" class="h-25px theme-light-show" />
+				<img alt="Logo" src="/public/media/logos/default-dark.svg" class="h-25px theme-dark-show" />
 			</a>
 			<!--end::Logo image-->
 		</div>
@@ -47,6 +146,21 @@
                         <i class="ki-outline ki-notification-on text-warning fs-3"></i>
                     </a>
                 </div>
+                
+                <!--begin::Kullanıcı Bildirim İkonu-->
+                <div class="app-navbar-item" id="kt_header_bildirim_menu_toggle" style="display: none;">
+                    <div class="position-relative">
+                        <a href="/kullanici/bildirimler" class="btn btn-icon rounded-circle w-35px h-35px bg-light-primary border border-primary-clarity position-relative">
+                            <i class="ki-outline ki-notification-on text-primary fs-3"></i>
+                            <!--begin::Bildirim sayacı-->
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="bildirim-sayaci" style="display: none; z-index: 1000; font-size: 0.7rem; min-width: 16px; height: 16px; border: 2px solid #fff;">
+                                <span id="bildirim-sayi">0</span>
+                            </span>
+                            <!--end::Bildirim sayacı-->
+                        </a>
+                    </div>
+                </div>
+                <!--end::Kullanıcı Bildirim İkonu-->
 				<!--begin::User menu-->
 				<div class="app-navbar-item ms-lg-5" id="kt_header_user_menu_toggle">
 					<!--begin::Menu wrapper-->
@@ -55,12 +169,18 @@
 						<div class="text-end d-none d-sm-flex flex-column justify-content-center me-3">
 
 							<span class="text-gray-500 fs-8 fw-bold">Merhaba</span>
-							<a href="#" class="text-gray-800 text-hover-primary fs-7 fw-bold d-block"><?=  $_SESSION['user_name']?></a>
+							<a href="#" class="text-gray-800 text-hover-primary fs-7 fw-bold d-block" title="Debug: <?= htmlspecialchars($userName . ' ' . $userSurname . ' (' . $userEmail . ')') ?>"><?= $userName ?> <?= $userSurname ?></a>
 						</div>
 						<!--end:Info-->
 						<!--begin::User-->
 						<div class="cursor-pointer symbol symbol symbol-circle symbol-35px symbol-md-40px">
-							<img class="" src="/public/media/avatars/300-3.jpg" alt="user" />
+							<?php if ($userImage): ?>
+								<img class="" src="<?= $userImage ?>" alt="user" />
+							<?php else: ?>
+								<div class="symbol-label bg-primary text-white fw-bold fs-6 d-flex align-items-center justify-content-center" style="min-width: 35px; min-height: 35px;" title="Debug: <?= htmlspecialchars($userName . ' ' . $userSurname . ' (' . $userEmail . ')') ?>">
+									<?= $initials ?>
+								</div>
+							<?php endif; ?>
 							<div class="position-absolute translate-middle bottom-0 mb-1 start-100 ms-n1 bg-success rounded-circle h-8px w-8px"></div>
 						</div>
 						<!--end::User-->
@@ -72,15 +192,21 @@
 							<div class="menu-content d-flex align-items-center px-3">
 								<!--begin::Avatar-->
 								<div class="symbol symbol-50px me-5">
-									<img alt="Logo" src="/public/media/avatars/300-3.jpg" />
+									<?php if ($userImage): ?>
+										<img alt="Logo" src="<?= $userImage ?>" />
+									<?php else: ?>
+										<div class="symbol-label bg-primary text-white fw-bold fs-5 d-flex align-items-center justify-content-center" style="min-width: 50px; min-height: 50px;">
+											<?= $initials ?>
+										</div>
+									<?php endif; ?>
 								</div>
 								<!--end::Avatar-->
 
 								<!--begin::Username-->
 								<div class="d-flex flex-column">
-									<div class="fw-bold d-flex align-items-center fs-5">	<?=  $_SESSION['user_name']?>
+									<div class="fw-bold d-flex align-items-center fs-5">	<?= $userName  ?> <?= $userSurname ?>
 									</div>
-									<a href="#" class="fw-semibold text-muted text-hover-primary fs-7"><?=  $_SESSION['user_email']?></a>
+									<a href="#" class="fw-semibold text-muted text-hover-primary fs-7"><?= $userEmail ?></a>
 								</div>
 								<!--end::Username-->
 							</div>
@@ -91,7 +217,8 @@
 						<!--end::Menu separator-->
 						<!--begin::Menu item-->
 						<div class="menu-item px-5">
-							<a href="#" class="menu-link px-5">Profilim</a>
+															<a href="/kullanici/profil" class="menu-link px-5">Profilim</a>
+								<a href="/kullanici/bildirimler" class="menu-link px-5">Bildirimlerim</a>
 						</div>
 						<!--begin::Menu item-->
 						<div class="menu-item px-5" data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-placement="left-start" data-kt-menu-offset="-15px, 0">
@@ -141,7 +268,7 @@
 
 						<!--begin::Menu item-->
 						<div class="menu-item px-5 my-1">
-							<a href="/" class="menu-link px-5">Ayarlar</a>
+							<a href="/admin/site-ayarlar" class="menu-link px-5">Site Ayarları</a>
 						</div>
 						<!--end::Menu item-->
 						<!--begin::Menu item-->
@@ -234,4 +361,119 @@ function performCompleteLogout() {
     console.log('📡 Server logout çağrısı');
     window.location.replace('/logout.php');
 }
+
+// Bildirim sistemi
+document.addEventListener('DOMContentLoaded', function() {
+    // Kullanıcı rolünü kontrol et
+    const userRole = '<?= $_SESSION['user_role'] ?? false ?>';
+    const bildirimIcon = document.getElementById('kt_header_bildirim_menu_toggle');
+    const bildirimSayaci = document.getElementById('bildirim-sayaci');
+    const bildirimSayi = document.getElementById('bildirim-sayi');
+    let yanipSonmeInterval;
+    let lastCount = 0;
+    
+    // Sadece kullanıcılar için bildirim ikonunu göster
+    if (userRole === false || userRole === '0') {
+        bildirimIcon.style.display = 'block';
+        
+        // Okunmamış bildirim sayısını al
+        function getUnreadCount() {
+            fetch('/kullanici/bildirimler/unread-count')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const count = data.count;
+                        bildirimSayi.textContent = count;
+                        
+                        if (count > 0) {
+                            bildirimSayaci.style.display = 'block';
+                            
+                            // Yeni bildirim geldiğinde pulse efekti
+                            if (count > lastCount && lastCount > 0) {
+                                startPulse();
+                            }
+                            
+                            startBlinking();
+                        } else {
+                            bildirimSayaci.style.display = 'none';
+                            stopBlinking();
+                            stopPulse();
+                        }
+                        
+                        lastCount = count;
+                    }
+                })
+                .catch(error => {
+                    console.error('Bildirim sayısı alınırken hata:', error);
+                });
+        }
+        
+        // Yanıp sönme efekti
+        function startBlinking() {
+            if (yanipSonmeInterval) return;
+            
+            yanipSonmeInterval = setInterval(() => {
+                bildirimSayaci.style.opacity = bildirimSayaci.style.opacity === '0.5' ? '1' : '0.5';
+            }, 800);
+        }
+        
+        function stopBlinking() {
+            if (yanipSonmeInterval) {
+                clearInterval(yanipSonmeInterval);
+                yanipSonmeInterval = null;
+                bildirimSayaci.style.opacity = '1';
+            }
+        }
+        
+        // Pulse efekti (yeni bildirim geldiğinde)
+        function startPulse() {
+            bildirimSayaci.style.animation = 'pulse 1.5s infinite';
+            
+            setTimeout(() => {
+                stopPulse();
+            }, 3000);
+        }
+        
+        function stopPulse() {
+            bildirimSayaci.style.animation = '';
+        }
+        
+        // Sayfa yüklendiğinde bildirim sayısını al
+        getUnreadCount();
+        
+        // Her 30 saniyede bir güncelle
+        setInterval(getUnreadCount, 30000);
+        
+        // Bildirim ikonuna tıklandığında sayacı gizle
+        bildirimIcon.querySelector('a').addEventListener('click', function() {
+            bildirimSayaci.style.display = 'none';
+            stopBlinking();
+            stopPulse();
+        });
+        
+        // Sayfa görünür olduğunda bildirim sayısını güncelle
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                getUnreadCount();
+            }
+        });
+    }
+});
 </script>
+
+<style>
+@keyframes pulse {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+}
+</style>

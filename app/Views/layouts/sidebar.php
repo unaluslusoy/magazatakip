@@ -2,9 +2,10 @@
 <div id="kt_app_sidebar" class="app-sidebar" data-kt-drawer="true" data-kt-drawer-name="app-sidebar" data-kt-drawer-activate="{default: true, lg: false}" data-kt-drawer-overlay="true" data-kt-drawer-width="250px" data-kt-drawer-direction="start" data-kt-drawer-toggle="#kt_app_sidebar_toggle">
     <!--begin::Header-->
     <div class="d-none d-lg-flex flex-center px-6 pt-10 pb-10" id="kt_app_sidebar_header">
-        <a class="menu-link"  href="/admin">
-            <span class="menu-title">MT Mağaza Takip</span>
-        </a>
+        
+        <a href="/admin">			
+				<img alt="Logo" src="/public/media/logos/default-dark.svg" class="h-45px " />
+			</a>
     </div>
     <!--end::Header-->
     <div class="flex-grow-1">
@@ -78,16 +79,7 @@
                         </a>
                     </div>
                     <!--end::Menu item-->
-                    <!--begin::Menu item-->
-                    <div class="menu-item">
-                        <a href="/admin/fatura_talep/listesi" class="menu-link py-3">
-                        <span class="menu-bullet">
-                            <i class="bi bi-shop-window"></i>
-                        </span>
-                            <span class="menu-title">Fatura Talepleri</span>
-                        </a>
-                    </div>
-                    <!--end::Menu item-->
+                    
                     <!--begin::Menu item-->
                     <div class="menu-item">
                         <a href="/admin/bildirim_gonder" class="menu-link py-3">

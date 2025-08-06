@@ -10,10 +10,6 @@ use app\Models\Bildirim;
 
 class BildirimController extends Controller
 {
-    public function __construct() {
-        // 🔒 GÜVENLIK: Admin erişim kontrolü
-        AdminMiddleware::handle();
-    }
     private $bildirimModel;
     private $ayarlarModel;
     private $kullaniciModel;
@@ -21,7 +17,19 @@ class BildirimController extends Controller
 
     public function __construct()
     {
-        AuthMiddleware::handle();
+        // 🔒 GÜVENLIK: Admin erişim kontrolü
+        AdminMiddleware::handle();
+        
+        // Veritabanı bağlantısı
+        $config = require 'config/database.php';
+        $this->db = new \PDO(
+            "mysql:host={$config['host']};dbname={$config['dbname']};charset=utf8mb4",
+            $config['username'],
+            $config['password'],
+            [\PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci"]
+        );
+        $this->db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+        
         $this->ayarlarModel = new OneSignalAyarlar();
         $this->kullaniciModel = new Kullanici();
         $this->bildirimService = new BildirimService();
@@ -50,7 +58,7 @@ class BildirimController extends Controller
             'notificationCounts' => $this->bildirimModel->getNotificationCounts()
         ];
 
-        $this->view('/admin/onesignal/bildirim_listele', $data);
+        $this->view('admin/bildirimler/index', $data);
     }
 
     public function delete($id)
@@ -90,7 +98,7 @@ class BildirimController extends Controller
             'gonderimKanallari' => ['web' => 'Web', 'mobil' => 'Mobil', 'email' => 'E-posta'],
             'oncelikler' => ['dusuk' => 'Düşük', 'normal' => 'Normal', 'yuksek' => 'Yüksek']
         ];
-        $this->view('/admin/onesignal/bildirim_gonder', $data);
+        $this->view('admin/bildirimler/gonder', $data);
     }
 
     public function bildirimiGonder()
@@ -126,7 +134,7 @@ class BildirimController extends Controller
                 foreach ($kullanicilar as $kullanici) {
                     $bildirimData['hedef_kullanici_id'] = $kullanici['id'];
 
-                    if ($this->bildirimModel->create($bildirimData)) {
+                    if ($this->create($bildirimData)) {
                         $basarili++;
 
                         // Bildirimi gerçek zamanlı gönderme işlemi
@@ -141,6 +149,12 @@ class BildirimController extends Controller
                         if (!$sonuc) {
                             $hatali++;
                             $hataliTokenlar[] = $kullanici['cihaz_token']; // Hatalı tokenı ekle
+                            
+                            // Bildirim durumunu başarısız olarak güncelle
+                            $this->db->prepare("UPDATE bildirimler SET durum = 'basarisiz' WHERE hedef_kullanici_id = ? AND gonderim_tarihi = ?")->execute([$kullanici['id'], $data['gonderim_tarihi']]);
+                        } else {
+                            // Bildirim durumunu gönderildi olarak güncelle
+                            $this->db->prepare("UPDATE bildirimler SET durum = 'gonderildi' WHERE hedef_kullanici_id = ? AND gonderim_tarihi = ?")->execute([$kullanici['id'], $data['gonderim_tarihi']]);
                         }
                     } else {
                         $hatali++;
@@ -177,5 +191,41 @@ class BildirimController extends Controller
         $this->view('/admin/onesignal/bildirim_listele', ['bildirimler' => $bildirimler]);
     }
 
+    public function create($data)
+    {
+        try {
+            $data['gonderim_tarihi'] = date('Y-m-d H:i:s');
+            
+            $columns = implode(", ", array_keys($data));
+            $placeholders = ":" . implode(", :", array_keys($data));
+            
+            $sql = "INSERT INTO bildirimler ({$columns}) VALUES ({$placeholders})";
+            $stmt = $this->db->prepare($sql);
+            
+            return $stmt->execute($data);
+        } catch (\PDOException $e) {
+            error_log("Bildirim oluşturma hatası: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function detay($id)
+    {
+        $bildirim = $this->bildirimModel->getBildirimById($id);
+        if (!$bildirim) {
+            $_SESSION['message'] = "Bildirim bulunamadı.";
+            $_SESSION['message_type'] = 'error';
+            header('Location: /admin/bildirimler');
+            exit();
+        }
+
+        $data = [
+            'title' => 'Bildirim Detayı',
+            'link' => 'Bildirim Detayı',
+            'bildirim' => $bildirim
+        ];
+
+        $this->view('admin/bildirimler/detay', $data);
+    }
 
 }

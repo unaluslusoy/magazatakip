@@ -12,13 +12,7 @@ require_once 'app/Views/layouts/navbar.php';
         <div id="kt_app_toolbar_container" class="app-container container-xxl d-flex flex-stack">
             <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
                 <h1 class="page-heading d-flex text-dark fw-bold fs-3 flex-column justify-content-center my-0">
-                    <i class="ki-duotone ki-people fs-1 text-primary me-2">
-                        <span class="path1"></span>
-                        <span class="path2"></span>
-                        <span class="path3"></span>
-                        <span class="path4"></span>
-                        <span class="path5"></span>
-                    </i>
+                   
                     Kullanıcı Yönetimi
                 </h1>
                 <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0 pt-1">
@@ -241,11 +235,11 @@ document.addEventListener('DOMContentLoaded', function() {
             <td class="d-flex align-items-center">
                 <div class="symbol symbol-circle symbol-50px overflow-hidden me-3">
                     <div class="symbol-label">
-                        <div class="symbol-label fs-3 bg-light-primary text-primary">${user.ad.charAt(0).toUpperCase()}</div>
+                        <div class="symbol-label fs-3 bg-light-primary text-primary">${user.ad.charAt(0).toUpperCase()}${user.soyad.charAt(0).toUpperCase()}</div>
                     </div>
                 </div>
                 <div class="d-flex flex-column">
-                    <a href="/admin/kullanici/duzenle/${user.id}" class="text-gray-800 text-hover-primary mb-1 fw-bold">${user.ad}</a>
+                    <a href="/admin/kullanici/duzenle/${user.id}" class="text-gray-800 text-hover-primary mb-1 fw-bold">${user.ad} ${user.soyad}</a>
                     <span class="text-muted fw-semibold text-muted d-block fs-7">ID: ${user.id}</span>
                 </div>
             </td>
@@ -279,7 +273,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </a>
                     </div>
                     <div class="menu-item px-3">
-                        <a href="#" class="menu-link px-3" onclick="deleteUser(${user.id}, '${user.ad}')">
+                        <a href="#" class="menu-link px-3" onclick="deleteUser(${user.id}, '${user.ad} ${user.soyad}')">
                             <i class="ki-duotone ki-trash fs-5 me-2">
                                 <span class="path1"></span>
                                 <span class="path2"></span>

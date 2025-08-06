@@ -82,7 +82,14 @@ $router->get('admin/geri_bildirimler/detay/{id}', 'Admin\GeriBildirimController@
 $router->get('admin/geri_bildirimler/sil/{id}', 'Admin\GeriBildirimController@sil');
 $router->post('admin/geri_bildirimler/guncelleDurum', 'Admin\GeriBildirimController@guncelleDurum');
 
-// OneSignal rotaları
+// Site Ayarları rotaları
+$router->get('/admin/site-ayarlar', 'Admin\SiteAyarlarController@index');
+$router->post('/admin/site-ayarlar/onesignal-kaydet', 'Admin\SiteAyarlarController@oneSignalKaydet');
+$router->post('/admin/site-ayarlar/genel-kaydet', 'Admin\SiteAyarlarController@siteAyarlarKaydet');
+$router->post('/admin/site-ayarlar/iletisim-kaydet', 'Admin\SiteAyarlarController@siteAyarlarKaydet');
+$router->post('/admin/site-ayarlar/sosyal-kaydet', 'Admin\SiteAyarlarController@siteAyarlarKaydet');
+
+// OneSignal rotaları (eski)
 $router->get('/admin/onesignal/ayarlar', 'Admin\OneSignalController@ayarlar');
 $router->post('/admin/onesignal/kaydet', 'Admin\OneSignalController@kaydet');
 
@@ -94,6 +101,11 @@ $router->get('/admin/bildirim_gonder', 'Admin\BildirimController@bildirimiGonder
 $router->post('/admin/bildirim_gonder', 'Admin\BildirimController@bildirimiGonder');
 $router->get('/admin/bildirimler/sil/(:num)', 'Admin\BildirimController@delete');
 $router->get('/admin/bildirimler/okundu/(:num)', 'Admin\BildirimController@markAsRead');
+$router->get('/admin/bildirimler/detay/(:num)', 'Admin\BildirimController@detay');
+
+// OneSignal Test Routes
+$router->get('/admin/onesignal-test', 'Admin\OneSignalTestController@index');
+$router->post('/admin/onesignal-test/gonder', 'Admin\OneSignalTestController@testGonder');
 
 $router->get('admin/fatura_talep/listesi', 'Admin\FaturaTalepController@listesi');
 $router->get('admin/fatura_talep/duzenle/{id}', 'Admin\FaturaTalepController@duzenle');

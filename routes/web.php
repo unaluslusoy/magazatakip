@@ -31,9 +31,15 @@ $router->post('ciro/duzenle/{id}', 'Kullanici\Ciro\CiroController@duzenle');
 $router->post('ciro/sil/{id}', 'Kullanici\Ciro\CiroController@sil');
 
 // Kullanıcı Profil Rotaları
-$router->get('profil', 'Kullanici\ProfilController@index');
-$router->get('profil/guncelle', 'Kullanici\ProfilController@guncelle');
-$router->post('profil/guncelle', 'Kullanici\ProfilController@guncelle');
+$router->get('kullanici/profil', 'Kullanici\ProfilController@index');
+$router->post('kullanici/profil/guncelle', 'Kullanici\ProfilController@guncelle');
+$router->post('kullanici/profil/sifre-degistir', 'Kullanici\ProfilController@sifreDegistir');
+
+// Kullanıcı Bildirim Routes
+$router->get('kullanici/bildirimler', 'Kullanici\BildirimController@index');
+$router->get('kullanici/bildirimler/detay/(:num)', 'Kullanici\BildirimController@detay');
+$router->post('kullanici/bildirimler/okundu/(:num)', 'Kullanici\BildirimController@markAsReadAjax');
+$router->get('kullanici/bildirimler/unread-count', 'Kullanici\BildirimController@getUnreadCount');
 
 // Token Rotaları
 $router->post('/token/kaydet', 'Kullanici\TokenController@kaydet');
