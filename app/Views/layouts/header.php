@@ -21,8 +21,8 @@
 	<link href="/public/css/style.bundle.css?v=<?php echo time(); ?>" rel="stylesheet" type="text/css" />
     <script src="/public/plugins/global/plugins.bundle.js?v=<?php echo time(); ?>"></script>
 	<script> if (window.top != window.self) { window.top.location.replace(window.self.location.href); }</script>
-    <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
-    <script src="/public/js/token-registration.js"></script>
+    <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" defer></script>
+    <script src="/public/js/token-registration.js" defer></script>
 
 </head>
 <body id="kt_app_body" data-kt-app-sidebar-enabled="true" data-kt-app-sidebar-fixed="true" data-kt-app-sidebar-push-header="true" data-kt-app-sidebar-push-toolbar="true" data-kt-app-sidebar-push-footer="true" class="app-default">

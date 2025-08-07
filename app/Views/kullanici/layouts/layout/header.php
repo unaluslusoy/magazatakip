@@ -37,6 +37,9 @@
     <!-- OneSignal SDK -->
     <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" defer></script>
     
+    <!-- Token Registration -->
+    <script src="/public/js/token-registration.js" defer></script>
+    
     <!-- PWA Core Scripts -->
     <script defer>
         // DOM ready kontrolü

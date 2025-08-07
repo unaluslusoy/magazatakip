@@ -1,27 +1,62 @@
 // OneSignal SDK yüklenme kontrolü
-function waitForOneSignal(callback, timeout = 10000) {
+function waitForOneSignal(callback, timeout = 15000) {
     const startTime = Date.now();
     
     function checkOneSignal() {
+        console.log('OneSignal kontrol ediliyor...', typeof window.OneSignal);
+        
         if (window.OneSignal && typeof window.OneSignal.init === 'function') {
+            console.log('OneSignal SDK bulundu, başlatılıyor...');
             callback();
         } else if (Date.now() - startTime < timeout) {
-            setTimeout(checkOneSignal, 100);
+            setTimeout(checkOneSignal, 500);
         } else {
-            console.warn('OneSignal SDK yüklenemedi, timeout');
+            console.error('OneSignal SDK yüklenemedi, timeout');
+            // Fallback: Manuel izin isteme
+            requestNotificationPermissionManually();
         }
     }
     
     checkOneSignal();
 }
 
+// Manuel bildirim izni isteme
+function requestNotificationPermissionManually() {
+    console.log('Manuel bildirim izni isteniyor...');
+    
+    if ('Notification' in window) {
+        if (Notification.permission === 'default') {
+            Notification.requestPermission().then(permission => {
+                console.log('Bildirim izni:', permission);
+                if (permission === 'granted') {
+                    console.log('Bildirim izni verildi, OneSignal yeniden deneniyor...');
+                    // OneSignal'ı tekrar dene
+                    setTimeout(() => {
+                        if (window.OneSignal) {
+                            initializeOneSignal();
+                        }
+                    }, 1000);
+                }
+            });
+        } else if (Notification.permission === 'granted') {
+            console.log('Bildirim izni zaten verilmiş');
+        } else {
+            console.log('Bildirim izni reddedilmiş');
+        }
+    }
+}
+
 // OneSignal başlatma fonksiyonu
 async function initializeOneSignal() {
     try {
+        console.log('OneSignal başlatılıyor...');
+        
         // OneSignal yapılandırmasını al
         const response = await fetch('/api/onesignal/config');
+        console.log('OneSignal config response:', response);
+        
         if (!response.ok) {
-            throw new Error('OneSignal yapılandırması alınamadı');
+            throw new Error(`OneSignal yapılandırması alınamadı: ${response.status}`);
         }
         
         const config = await response.json();
@@ -33,14 +68,17 @@ async function initializeOneSignal() {
         
         // OneSignal'ı başlat
         window.OneSignal = window.OneSignal || [];
+        
         OneSignal.push(function() {
+            console.log('OneSignal.push çalıştı');
+            
             OneSignal.init({
                 appId: config.data.app_id,
                 allowLocalhostAsSecureOrigin: true,
                 notifyButton: {
                     enable: false
                 },
-                autoRegister: false,
+                autoRegister: true, // Otomatik kayıt aktif
                 autoResubscribe: true,
                 persistNotification: false,
                 promptOptions: {
@@ -56,7 +94,7 @@ async function initializeOneSignal() {
                                 },
                                 delay: {
                                     pageViews: 1,
-                                    timeDelay: 20
+                                    timeDelay: 10 // Daha hızlı
                                 }
                             }
                         ]
@@ -74,7 +112,13 @@ async function initializeOneSignal() {
                 console.log('Push notifications enabled:', isEnabled);
                 if (isEnabled) {
                     // Kullanıcı zaten izin vermiş, token'ı al ve kaydet
-                    getAndSendToken();
+                    setTimeout(() => {
+                        getAndSendToken();
+                    }, 1000);
+                } else {
+                    console.log('Bildirim izni verilmemiş, izin isteniyor...');
+                    // İzin iste
+                    OneSignal.registerForPushNotifications();
                 }
             });
             
@@ -82,24 +126,43 @@ async function initializeOneSignal() {
             OneSignal.on('subscriptionChange', function (isSubscribed) {
                 console.log('Subscription changed:', isSubscribed);
                 if (isSubscribed) {
-                    getAndSendToken();
+                    setTimeout(() => {
+                        getAndSendToken();
+                    }, 1000);
                 } else {
                     // İzin iptal edildi, token'ı sil
                     removeTokenFromServer();
+                }
+            });
+            
+            // Bildirim izni verildiğinde
+            OneSignal.on('notificationPermissionChange', function(permissionChange) {
+                console.log('Notification permission changed:', permissionChange);
+                if (permissionChange.current === 'granted') {
+                    setTimeout(() => {
+                        getAndSendToken();
+                    }, 1000);
                 }
             });
         });
         
     } catch (error) {
         console.error('OneSignal başlatma hatası:', error);
+        // Fallback: Manuel izin isteme
+        requestNotificationPermissionManually();
     }
 }
 
 // OneSignal SDK hazır olduğunda başlat
-waitForOneSignal(initializeOneSignal);
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM yüklendi, OneSignal bekleniyor...');
+    waitForOneSignal(initializeOneSignal);
+});
 
 async function getAndSendToken() {
     try {
+        console.log('Token alınıyor...');
+        
         const userId = await OneSignal.getUserId();
         console.log('OneSignal UserId:', userId);
         
@@ -107,7 +170,11 @@ async function getAndSendToken() {
             // Token'ı sunucuya gönder
             await sendTokenToServer(userId);
         } else {
-            console.log('UserId alınamadı');
+            console.log('UserId alınamadı, tekrar deneniyor...');
+            // Tekrar dene
+            setTimeout(() => {
+                getAndSendToken();
+            }, 2000);
         }
     } catch (error) {
         console.error('Token alma hatası:', error);
@@ -116,10 +183,11 @@ async function getAndSendToken() {
 
 async function sendTokenToServer(token) {
     try {
-        console.log('Sending token to server:', token);
+        console.log('Token sunucuya gönderiliyor:', token);
         
         // Platformu tespit et
         const platform = detectPlatform();
+        console.log('Platform tespit edildi:', platform);
         
         const response = await fetch('/api/device/token/save', {
             method: 'POST',
@@ -170,6 +238,7 @@ async function removeTokenFromServer() {
 
 function detectPlatform() {
     const userAgent = navigator.userAgent.toLowerCase();
+    console.log('User Agent:', navigator.userAgent);
     
     if (/android/.test(userAgent)) {
         return 'Android';
@@ -188,6 +257,8 @@ function detectPlatform() {
 
 // OneSignal event handlers
 function setupOneSignalEventHandlers() {
+    console.log('OneSignal event handlers kuruluyor...');
+    
     if (window.OneSignal && typeof window.OneSignal.push === 'function') {
         OneSignal.push(function() {
             OneSignal.on('notificationDisplay', function(event) {
