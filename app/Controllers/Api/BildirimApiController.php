@@ -1,7 +1,7 @@
 <?php
 namespace app\Controllers\Api;
 
-use app\Models\Kullanici\BildirimModel;
+use app\Models\Bildirim;
 use core\Controller;
 
 class BildirimApiController extends Controller {
@@ -9,7 +9,7 @@ class BildirimApiController extends Controller {
     private $bildirimModel;
     
     public function __construct() {
-        $this->bildirimModel = new BildirimModel();
+        $this->bildirimModel = new Bildirim();
         
         // API için CORS headers
         header('Access-Control-Allow-Origin: *');
@@ -46,7 +46,7 @@ class BildirimApiController extends Controller {
                 return;
             }
             
-            $bildirimListesi = $this->bildirimModel->getAll($_SESSION['user_id']);
+            $bildirimListesi = $this->bildirimModel->getKullaniciBildirimleri($_SESSION['user_id'], 100);
             
             $response = [
                 'success' => true,
@@ -83,7 +83,7 @@ class BildirimApiController extends Controller {
                 return;
             }
             
-            $bildirim = $this->bildirimModel->get($id, $_SESSION['user_id']);
+            $bildirim = $this->bildirimModel->getKullaniciBildirimDetay($id, $_SESSION['user_id']);
             
             if (!$bildirim) {
                 http_response_code(404);
@@ -129,7 +129,7 @@ class BildirimApiController extends Controller {
                 return;
             }
             
-            $result = $this->bildirimModel->markAsRead($id, $_SESSION['user_id']);
+            $result = $this->bildirimModel->markKullaniciBildirimAsRead($id, $_SESSION['user_id']);
             
             if ($result) {
                 $response = [
@@ -217,7 +217,7 @@ class BildirimApiController extends Controller {
                 return;
             }
             
-            $result = $this->bildirimModel->delete($id, $_SESSION['user_id']);
+            $result = $this->bildirimModel->deleteBildirim($id);
             
             if ($result) {
                 $response = [

@@ -278,4 +278,66 @@ class Bildirim extends Model
             return false;
         }
     }
+
+    /**
+     * Tüm bildirimleri okundu olarak işaretle
+     */
+    public function markAllAsRead($kullaniciId)
+    {
+        try {
+            $stmt = $this->db->prepare("UPDATE {$this->table} SET okundu = 1, okunma_tarihi = NOW() WHERE hedef_kullanici_id = :kullanici_id AND okundu = 0");
+            return $stmt->execute([':kullanici_id' => $kullaniciId]);
+        } catch (\PDOException $e) {
+            error_log("Tüm bildirimler okundu işaretlenirken hata: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Okundu sayısını getir
+     */
+    public function getReadCount($kullaniciId)
+    {
+        try {
+            $stmt = $this->db->prepare("SELECT COUNT(*) as count FROM {$this->table} WHERE hedef_kullanici_id = :kullanici_id AND okundu = 1");
+            $stmt->execute([':kullanici_id' => $kullaniciId]);
+            $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+            return (int)$result['count'];
+        } catch (\PDOException $e) {
+            error_log("Okundu bildirim sayısı alınırken hata: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Toplam sayıyı getir
+     */
+    public function getTotalCount($kullaniciId)
+    {
+        try {
+            $stmt = $this->db->prepare("SELECT COUNT(*) as count FROM {$this->table} WHERE hedef_kullanici_id = :kullanici_id");
+            $stmt->execute([':kullanici_id' => $kullaniciId]);
+            $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+            return (int)$result['count'];
+        } catch (\PDOException $e) {
+            error_log("Toplam bildirim sayısı alınırken hata: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Bugünkü sayıyı getir
+     */
+    public function getTodayCount($kullaniciId)
+    {
+        try {
+            $stmt = $this->db->prepare("SELECT COUNT(*) as count FROM {$this->table} WHERE hedef_kullanici_id = :kullanici_id AND DATE(gonderim_tarihi) = CURDATE()");
+            $stmt->execute([':kullanici_id' => $kullaniciId]);
+            $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+            return (int)$result['count'];
+        } catch (\PDOException $e) {
+            error_log("Bugünkü bildirim sayısı alınırken hata: " . $e->getMessage());
+            return 0;
+        }
+    }
 }
