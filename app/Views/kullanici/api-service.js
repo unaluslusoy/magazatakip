@@ -307,6 +307,32 @@ class OneSignalAyarlarApiService extends ApiService {
 }
 
 /**
+ * Test Bildirimi API Service
+ */
+class TestBildirimApiService extends ApiService {
+    constructor() {
+        super();
+        this.endpoint = '/notification';
+    }
+
+    async sendTestNotification(title = 'Test Bildirimi', message = 'Bu bir test bildirimidir.', url = null) {
+        return await this.post(`${this.endpoint}/test`, {
+            title: title,
+            message: message,
+            url: url
+        });
+    }
+
+    async sendTestNotificationToAll(title = 'Toplu Test Bildirimi', message = 'Bu bir toplu test bildirimidir.', url = null) {
+        return await this.post(`${this.endpoint}/test-all`, {
+            title: title,
+            message: message,
+            url: url
+        });
+    }
+}
+
+/**
  * Yardımcı fonksiyonlar
  */
 class ApiHelpers {
@@ -461,4 +487,5 @@ window.isEmriApiService = new IsEmriApiService();
 window.bildirimApiService = new BildirimApiService();
 window.cihazTokenApiService = new CihazTokenApiService();
 window.oneSignalAyarlarApiService = new OneSignalAyarlarApiService();
+window.testBildirimApiService = new TestBildirimApiService();
 window.apiHelpers = ApiHelpers; 

@@ -80,4 +80,8 @@ $apiRouter->put('api/device/notification-permission', 'Api\CihazTokenController@
 $apiRouter->get('api/onesignal/config', 'Api\OneSignalAyarlarController@getOneSignalConfig');
 $apiRouter->get('api/onesignal/status', 'Api\OneSignalAyarlarController@checkOneSignalStatus');
 
+// Test Bildirimi API Rotaları
+$apiRouter->post('api/notification/test', 'Api\TestBildirimController@sendTestNotification');
+$apiRouter->post('api/notification/test-all', 'Api\TestBildirimController@sendTestNotificationToAll');
+
 return $apiRouter;

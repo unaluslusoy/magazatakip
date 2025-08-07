@@ -143,6 +143,7 @@
                 this.deviceTokenService = window.deviceTokenService;
                 this.apiService = window.apiService;
                 this.oneSignalAyarlarApiService = window.oneSignalAyarlarApiService;
+                this.testBildirimApiService = window.testBildirimApiService;
                 this.init();
             }
             
@@ -359,20 +360,22 @@
                 try {
                     this.log('Test bildirimi gönderiliyor...');
                     
-                    // Test bildirimi gönder (API endpoint'i gerekli)
-                    const response = await this.apiService.post('/api/notification/test', {
-                        title: 'Test Bildirimi',
-                        message: 'Bu bir test bildirimidir.',
-                        url: window.location.href
-                    });
+                    const response = await this.testBildirimApiService.sendTestNotification(
+                        'Test Bildirimi',
+                        'Bu bir test bildirimidir. Sistem çalışıyor!',
+                        window.location.href
+                    );
                     
                     if (response.success) {
-                        this.log('Test bildirimi gönderildi');
+                        this.log('Test bildirimi başarıyla gönderildi');
+                        alert('Test bildirimi başarıyla gönderildi!');
                     } else {
                         this.log('Test bildirimi gönderilemedi: ' + response.message);
+                        alert('Test bildirimi gönderilemedi: ' + response.message);
                     }
                 } catch (error) {
                     this.log('Hata: ' + error.message);
+                    alert('Test bildirimi hatası: ' + error.message);
                 }
             }
             
