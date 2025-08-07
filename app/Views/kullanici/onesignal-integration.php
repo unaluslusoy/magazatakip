@@ -142,19 +142,93 @@
             constructor() {
                 this.deviceTokenService = window.deviceTokenService;
                 this.apiService = window.apiService;
+                this.oneSignalAyarlarApiService = window.oneSignalAyarlarApiService;
                 this.init();
             }
             
             async init() {
                 this.log('OneSignal entegrasyonu başlatılıyor...');
                 
+                // OneSignal durumunu kontrol et
+                await this.checkOneSignalStatus();
+                
                 // Event listener'ları ekle
                 this.setupEventListeners();
                 
-                // Durumu kontrol et
+                // Cihaz durumunu kontrol et
                 await this.checkNotificationStatus();
                 
                 this.log('OneSignal entegrasyonu başlatıldı');
+            }
+            
+            async checkOneSignalStatus() {
+                try {
+                    this.log('OneSignal durumu kontrol ediliyor...');
+                    
+                    const response = await this.oneSignalAyarlarApiService.getStatus();
+                    
+                    if (response.success) {
+                        const status = response.data;
+                        this.log(`OneSignal Durumu: Yapılandırılmış=${status.configured}, Geçerli=${status.valid}`);
+                        
+                        if (!status.configured) {
+                            this.showOneSignalNotConfigured();
+                            return false;
+                        }
+                        
+                        if (!status.valid) {
+                            this.showOneSignalInvalid();
+                            return false;
+                        }
+                        
+                        this.log('OneSignal yapılandırması geçerli');
+                        return true;
+                    } else {
+                        this.log('OneSignal durumu kontrol edilemedi: ' + response.message);
+                        this.showOneSignalError();
+                        return false;
+                    }
+                } catch (error) {
+                    this.log('OneSignal durum kontrolü hatası: ' + error.message);
+                    this.showOneSignalError();
+                    return false;
+                }
+            }
+            
+            showOneSignalNotConfigured() {
+                const statusDiv = document.getElementById('notification-status');
+                statusDiv.className = 'notification-status status-disabled';
+                statusDiv.innerHTML = `
+                    <div class="text-center">
+                        <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+                        <h4 class="mt-2">OneSignal Yapılandırılmamış</h4>
+                        <p>OneSignal ayarları yapılandırılmamış. Lütfen yönetici ile iletişime geçin.</p>
+                    </div>
+                `;
+            }
+            
+            showOneSignalInvalid() {
+                const statusDiv = document.getElementById('notification-status');
+                statusDiv.className = 'notification-status status-disabled';
+                statusDiv.innerHTML = `
+                    <div class="text-center">
+                        <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+                        <h4 class="mt-2">OneSignal Ayarları Geçersiz</h4>
+                        <p>OneSignal App ID veya API Key eksik. Lütfen yönetici ile iletişime geçin.</p>
+                    </div>
+                `;
+            }
+            
+            showOneSignalError() {
+                const statusDiv = document.getElementById('notification-status');
+                statusDiv.className = 'notification-status status-disabled';
+                statusDiv.innerHTML = `
+                    <div class="text-center">
+                        <i class="bi bi-x-circle" style="font-size: 2rem;"></i>
+                        <h4 class="mt-2">OneSignal Bağlantı Hatası</h4>
+                        <p>OneSignal ayarları kontrol edilemedi.</p>
+                    </div>
+                `;
             }
             
             setupEventListeners() {

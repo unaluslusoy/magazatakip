@@ -6,12 +6,15 @@
 class DeviceTokenService {
     constructor() {
         this.apiService = window.apiService;
-        this.oneSignalAppId = 'YOUR_ONESIGNAL_APP_ID'; // OneSignal App ID'nizi buraya ekleyin
+        this.oneSignalAppId = null;
         this.init();
     }
     
     async init() {
         try {
+            // OneSignal yapılandırmasını al
+            await this.loadOneSignalConfig();
+            
             // OneSignal'ı başlat
             await this.initializeOneSignal();
             
@@ -25,11 +28,36 @@ class DeviceTokenService {
     }
     
     /**
+     * OneSignal yapılandırmasını veritabanından al
+     */
+    async loadOneSignalConfig() {
+        try {
+            const response = await this.apiService.get('/api/onesignal/config');
+            
+            if (response.success && response.data.app_id) {
+                this.oneSignalAppId = response.data.app_id;
+                console.log('OneSignal App ID yüklendi:', this.oneSignalAppId);
+            } else {
+                console.warn('OneSignal App ID bulunamadı veya yapılandırılmamış');
+                throw new Error('OneSignal yapılandırması bulunamadı');
+            }
+        } catch (error) {
+            console.error('OneSignal yapılandırması yükleme hatası:', error);
+            throw error;
+        }
+    }
+    
+    /**
      * OneSignal'ı başlat
      */
     async initializeOneSignal() {
         if (typeof OneSignal === 'undefined') {
-            console.warn('OneSignal yüklenmemiş');
+            console.warn('OneSignal SDK yüklenmemiş');
+            return;
+        }
+        
+        if (!this.oneSignalAppId) {
+            console.error('OneSignal App ID mevcut değil');
             return;
         }
         
@@ -67,6 +95,8 @@ class DeviceTokenService {
             
             // OneSignal event listener'larını ekle
             this.setupOneSignalListeners();
+            
+            console.log('OneSignal başarıyla başlatıldı');
             
         } catch (error) {
             console.error('OneSignal başlatma hatası:', error);

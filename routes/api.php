@@ -76,4 +76,8 @@ $apiRouter->delete('api/device/token/remove', 'Api\CihazTokenController@removeDe
 $apiRouter->get('api/device/info', 'Api\CihazTokenController@getDeviceInfo');
 $apiRouter->put('api/device/notification-permission', 'Api\CihazTokenController@updateNotificationPermission');
 
+// OneSignal Ayarları API Rotaları
+$apiRouter->get('api/onesignal/config', 'Api\OneSignalAyarlarController@getOneSignalConfig');
+$apiRouter->get('api/onesignal/status', 'Api\OneSignalAyarlarController@checkOneSignalStatus');
+
 return $apiRouter;

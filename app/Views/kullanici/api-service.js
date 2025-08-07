@@ -289,6 +289,24 @@ class CihazTokenApiService extends ApiService {
 }
 
 /**
+ * OneSignal Ayarları API Service
+ */
+class OneSignalAyarlarApiService extends ApiService {
+    constructor() {
+        super();
+        this.endpoint = '/onesignal';
+    }
+
+    async getConfig() {
+        return await this.get(`${this.endpoint}/config`);
+    }
+
+    async getStatus() {
+        return await this.get(`${this.endpoint}/status`);
+    }
+}
+
+/**
  * Yardımcı fonksiyonlar
  */
 class ApiHelpers {
@@ -441,5 +459,6 @@ window.ciroApiService = new CiroApiService();
 window.giderApiService = new GiderApiService();
 window.isEmriApiService = new IsEmriApiService();
 window.bildirimApiService = new BildirimApiService();
-window.cihazTokenApiService = new CihazTokenApiService(); // Cihaz Token API Service'i eklendi
+window.cihazTokenApiService = new CihazTokenApiService();
+window.oneSignalAyarlarApiService = new OneSignalAyarlarApiService();
 window.apiHelpers = ApiHelpers; 

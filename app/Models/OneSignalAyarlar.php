@@ -8,67 +8,98 @@ class OneSignalAyarlar extends Model
 {
     protected $table = 'onesignal_ayarlar';
 
+    /**
+     * OneSignal ayarlarını getir
+     */
     public function getAyarlar()
     {
         try {
-            $stmt = $this->db->query("SELECT * FROM {$this->table} LIMIT 1");
+            $stmt = $this->db->query("SELECT * FROM {$this->table} ORDER BY id DESC LIMIT 1");
             return $stmt->fetch(\PDO::FETCH_ASSOC);
         } catch (\PDOException $e) {
-            error_log("Veritabanından OneSignal ayarları getirilirken hata oluştu: " . $e->getMessage());
+            error_log("OneSignal ayarları alınırken hata: " . $e->getMessage());
             return false;
         }
     }
 
-    public function ayarlariGuncelle($ayarlar)
+    /**
+     * OneSignal App ID'yi getir
+     */
+    public function getAppId()
     {
         try {
-            // Önce mevcut kaydı kontrol edelim
-            $stmt = $this->db->prepare("SELECT COUNT(*) FROM {$this->table}");
-            $stmt->execute();
-            $count = $stmt->fetchColumn();
-
-            if ($count == 0) {
-                // Kayıt yoksa INSERT yapalım
-                $sql = "INSERT INTO {$this->table} (onesignal_app_id, onesignal_api_key, twilio_sid, twilio_token, twilio_phone, sendgrid_api_key, sendgrid_from_email) 
-                        VALUES (:onesignal_app_id, :onesignal_api_key, :twilio_sid, :twilio_token, :twilio_phone, :sendgrid_api_key, :sendgrid_from_email)";
-            } else {
-                // Kayıt varsa UPDATE yapalım
-                $sql = "UPDATE {$this->table} SET 
-                        onesignal_app_id = :onesignal_app_id,
-                        onesignal_api_key = :onesignal_api_key,
-                        twilio_sid = :twilio_sid,
-                        twilio_token = :twilio_token,
-                        twilio_phone = :twilio_phone,
-                        sendgrid_api_key = :sendgrid_api_key,
-                        sendgrid_from_email = :sendgrid_from_email
-                        WHERE id = 1";
-            }
-
-            $stmt = $this->db->prepare($sql);
-            $result = $stmt->execute($ayarlar);
-
-            if (!$result) {
-                // Hata loglaması yapalım
-                error_log("OneSignal ayarları güncellenirken hata oluştu: " . print_r($stmt->errorInfo(), true));
-            }
-
-            return $result;
-        } catch (\PDOException $e) {
-            error_log("OneSignal ayarları güncellenirken veritabanı hatası oluştu: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    public function getOneSignalAppId()
-    {
-        try {
-            $stmt = $this->db->prepare("SELECT onesignal_app_id FROM {$this->table} LIMIT 1");
-            $stmt->execute();
+            $stmt = $this->db->query("SELECT onesignal_app_id FROM {$this->table} ORDER BY id DESC LIMIT 1");
             $result = $stmt->fetch(\PDO::FETCH_ASSOC);
-            return $result['onesignal_app_id'] ?? null;
+            return $result ? $result['onesignal_app_id'] : null;
         } catch (\PDOException $e) {
-            error_log("Veritabanından OneSignal App ID getirilirken hata oluştu: " . $e->getMessage());
+            error_log("OneSignal App ID alınırken hata: " . $e->getMessage());
             return null;
         }
+    }
+
+    /**
+     * OneSignal API Key'i getir
+     */
+    public function getApiKey()
+    {
+        try {
+            $stmt = $this->db->query("SELECT onesignal_api_key FROM {$this->table} ORDER BY id DESC LIMIT 1");
+            $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+            return $result ? $result['onesignal_api_key'] : null;
+        } catch (\PDOException $e) {
+            error_log("OneSignal API Key alınırken hata: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Ayarları güncelle
+     */
+    public function updateAyarlar($data)
+    {
+        try {
+            $existing = $this->getAyarlar();
+            
+            if ($existing) {
+                // Mevcut ayarları güncelle
+                return $this->update($existing['id'], $data);
+            } else {
+                // Yeni ayar oluştur
+                return $this->create($data);
+            }
+        } catch (\PDOException $e) {
+            error_log("OneSignal ayarları güncellenirken hata: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Ayarların mevcut olup olmadığını kontrol et
+     */
+    public function ayarlarMevcut()
+    {
+        try {
+            $stmt = $this->db->query("SELECT COUNT(*) as count FROM {$this->table}");
+            $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+            return $result['count'] > 0;
+        } catch (\PDOException $e) {
+            error_log("OneSignal ayarları kontrol edilirken hata: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Geçerli OneSignal ayarlarını kontrol et
+     */
+    public function ayarlarGecerli()
+    {
+        $ayarlar = $this->getAyarlar();
+        
+        if (!$ayarlar) {
+            return false;
+        }
+        
+        // App ID ve API Key'in mevcut olup olmadığını kontrol et
+        return !empty($ayarlar['onesignal_app_id']) && !empty($ayarlar['onesignal_api_key']);
     }
 }
