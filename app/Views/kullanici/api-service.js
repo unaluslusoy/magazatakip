@@ -257,6 +257,38 @@ class BildirimApiService extends ApiService {
 }
 
 /**
+ * Cihaz Token API Service
+ */
+class CihazTokenApiService extends ApiService {
+    constructor() {
+        super();
+        this.endpoint = '/device';
+    }
+
+    async saveDeviceToken(deviceToken, platform, notificationPermission = true) {
+        return await this.post(`${this.endpoint}/token/save`, {
+            device_token: deviceToken,
+            platform: platform,
+            notification_permission: notificationPermission
+        });
+    }
+
+    async removeDeviceToken() {
+        return await this.delete(`${this.endpoint}/token/remove`);
+    }
+
+    async getDeviceInfo() {
+        return await this.get(`${this.endpoint}/info`);
+    }
+
+    async updateNotificationPermission(permission) {
+        return await this.put(`${this.endpoint}/notification-permission`, {
+            permission: permission
+        });
+    }
+}
+
+/**
  * Yardımcı fonksiyonlar
  */
 class ApiHelpers {
@@ -409,4 +441,5 @@ window.ciroApiService = new CiroApiService();
 window.giderApiService = new GiderApiService();
 window.isEmriApiService = new IsEmriApiService();
 window.bildirimApiService = new BildirimApiService();
+window.cihazTokenApiService = new CihazTokenApiService(); // Cihaz Token API Service'i eklendi
 window.apiHelpers = ApiHelpers; 

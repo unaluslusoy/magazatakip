@@ -70,4 +70,10 @@ $apiRouter->delete('api/bildirim/sil/{id}', 'Api\BildirimApiController@deleteBil
 $apiRouter->get('api/bildirim/okunmamis-sayi', 'Api\BildirimApiController@getUnreadCount');
 $apiRouter->get('api/bildirim/stats', 'Api\BildirimApiController@getBildirimStats');
 
+// Cihaz Token API Rotaları
+$apiRouter->post('api/device/token/save', 'Api\CihazTokenController@saveDeviceToken');
+$apiRouter->delete('api/device/token/remove', 'Api\CihazTokenController@removeDeviceToken');
+$apiRouter->get('api/device/info', 'Api\CihazTokenController@getDeviceInfo');
+$apiRouter->put('api/device/notification-permission', 'Api\CihazTokenController@updateNotificationPermission');
+
 return $apiRouter;
