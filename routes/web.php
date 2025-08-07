@@ -51,7 +51,6 @@ $router->get('kullanici/bildirimler/unread-count', 'Kullanici\BildirimController
 
 // Token Rotaları
 $router->post('/token/kaydet', 'Kullanici\TokenController@kaydet');
-$router->get('/token/onesignal-config', 'Kullanici\TokenController@getOneSignalConfig');
 
 // Fatura Talep Rotaları
 $router->get('fatura_talep/olustur', 'Kullanici\FaturaTalep\FaturaTalepController@olustur');
@@ -68,5 +67,12 @@ $router->post('gider/ekle', 'Kullanici\GiderController@ekle');
 $router->get('gider/duzenle/{id}', 'Kullanici\GiderController@duzenle');
 $router->post('gider/duzenle/{id}', 'Kullanici\GiderController@duzenle');
 $router->get('gider/sil/{id}', 'Kullanici\GiderController@sil');
+
+// Kullanıcı rotaları
+$router->get('/kullanici/anasayfa', 'Kullanici\AnasayfaController@index');
+$router->get('/kullanici/profil', 'Kullanici\ProfilController@index');
+$router->post('/kullanici/profil/guncelle', 'Kullanici\ProfilController@guncelle');
+$router->get('/kullanici/sifre-degistir', 'Kullanici\SifreController@index');
+$router->post('/kullanici/sifre-degistir', 'Kullanici\SifreController@degistir');
 
 // Diğer kullanıcı rotaları devam eder

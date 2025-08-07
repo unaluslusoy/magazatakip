@@ -85,16 +85,19 @@ $router->get('admin/geri_bildirimler/detay/{id}', 'Admin\GeriBildirimController@
 $router->get('admin/geri_bildirimler/sil/{id}', 'Admin\GeriBildirimController@sil');
 $router->post('admin/geri_bildirimler/guncelleDurum', 'Admin\GeriBildirimController@guncelleDurum');
 
-// Site Ayarları rotaları
+// Site ayarları rotaları
 $router->get('/admin/site-ayarlar', 'Admin\SiteAyarlarController@index');
+$router->post('/admin/site-ayarlar/kaydet', 'Admin\SiteAyarlarController@kaydet');
 $router->post('/admin/site-ayarlar/onesignal-kaydet', 'Admin\SiteAyarlarController@oneSignalKaydet');
-$router->post('/admin/site-ayarlar/genel-kaydet', 'Admin\SiteAyarlarController@siteAyarlarKaydet');
-$router->post('/admin/site-ayarlar/iletisim-kaydet', 'Admin\SiteAyarlarController@siteAyarlarKaydet');
-$router->post('/admin/site-ayarlar/sosyal-kaydet', 'Admin\SiteAyarlarController@siteAyarlarKaydet');
 
-// OneSignal rotaları (eski)
-$router->get('/admin/onesignal/ayarlar', 'Admin\OneSignalController@ayarlar');
-$router->post('/admin/onesignal/kaydet', 'Admin\OneSignalController@kaydet');
+// Bildirim rotaları
+$router->get('/admin/bildirimler', 'Admin\BildirimController@index');
+$router->get('/admin/bildirimler/ekle', 'Admin\BildirimController@ekle');
+$router->post('/admin/bildirimler/ekle', 'Admin\BildirimController@eklePost');
+$router->get('/admin/bildirimler/duzenle/{id}', 'Admin\BildirimController@duzenle');
+$router->post('/admin/bildirimler/duzenle/{id}', 'Admin\BildirimController@duzenlePost');
+$router->delete('/admin/bildirimler/sil/{id}', 'Admin\BildirimController@sil');
+$router->post('/admin/bildirimler/toplu-gonder', 'Admin\BildirimController@topluGonder');
 
 $router->post('/token/kaydet', 'TokenController@kaydet');
 $router->get('/token/onesignal-config', 'TokenController@getOneSignalConfig');
