@@ -1,6 +1,6 @@
 <?php
-require_once 'app/Views/kullanici/layout/header.php';
-require_once 'app/Views/kullanici/layout/navbar.php';
+require_once __DIR__ . '/layouts/layout/header.php';
+require_once __DIR__ . '/layouts/layout/navbar.php';
 ?>
 <div class="app-wrapper  flex-column flex-row-fluid " id="kt_app_wrapper">
     <!--begin::Main-->
@@ -214,5 +214,5 @@ require_once 'app/Views/kullanici/layout/navbar.php';
     <!--End::Main-->
 </div>
 <?php
-require_once 'app/Views/kullanici/layout/footer.php';
+require_once __DIR__ . '/layouts/layout/footer.php';
 ?>

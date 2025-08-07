@@ -2,9 +2,12 @@
 $title = "Bildirimlerim";
 $link = "Bildirimlerim";
 
-require_once 'app/Views/kullanici/layout/header.php';
-require_once 'app/Views/kullanici/layout/navbar.php';
+require_once __DIR__ . '/../layouts/layout/header.php';
+require_once __DIR__ . '/../layouts/layout/navbar.php';
 ?>
+
+<!-- API Service -->
+<script src="/app/Views/kullanici/api-service.js"></script>
 
 <?php if (isset($_SESSION['message']) && isset($_SESSION['message_type'])): ?>
     <div class="alert alert-<?= $_SESSION['message_type'] ?> alert-dismissible fade show" role="alert">
@@ -32,7 +35,7 @@ require_once 'app/Views/kullanici/layout/navbar.php';
                             </div>
                             <div>
                                 <div class="fs-6 text-gray-600">Toplam</div>
-                                <div class="fs-4 fw-bold text-gray-900"><?= $bildirimSayilari['toplam'] ?? 0 ?></div>
+                                <div class="fs-4 fw-bold text-gray-900" id="toplam-bildirim"><?= $bildirimSayilari['toplam'] ?? 0 ?></div>
                             </div>
                         </div>
                     </div>
@@ -50,7 +53,7 @@ require_once 'app/Views/kullanici/layout/navbar.php';
                             </div>
                             <div>
                                 <div class="fs-6 text-gray-600">Yeni</div>
-                                <div class="fs-4 fw-bold text-gray-900"><?= $bildirimSayilari['okunmamis'] ?? 0 ?></div>
+                                <div class="fs-4 fw-bold text-gray-900" id="okunmamis-bildirim"><?= $bildirimSayilari['okunmamis'] ?? 0 ?></div>
                             </div>
                         </div>
                     </div>
@@ -68,7 +71,7 @@ require_once 'app/Views/kullanici/layout/navbar.php';
                             </div>
                             <div>
                                 <div class="fs-6 text-gray-600">Okundu</div>
-                                <div class="fs-4 fw-bold text-gray-900"><?= $bildirimSayilari['okundu'] ?? 0 ?></div>
+                                <div class="fs-4 fw-bold text-gray-900" id="okundu-bildirim"><?= $bildirimSayilari['okundu'] ?? 0 ?></div>
                             </div>
                         </div>
                     </div>
@@ -86,7 +89,7 @@ require_once 'app/Views/kullanici/layout/navbar.php';
                             </div>
                             <div>
                                 <div class="fs-6 text-gray-600">Bugün</div>
-                                <div class="fs-4 fw-bold text-gray-900"><?= $bildirimSayilari['bugun'] ?? 0 ?></div>
+                                <div class="fs-4 fw-bold text-gray-900" id="bugun-bildirim"><?= $bildirimSayilari['bugun'] ?? 0 ?></div>
                             </div>
                         </div>
                     </div>
@@ -224,11 +227,8 @@ require_once 'app/Views/kullanici/layout/navbar.php';
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-8 text-center">
-                            <div class="symbol symbol-100px mb-4">
-                                <div class="symbol-label bg-light-muted">
-                                    <i class="ki-outline ki-notification-off fs-1 text-muted"></i>
-                                </div>
-                            </div>
+                            
+                        
                             <h3 class="text-muted mb-2">Henüz bildiriminiz bulunmuyor</h3>
                             <p class="text-muted fs-6">Yeni bildirimler geldiğinde burada görünecek.</p>
                         </div>
@@ -252,4 +252,98 @@ require_once 'app/Views/kullanici/layout/navbar.php';
 </div>
 <!--end::Content-->
 
-<?php require_once 'app/Views/kullanici/layout/footer.php'; ?> 
+<script>
+// API tabanlı bildirim yönetimi
+class BildirimManager {
+    constructor() {
+        this.apiService = window.bildirimApiService;
+        this.init();
+    }
+    
+    async init() {
+        await this.loadBildirimStats();
+        this.setupEventListeners();
+    }
+    
+    async loadBildirimStats() {
+        try {
+            const response = await this.apiService.getBildirimStats();
+            
+            if (response.success) {
+                this.updateBildirimStats(response.data);
+            } else {
+                console.error('Bildirim istatistikleri yüklenemedi:', response.message);
+            }
+        } catch (error) {
+            console.error('Bildirim istatistikleri yükleme hatası:', error);
+        }
+    }
+    
+    updateBildirimStats(stats) {
+        // İstatistik kartlarını güncelle
+        this.updateStatCard('toplam-bildirim', stats.toplam || 0);
+        this.updateStatCard('okunmamis-bildirim', stats.okunmamis || 0);
+        this.updateStatCard('okundu-bildirim', stats.okundu || 0);
+        this.updateStatCard('bugun-bildirim', stats.bugun || 0);
+    }
+    
+    updateStatCard(elementId, value) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.textContent = value;
+        }
+    }
+    
+    setupEventListeners() {
+        // Refresh butonu ekle
+        const refreshBtn = document.createElement('button');
+        refreshBtn.className = 'btn btn-sm btn-outline-primary ms-2';
+        refreshBtn.innerHTML = '<i class="ki-outline ki-refresh fs-7 me-1"></i> Yenile';
+        refreshBtn.onclick = () => this.loadBildirimStats();
+        
+        const header = document.querySelector('.card-title');
+        if (header) {
+            header.appendChild(refreshBtn);
+        }
+        
+        // Okundu işaretle butonlarını API ile entegre et
+        document.querySelectorAll('.mark-as-read').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const bildirimId = btn.getAttribute('data-id');
+                await this.markAsRead(bildirimId);
+            });
+        });
+    }
+    
+    async markAsRead(bildirimId) {
+        try {
+            const response = await this.apiService.markAsRead(bildirimId);
+            
+            if (response.success) {
+                // UI'yi güncelle
+                const bildirimCard = document.querySelector(`[data-bildirim-id="${bildirimId}"]`);
+                if (bildirimCard) {
+                    bildirimCard.classList.remove('border-warning');
+                    bildirimCard.classList.add('border-success');
+                }
+                
+                // İstatistikleri yenile
+                await this.loadBildirimStats();
+            } else {
+                alert('Bildirim işaretlenirken hata oluştu: ' + response.message);
+            }
+        } catch (error) {
+            console.error('Bildirim işaretleme hatası:', error);
+            alert('Bildirim işaretlenirken hata oluştu: ' + error.message);
+        }
+    }
+}
+
+// Sayfa yüklendiğinde BildirimManager'ı başlat
+document.addEventListener('DOMContentLoaded', function() {
+    window.bildirimManager = new BildirimManager();
+});
+</script>
+
+<?php require_once __DIR__ . '/../layouts/layout/footer.php'; ?> 

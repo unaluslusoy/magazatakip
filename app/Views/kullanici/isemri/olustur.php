@@ -1,5 +1,5 @@
-<?php require_once 'app/Views/kullanici/layout/header.php'; ?>
-<?php require_once 'app/Views/kullanici/layout/navbar.php'; ?>
+<?php require_once __DIR__ . '/../layouts/layout/header.php'; ?>
+<?php require_once __DIR__ . '/../layouts/layout/navbar.php'; ?>
 
 <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
     <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
@@ -304,4 +304,4 @@
     });
 </script>
 
-<?php require_once 'app/Views/kullanici/layout/footer.php'; ?>
+<?php require_once __DIR__ . '/../layouts/layout/footer.php'; ?>

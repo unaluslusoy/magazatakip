@@ -2,9 +2,12 @@
 $title = "Profilim";
 $link = "Profil";
 
-require_once 'app/Views/layouts/header.php';
-require_once 'app/Views/layouts/navbar.php';
+require_once __DIR__ . '/layouts/layout/header.php';
+require_once __DIR__ . '/layouts/layout/navbar.php';
 ?>
+
+<!-- API Service -->
+<script src="/app/Views/kullanici/api-service.js"></script>
 
 <?php if (isset($_SESSION['message']) && isset($_SESSION['message_type'])): ?>
     <div class="alert alert-<?= $_SESSION['message_type'] ?> alert-dismissible fade show" role="alert">
@@ -292,30 +295,107 @@ require_once 'app/Views/layouts/navbar.php';
 <!--end::Content-->
 
 <script>
-// Şifre değiştirme formu validasyonu
-document.addEventListener('DOMContentLoaded', function() {
-    const sifreForm = document.querySelector('form[action="/kullanici/profil/sifre-degistir"]');
-    if (sifreForm) {
-        sifreForm.addEventListener('submit', function(e) {
-            const yeniSifre = document.getElementById('yeni_sifre').value;
-            const yeniSifreTekrar = document.getElementById('yeni_sifre_tekrar').value;
-            
-            if (yeniSifre !== yeniSifreTekrar) {
-                e.preventDefault();
-                alert('Yeni şifreler eşleşmiyor!');
-                return false;
-            }
-            
-            if (yeniSifre.length < 6) {
-                e.preventDefault();
-                alert('Şifre en az 6 karakter olmalıdır!');
-                return false;
-            }
-        });
+// API tabanlı profil yönetimi
+class ProfilManager {
+    constructor() {
+        this.apiService = window.userApiService;
+        this.init();
     }
+    
+    async init() {
+        await this.loadProfilBilgileri();
+        this.setupEventListeners();
+    }
+    
+    async loadProfilBilgileri() {
+        try {
+            const response = await this.apiService.getProfile();
+            
+            if (response.success) {
+                this.updateProfilBilgileri(response.data);
+            } else {
+                console.error('Profil bilgileri yüklenemedi:', response.message);
+            }
+        } catch (error) {
+            console.error('Profil bilgileri yükleme hatası:', error);
+        }
+    }
+    
+    updateProfilBilgileri(profil) {
+        // Profil bilgilerini güncelle (eğer gerekirse)
+        const adSoyadElement = document.querySelector('.text-gray-800.text-hover-primary');
+        if (adSoyadElement && profil.ad && profil.soyad) {
+            adSoyadElement.textContent = `${profil.ad} ${profil.soyad}`;
+        }
+        
+        const emailElement = document.querySelector('.text-gray-500.fw-semibold');
+        if (emailElement && profil.email) {
+            emailElement.textContent = profil.email;
+        }
+    }
+    
+    setupEventListeners() {
+        // Şifre değiştirme formunu API ile entegre et
+        const sifreForm = document.querySelector('form[action="/kullanici/profil/sifre-degistir"]');
+        if (sifreForm) {
+            sifreForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await this.changePassword();
+            });
+        }
+        
+        // Refresh butonu ekle
+        const refreshBtn = document.createElement('button');
+        refreshBtn.className = 'btn btn-sm btn-outline-primary ms-2';
+        refreshBtn.innerHTML = '<i class="ki-outline ki-refresh fs-7 me-1"></i> Yenile';
+        refreshBtn.onclick = () => this.loadProfilBilgileri();
+        
+        const header = document.querySelector('.card-header');
+        if (header) {
+            header.appendChild(refreshBtn);
+        }
+    }
+    
+    async changePassword() {
+        const mevcutSifre = document.getElementById('mevcut_sifre').value;
+        const yeniSifre = document.getElementById('yeni_sifre').value;
+        const yeniSifreTekrar = document.getElementById('yeni_sifre_tekrar').value;
+        
+        if (yeniSifre !== yeniSifreTekrar) {
+            alert('Yeni şifreler eşleşmiyor!');
+            return;
+        }
+        
+        if (yeniSifre.length < 6) {
+            alert('Şifre en az 6 karakter olmalıdır!');
+            return;
+        }
+        
+        try {
+            const response = await this.apiService.changePassword(mevcutSifre, yeniSifre);
+            
+            if (response.success) {
+                alert('Şifre başarıyla değiştirildi!');
+                // Formu temizle
+                document.getElementById('mevcut_sifre').value = '';
+                document.getElementById('yeni_sifre').value = '';
+                document.getElementById('yeni_sifre_tekrar').value = '';
+            } else {
+                alert('Şifre değiştirme hatası: ' + response.message);
+            }
+        } catch (error) {
+            console.error('Şifre değiştirme hatası:', error);
+            alert('Şifre değiştirme hatası: ' + error.message);
+        }
+    }
+}
+
+// Sayfa yüklendiğinde ProfilManager'ı başlat
+document.addEventListener('DOMContentLoaded', function() {
+    window.profilManager = new ProfilManager();
 });
 </script>
 
-<?php require_once 'app/Views/layouts/footer.php'; ?>
+<?php require_once __DIR__ . '/layouts/layout/footer.php'; ?>
 
 

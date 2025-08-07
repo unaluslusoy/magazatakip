@@ -1,4 +1,10 @@
 <?php
+// Veritabanı sabitleri - sadece bir kez tanımla
+if (!defined('DB_HOST')) define('DB_HOST', 'localhost');
+if (!defined('DB_NAME')) define('DB_NAME', 'magazatakip_pg');
+if (!defined('DB_USER')) define('DB_USER', 'magazatakip_pg');
+if (!defined('DB_PASS')) define('DB_PASS', 'Magaza.123!');
+
 return [
 'host' => 'localhost',
 'dbname' => 'magazatakip_pg',

@@ -1,6 +1,210 @@
 <?php
-require_once 'app/Views/kullanici/layout/header.php';
-require_once 'app/Views/kullanici/layout/navbar.php';
+require_once __DIR__ . '/../layouts/layout/header.php';
+require_once __DIR__ . '/../layouts/layout/navbar.php';
+
+// Önbellek sorununu önlemek için unique timestamp
+$timestamp = time();
+?>
+
+    <!-- Önbellek önleme meta tag'leri -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0, private">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="-1">
+    <meta http-equiv="Last-Modified" content="<?= gmdate('D, d M Y H:i:s') ?> GMT">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- API Service -->
+    <script src="/app/Views/kullanici/api-service.js"></script>
+    
+    <script>
+        // API tabanlı ciro yönetimi
+        class CiroManager {
+            constructor() {
+                this.apiService = window.ciroApiService;
+                this.init();
+            }
+            
+            async init() {
+                await this.loadCiroListesi();
+                this.setupEventListeners();
+            }
+            
+            async loadCiroListesi() {
+                try {
+                    const loadingDiv = document.getElementById('loading-indicator');
+                    if (loadingDiv) loadingDiv.style.display = 'block';
+                    
+                    const response = await this.apiService.getCiroListesi();
+                    
+                    if (response.success) {
+                        this.renderCiroListesi(response.data);
+                        this.updateDebugInfo(response.count, response.timestamp);
+                    } else {
+                        this.showError('Veri yükleme hatası: ' + response.message);
+                    }
+                } catch (error) {
+                    console.error('Ciro listesi yükleme hatası:', error);
+                    this.showError('Veri yükleme hatası: ' + error.message);
+                } finally {
+                    const loadingDiv = document.getElementById('loading-indicator');
+                    if (loadingDiv) loadingDiv.style.display = 'none';
+                }
+            }
+            
+            renderCiroListesi(ciroListesi) {
+                const tbody = document.querySelector('#kt_ecommerce_products_table tbody');
+                if (!tbody) return;
+                
+                if (ciroListesi.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td class="text-center" colspan="20">
+                                <div class="d-flex flex-column align-items-center py-10">
+                                    <i class="ki-outline ki-information-3 fs-3x text-muted mb-5"></i>
+                                    <span class="text-muted fw-semibold">Henüz ciro kaydı bulunmuyor</span>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                tbody.innerHTML = ciroListesi.map((ciro, index) => `
+                    <tr class="${index % 2 == 0 ? 'table-row-light' : 'table-row-dark'}">
+                        <td>
+                            <div class="form-check form-check-sm form-check-custom form-check-solid">
+                                <input class="form-check-input" type="checkbox" value="${ciro.id}">
+                            </div>
+                        </td>
+                        <td class="text-start">${ciro.magaza_adi || ciro.magaza_id}</td>
+                        <td class="text-end">${this.formatDate(ciro.ekleme_tarihi)}</td>
+                        <td class="text-end">${this.formatDate(ciro.gun)}</td>
+                        <td class="text-end fw-bold text-success">${this.formatMoney(ciro.nakit)}</td>
+                        <td class="text-end fw-bold text-primary">${this.formatMoney(ciro.kredi_karti)}</td>
+                        <td class="text-end">${this.formatMoney(ciro.carliston)}</td>
+                        <td class="text-end">${this.formatMoney(ciro.getir_carsi)}</td>
+                        <td class="text-end">${this.formatMoney(ciro.trendyolgo)}</td>
+                        <td class="text-end">${this.formatMoney(ciro.multinet)}</td>
+                        <td class="text-end">${this.formatMoney(ciro.sodexo)}</td>
+                        <td class="text-end">${this.formatMoney(ciro.edenred)}</td>
+                        <td class="text-end">${this.formatMoney(ciro.setcard)}</td>
+                        <td class="text-end">${this.formatMoney(ciro.tokenflex)}</td>
+                        <td class="text-end">${this.formatMoney(ciro.iwallet)}</td>
+                        <td class="text-end">${this.formatMoney(ciro.metropol)}</td>
+                        <td class="text-end">${this.formatMoney(ciro.ticket)}</td>
+                        <td class="text-end">${this.formatMoney(ciro.didi)}</td>
+                        <td class="text-end fw-bold fs-6 text-success">${this.formatMoney(ciro.toplam)}</td>
+                        <td class="text-end">
+                            <a href="/ciro/duzenle/${ciro.id}" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1" title="Düzenle">
+                                <i class="ki-outline ki-pencil fs-2"></i>
+                            </a>
+                            <button type="button" class="btn btn-icon btn-bg-light btn-active-color-danger btn-sm" 
+                                onclick="ciroManager.deleteCiro(${ciro.id})" title="Sil">
+                                <i class="ki-outline ki-trash fs-2"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+            
+            updateDebugInfo(count, timestamp) {
+                // Debug bilgisini kaldır - kullanıcı görmesin
+                const debugDiv = document.getElementById('debug-info');
+                if (debugDiv) {
+                    debugDiv.innerHTML = '';
+                }
+            }
+            
+            async deleteCiro(id) {
+                if (!confirm('Bu ciro kaydını silmek istediğinizden emin misiniz?')) {
+                    return;
+                }
+                
+                try {
+                    const response = await this.apiService.deleteCiro(id);
+                    
+                    if (response.success) {
+                        this.showSuccess('Ciro kaydı başarıyla silindi');
+                        await this.loadCiroListesi(); // Listeyi yenile
+                    } else {
+                        this.showError('Silme hatası: ' + response.message);
+                    }
+                } catch (error) {
+                    console.error('Silme hatası:', error);
+                    this.showError('Silme hatası: ' + error.message);
+                }
+            }
+            
+            setupEventListeners() {
+                // Refresh butonu
+                const refreshBtn = document.querySelector('button[onclick="forceRefresh()"]');
+                if (refreshBtn) {
+                    refreshBtn.onclick = () => this.loadCiroListesi();
+                }
+            }
+            
+            formatMoney(value) {
+                if (!value || value == 0) return '0,00 ₺';
+                return new Intl.NumberFormat('tr-TR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(value) + ' ₺';
+            }
+            
+            formatDate(dateString) {
+                if (!dateString) return '';
+                const date = new Date(dateString);
+                return date.toLocaleDateString('tr-TR');
+            }
+            
+            showSuccess(message) {
+                this.showAlert(message, 'success');
+            }
+            
+            showError(message) {
+                this.showAlert(message, 'danger');
+            }
+            
+            showAlert(message, type) {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert alert-${type} alert-dismissible fade show mb-4`;
+                alertDiv.innerHTML = `
+                    <i class="ki-outline ki-${type === 'success' ? 'check-circle' : 'cross-circle'} fs-2 me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                
+                const container = document.querySelector('.card-body');
+                if (container) {
+                    container.insertBefore(alertDiv, container.firstChild);
+                    
+                    // 5 saniye sonra otomatik kaldır
+                    setTimeout(() => {
+                        alertDiv.remove();
+                    }, 5000);
+                }
+            }
+        }
+        
+        // Sayfa yüklendiğinde CiroManager'ı başlat
+        document.addEventListener('DOMContentLoaded', function() {
+            window.ciroManager = new CiroManager();
+        });
+        
+        // Eski fonksiyonları kaldır
+        function forceRefresh() {
+            if (window.ciroManager) {
+                window.ciroManager.loadCiroListesi();
+            }
+        }
+    </script>
+
+<?php
+// Para birimi formatlama fonksiyonu
+function formatMoney($value) {
+    if (empty($value) || $value == 0) return '0,00 ₺';
+    return number_format($value, 2, ',', '.') . ' ₺';
+}
 ?>
 <div class="app-wrapper  flex-column flex-row-fluid " id="kt_app_wrapper">
     <!--begin::Main-->
@@ -43,6 +247,11 @@ require_once 'app/Views/kullanici/layout/navbar.php';
                     </div>
                     <!--end::Page title-->
                     <div class="d-flex align-items-center gap-2 gap-lg-3">
+                        <!--begin::Refresh button-->
+                        <button type="button" class="btn btn-sm fw-bold btn-outline-secondary" onclick="forceRefresh()">
+                            <i class="fas fa-sync-alt"></i> Zorla Yenile
+                        </button>
+                        <!--end::Refresh button-->
                         <!--begin::Primary button-->
                         <a href="/ciro/ekle" class="btn btn-sm fw-bold btn-primary" >
                             Ciro Ekle
@@ -86,24 +295,29 @@ require_once 'app/Views/kullanici/layout/navbar.php';
                         <!--end::Card header-->
                         <!--begin::Card body-->
                         <div class="card-body pt-0">
+                            <!-- Loading Indicator -->
+                            <div id="loading-indicator" class="alert alert-warning alert-dismissible fade show mb-4" style="display: none;">
+                                <i class="ki-outline ki-loading fs-2 me-2"></i>
+                                Veriler yükleniyor...
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                            
+                            <!-- Debug Bilgisi -->
+                            <div id="debug-info"></div>
+                            
+                            <!-- Mesaj -->
+                            <?php if (isset($_SESSION['message'])) : ?>
+                                <div class="alert alert-<?= $_SESSION['message_type'] ?? 'info' ?> alert-dismissible fade show mb-4">
+                                    <i class="ki-outline ki-<?= $_SESSION['message_type'] == 'success' ? 'check-circle' : 'cross-circle' ?> fs-2 me-2"></i>
+                                    <?= htmlspecialchars($_SESSION['message']) ?>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                                <?php unset($_SESSION['message'], $_SESSION['message_type']); ?>
+                            <?php endif; ?>
                             <!--begin::Table-->
                             <div id="kt_ecommerce_products_table_wrapper" class="dt-container dt-bootstrap5 dt-empty-footer">
                                 <div id="" class="table-responsive">
-                                    <table class="table align-middle table-row-dashed fs-6 gy-5 dataTable" id="kt_ecommerce_products_table" style="width: 1125.5px;">
-                                        <colgroup>
-                                            <col data-dt-column="0" style="width: 36.3906px;">
-                                            <col data-dt-column="1" style="width: 10px;">
-                                            <col data-dt-column="2" style="width: 20px;">
-                                            <col data-dt-column="3" style="width: 50px;">
-                                            <col data-dt-column="4" style="width: 50px;">
-                                            <col data-dt-column="5" style="width: 50px;">
-                                            <col data-dt-column="6" style="width: 50px;">
-                                            <col data-dt-column="7" style="width: 50px;">
-                                            <col data-dt-column="8" style="width: 50px;">
-                                            <col data-dt-column="9" style="width: 50px">
-                                            <col data-dt-column="10" style="width: 140.672px;">
-
-                                        </colgroup>
+                                    <table class="table align-middle table-row-dashed fs-6 gy-5 dataTable" id="kt_ecommerce_products_table">
                                         <thead>
                                         <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0" role="row">
                                             <th class="w-10px pe-2 dt-orderable-none" data-dt-column="0" rowspan="1" colspan="1" aria-label="">
@@ -114,43 +328,52 @@ require_once 'app/Views/kullanici/layout/navbar.php';
                                                 </span>
                                                 <span class="dt-column-order"></span>
                                             </th>
-                                            <th class="min-w-20px dt-orderable-asc dt-orderable-desc" data-dt-column="1" rowspan="1" colspan="1" aria-label="Product: Activate to sort" tabindex="0">
+                                            <th class="min-w-120px dt-orderable-asc dt-orderable-desc" data-dt-column="1" rowspan="1" colspan="1" aria-label="Product: Activate to sort" tabindex="0">
                                                 <span class="dt-column-title" role="button">Şube</span>
                                                 <span class="dt-column-order"></span>
                                             </th>
-                                            <th class="text-end min-w-100px dt-type-numeric dt-orderable-asc dt-orderable-desc" data-dt-column="2" rowspan="1" colspan="1" aria-label="SKU: Activate to sort" tabindex="0">
+                                            <th class="text-end min-w-120px dt-type-numeric dt-orderable-asc dt-orderable-desc" data-dt-column="2" rowspan="1" colspan="1" aria-label="SKU: Activate to sort" tabindex="0">
                                                 <span class="dt-column-title" role="button">Ekleme Tarihi</span>
                                                 <span class="dt-column-order"></span>
                                             </th>
-                                            <th class="text-end min-w-70px dt-type-numeric dt-orderable-asc dt-orderable-desc" data-dt-column="3" rowspan="1" colspan="1" aria-label="Qty: Activate to sort" tabindex="0">
+                                            <th class="text-end min-w-120px dt-type-numeric dt-orderable-asc dt-orderable-desc" data-dt-column="3" rowspan="1" colspan="1" aria-label="Qty: Activate to sort" tabindex="0">
                                                 <span class="dt-column-title" role="button">Gün</span>
                                                 <span class="dt-column-order"></span>
                                             </th>
-                                            <th class="text-end min-w-70px dt-type-numeric dt-orderable-asc dt-orderable-desc" data-dt-column="4" rowspan="1" colspan="1" aria-label="Price: Activate to sort" tabindex="0">
+                                            <th class="text-end min-w-120px dt-type-numeric dt-orderable-asc dt-orderable-desc" data-dt-column="4" rowspan="1" colspan="1" aria-label="Price: Activate to sort" tabindex="0">
                                                 <span class="dt-column-title" role="button">Nakit</span>
                                                 <span class="dt-column-order"> </span>
                                             </th>
-                                            <th class="text-end min-w-70px dt-orderable-asc dt-orderable-desc" data-dt-column="5" rowspan="1" colspan="1" aria-label="Rating: Activate to sort" tabindex="0">
+                                            <th class="text-end min-w-120px dt-orderable-asc dt-orderable-desc" data-dt-column="5" rowspan="1" colspan="1" aria-label="Rating: Activate to sort" tabindex="0">
                                                 <span class="dt-column-title" role="button">Kredi Kartı</span>
                                                 <span class="dt-column-order"></span>
                                             </th>
-                                            <th class="text-end min-w-70px dt-orderable-asc dt-orderable-desc" data-dt-column="6" rowspan="1" colspan="1" aria-label="Status: Activate to sort" tabindex="0">
+                                            <th class="text-end min-w-120px dt-orderable-asc dt-orderable-desc" data-dt-column="6" rowspan="1" colspan="1" aria-label="Status: Activate to sort" tabindex="0">
                                                 <span class="dt-column-title" role="button">YemekSepeti</span>
                                                 <span class="dt-column-order"></span>
                                             </th>
-                                            <th class="text-end min-w-70px dt-orderable-asc dt-orderable-desc" data-dt-column="7" rowspan="1" colspan="1" aria-label="Status: Activate to sort" tabindex="0">
+                                            <th class="text-end min-w-120px dt-orderable-asc dt-orderable-desc" data-dt-column="7" rowspan="1" colspan="1" aria-label="Status: Activate to sort" tabindex="0">
                                                 <span class="dt-column-title" role="button">Getir Çarşı</span>
                                                 <span class="dt-column-order"></span>
                                             </th>
-                                            <th class="text-end min-w-70px dt-orderable-asc dt-orderable-desc" data-dt-column="8" rowspan="1" colspan="1" aria-label="Status: Activate to sort" tabindex="0">
+                                            <th class="text-end min-w-120px dt-orderable-asc dt-orderable-desc" data-dt-column="8" rowspan="1" colspan="1" aria-label="Status: Activate to sort" tabindex="0">
                                                 <span class="dt-column-title" role="button">TrendyolGO</span>
                                                 <span class="dt-column-order"></span>
                                             </th>
-                                            <th class="text-end min-w-70px dt-orderable-asc dt-orderable-desc" data-dt-column="9" rowspan="1" colspan="1" aria-label="Status: Activate to sort" tabindex="0">
-                                                <span class="dt-column-title" role="button">Durum</span>
+                                            <th class="text-end min-w-120px">Multinet</th>
+                                            <th class="text-end min-w-120px">Sodexo</th>
+                                            <th class="text-end min-w-120px">Edenred</th>
+                                            <th class="text-end min-w-120px">Setcard</th>
+                                            <th class="text-end min-w-120px">Tokenflex</th>
+                                            <th class="text-end min-w-120px">iWallet</th>
+                                            <th class="text-end min-w-120px">Metropol</th>
+                                            <th class="text-end min-w-120px">Ticket</th>
+                                            <th class="text-end min-w-120px">Didi</th>
+                                            <th class="text-end min-w-120px dt-orderable-asc dt-orderable-desc" data-dt-column="9" rowspan="1" colspan="1" aria-label="Status: Activate to sort" tabindex="0">
+                                                <span class="dt-column-title" role="button">Toplam</span>
                                                 <span class="dt-column-order"></span>
                                             </th>
-                                            <th class="text-end min-w-100px dt-orderable-none" data-dt-column="7" rowspan="1" colspan="10" aria-label="Actions">
+                                            <th class="text-end min-w-100px dt-orderable-none" data-dt-column="10" rowspan="1" colspan="1" aria-label="Actions">
                                                 <span class="dt-column-title">Aksiyon</span>
                                                 <span class="dt-column-order"></span>
                                             </th>
@@ -159,56 +382,49 @@ require_once 'app/Views/kullanici/layout/navbar.php';
                                         <tbody class="fw-semibold text-gray-600">
 
                                         <?php if (!empty($ciroListesi)) : ?>
-                                            <?php foreach ($ciroListesi as $ciro) : ?>
-                                                <tr>
+                                            <?php foreach ($ciroListesi as $index => $ciro) : ?>
+                                                <tr class="<?= $index % 2 == 0 ? 'table-row-light' : 'table-row-dark' ?>">
                                                     <td>
                                                         <div class="form-check form-check-sm form-check-custom form-check-solid">
-                                                            <input class="form-check-input" type="checkbox" value="1">
+                                                            <input class="form-check-input" type="checkbox" value="<?= $ciro['id'] ?>">
                                                         </div>
                                                     </td>
-                                                    <td><?= $ciro['magaza_id'] ?></td>
-                                                    <td><?= $ciro['ekleme_tarihi'] ?></td>
-                                                    <td><?= $ciro['gun'] ?></td>
-                                                    <td><?= $ciro['nakit'] ?></td>
-                                                    <td><?= $ciro['kredi_karti'] ?></td>
-                                                    <td><?= $ciro['carliston'] ?></td>
-                                                    <td><?= $ciro['getir_carsi'] ?></td>
-                                                    <td><?= $ciro['trendyolgo'] ?></td>
-                                                    <td><?= $ciro['durum'] ?></td>
+                                                    <td class="text-start"><?= htmlspecialchars($ciro['magaza_adi'] ?? $ciro['magaza_id']) ?></td>
+                                                    <td class="text-end"><?= date('d.m.Y', strtotime($ciro['ekleme_tarihi'])) ?></td>
+                                                    <td class="text-end"><?= date('d.m.Y', strtotime($ciro['gun'])) ?></td>
+                                                    <td class="text-end fw-bold text-success"><?= formatMoney($ciro['nakit']) ?></td>
+                                                    <td class="text-end fw-bold text-primary"><?= formatMoney($ciro['kredi_karti']) ?></td>
+                                                    <td class="text-end"><?= formatMoney($ciro['carliston']) ?></td>
+                                                    <td class="text-end"><?= formatMoney($ciro['getir_carsi']) ?></td>
+                                                    <td class="text-end"><?= formatMoney($ciro['trendyolgo']) ?></td>
+                                                    <td class="text-end"><?= formatMoney($ciro['multinet']) ?></td>
+                                                    <td class="text-end"><?= formatMoney($ciro['sodexo']) ?></td>
+                                                    <td class="text-end"><?= formatMoney($ciro['edenred']) ?></td>
+                                                    <td class="text-end"><?= formatMoney($ciro['setcard']) ?></td>
+                                                    <td class="text-end"><?= formatMoney($ciro['tokenflex']) ?></td>
+                                                    <td class="text-end"><?= formatMoney($ciro['iwallet']) ?></td>
+                                                    <td class="text-end"><?= formatMoney($ciro['metropol']) ?></td>
+                                                    <td class="text-end"><?= formatMoney($ciro['ticket']) ?></td>
+                                                    <td class="text-end"><?= formatMoney($ciro['didi']) ?></td>
+                                                    <td class="text-end fw-bold fs-6 text-success"><?= formatMoney($ciro['toplam']) ?></td>
                                                     <td class="text-end">
-                                                        <a href="#" class="btn btn-sm btn-light btn-flex btn-center btn-active-light-primary" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
-                                                            İşlemler
-                                                            <i class="ki-outline ki-down fs-5 ms-1"></i>                    </a>
-                                                        <!--begin::Menu-->
-                                                        <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-125px py-4" data-kt-menu="true">
-                                                            <!--begin::Menu item-->
-                                                            <div class="menu-item px-3">
-                                                                <a href="#" class="menu-link px-3">
-                                                                    Düzenle
-                                                                </a>
-                                                            </div>
-                                                            <!--end::Menu item-->
-
-                                                            <!--begin::Menu item-->
-                                                            <div class="menu-item px-3">
-                                                                <a href="#" class="menu-link px-3" data-kt-ecommerce-product-filter="delete_row">
-                                                                    Sil
-                                                                </a>
-                                                            </div>
-                                                            <!--end::Menu item-->
-                                                        </div>
-                                                        <!--end::Menu-->
-                                                    </td>
+                                                        <a href="/ciro/duzenle/<?= $ciro['id'] ?>" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1" title="Düzenle">
+                                                            <i class="ki-outline ki-pencil fs-2"></i>
+                                                        </a>
+                                                        <a href="/ciro/sil/<?= $ciro['id'] ?>" class="btn btn-icon btn-bg-light btn-active-color-danger btn-sm" 
+                                                            onclick="return confirm('Bu ciro kaydını silmek istediğinizden emin misiniz?')" title="Sil">
+                                                             <i class="ki-outline ki-trash fs-2"></i>
+                                                         </a>
+                                                     </td>
                                                 </tr>
                                             <?php endforeach; ?>
                                         <?php else : ?>
                                             <tr>
-                                                <td class="text-center" colspan="9">
-                                                    <i class="ki-duotone ki-information-3 w-30px h-30px ">
-                                                        <span class="path1"></span>
-                                                        <span class="path2"></span>
-                                                        <span class="path3"></span>
-                                                    </i> Veriyok
+                                                <td class="text-center" colspan="20">
+                                                    <div class="d-flex flex-column align-items-center py-10">
+                                                        <i class="ki-outline ki-information-3 fs-3x text-muted mb-5"></i>
+                                                        <span class="text-muted fw-semibold">Henüz ciro kaydı bulunmuyor</span>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         <?php endif; ?>
@@ -261,6 +477,83 @@ require_once 'app/Views/kullanici/layout/navbar.php';
     <!--End::Main-->
 </div>
 
+<style>
+.table-row-light {
+    background-color: #f8f9fa;
+}
+.table-row-dark {
+    background-color: #ffffff;
+}
+.table-row-light:hover,
+.table-row-dark:hover {
+    background-color: #e9ecef !important;
+}
 
-<?php require_once 'app/Views/kullanici/layout/footer.php';?>
+/* Para birimi değerlerinin alt satıra kaymaması için */
+#kt_ecommerce_products_table th,
+#kt_ecommerce_products_table td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0.75rem 0.5rem;
+}
+
+/* Para birimi sütunları için özel genişlik */
+#kt_ecommerce_products_table th.text-end,
+#kt_ecommerce_products_table td.text-end {
+    min-width: 120px;
+    max-width: 120px;
+}
+
+/* Şube sütunu için daha geniş alan */
+#kt_ecommerce_products_table th:first-child + th,
+#kt_ecommerce_products_table td:first-child + td {
+    min-width: 150px;
+    max-width: 200px;
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+/* Tarih sütunları için */
+#kt_ecommerce_products_table th:nth-child(3),
+#kt_ecommerce_products_table th:nth-child(4),
+#kt_ecommerce_products_table td:nth-child(3),
+#kt_ecommerce_products_table td:nth-child(4) {
+    min-width: 110px;
+    max-width: 110px;
+}
+
+/* Toplam sütunu için daha geniş alan */
+#kt_ecommerce_products_table th:nth-last-child(2),
+#kt_ecommerce_products_table td:nth-last-child(2) {
+    min-width: 130px;
+    max-width: 130px;
+    font-weight: bold;
+}
+
+/* Aksiyon sütunu için */
+#kt_ecommerce_products_table th:last-child,
+#kt_ecommerce_products_table td:last-child {
+    min-width: 100px;
+    max-width: 100px;
+}
+
+/* Tablo responsive yapısı */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Mobilde daha iyi görünüm */
+@media (max-width: 768px) {
+    #kt_ecommerce_products_table th,
+    #kt_ecommerce_products_table td {
+        min-width: 100px;
+        font-size: 0.875rem;
+        padding: 0.5rem 0.25rem;
+    }
+}
+</style>
+
+<?php require_once __DIR__ . '/../layouts/layout/footer.php';?>
 

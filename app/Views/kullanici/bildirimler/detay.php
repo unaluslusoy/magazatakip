@@ -2,8 +2,8 @@
 $title = "Bildirim Detayı";
 $link = "Bildirim Detayı";
 
-require_once 'app/Views/kullanici/layout/header.php';
-require_once 'app/Views/kullanici/layout/navbar.php';
+require_once __DIR__ . '/../layouts/layout/header.php';
+require_once __DIR__ . '/../layouts/layout/navbar.php';
 ?>
 
 <!--begin::Content-->
@@ -220,4 +220,4 @@ require_once 'app/Views/kullanici/layout/navbar.php';
 </div>
 <!--end::Content-->
 
-<?php require_once 'app/Views/kullanici/layout/footer.php'; ?> 
+<?php require_once __DIR__ . '/../layouts/layout/footer.php'; ?> 

@@ -1,5 +1,3 @@
-php_value session.save_path /home/magazatakip/domains/magazatakip.com.tr/session
-php_value session.gc_maxlifetime 2592000
 
 AddType application/javascript .js
 <IfModule mod_rewrite.c>

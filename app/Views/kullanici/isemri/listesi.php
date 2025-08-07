@@ -1,7 +1,10 @@
 <?php
-require_once 'app/Views/kullanici/layout/header.php';
-require_once 'app/Views/kullanici/layout/navbar.php';
+require_once __DIR__ . '/../layouts/layout/header.php';
+require_once __DIR__ . '/../layouts/layout/navbar.php';
 ?>
+
+<!-- API Service -->
+<script src="/app/Views/kullanici/api-service.js"></script>
 
     <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
         <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
@@ -1058,6 +1061,59 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// API tabanlı iş emri yönetimi
+class IsEmriManager {
+    constructor() {
+        this.apiService = window.isEmriApiService;
+        this.init();
+    }
+    
+    async init() {
+        await this.loadIsEmriListesi();
+        this.setupEventListeners();
+    }
+    
+    async loadIsEmriListesi() {
+        try {
+            const response = await this.apiService.getIsEmriListesi();
+            
+            if (response.success) {
+                this.updateIsEmriCount(response.data.length);
+            } else {
+                console.error('İş emri listesi yüklenemedi:', response.message);
+            }
+        } catch (error) {
+            console.error('İş emri listesi yükleme hatası:', error);
+        }
+    }
+    
+    updateIsEmriCount(count) {
+        // İş emri sayısını güncelle (eğer varsa)
+        const countElement = document.querySelector('.isemri-count');
+        if (countElement) {
+            countElement.textContent = count;
+        }
+    }
+    
+    setupEventListeners() {
+        // Refresh butonu ekle
+        const refreshBtn = document.createElement('button');
+        refreshBtn.className = 'btn btn-sm btn-outline-secondary ms-2';
+        refreshBtn.innerHTML = '<i class="ki-outline ki-refresh fs-7 me-1"></i> Yenile';
+        refreshBtn.onclick = () => this.loadIsEmriListesi();
+        
+        const toolbar = document.querySelector('.card-toolbar');
+        if (toolbar) {
+            toolbar.appendChild(refreshBtn);
+        }
+    }
+}
+
+// Sayfa yüklendiğinde IsEmriManager'ı başlat
+document.addEventListener('DOMContentLoaded', function() {
+    window.isEmriManager = new IsEmriManager();
+});
+
 // Service Worker registration (isteğe bağlı)
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
@@ -1069,6 +1125,6 @@ if ('serviceWorker' in navigator) {
 </script>
 
 <?php
-require_once 'app/Views/kullanici/layout/footer.php';
+require_once __DIR__ . '/../layouts/layout/footer.php';
 ?>
 

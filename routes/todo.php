@@ -1,6 +1,8 @@
 <?php
 use core\Router;
 
+// Router instance'ını kullan
+global $router;
 
 $router->get('todo', 'Todo\TodoController@index');
 $router->get('todo/ekle', 'Todo\TodoController@create');

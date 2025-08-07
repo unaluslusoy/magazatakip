@@ -2,10 +2,15 @@
 
 namespace core;
 class Router {
-    private $routes = [];
+    public $routes = [];
 
     public function get($uri, $controller) {
         $this->routes['GET'][$uri] = $controller;
+        // Debug: Route ekleme
+        if (defined('DEBUG_MODE') && DEBUG_MODE) {
+            $controllerStr = is_callable($controller) ? 'Closure' : $controller;
+            error_log("Route added: GET $uri -> $controllerStr");
+        }
     }
 
     public function post($uri, $controller) {
@@ -30,6 +35,11 @@ class Router {
 
     private function match($method, $uri) {
         $uriParts = $this->parseUri($uri);
+        
+        // Method için route'lar var mı kontrol et
+        if (!isset($this->routes[$method]) || empty($this->routes[$method])) {
+            return false;
+        }
         
         foreach ($this->routes[$method] as $route => $controller) {
             $routeParts = $this->parseUri($route);
@@ -57,7 +67,13 @@ class Router {
     }
 
     public function dispatch($uri) {
-        $method = $_SERVER['REQUEST_METHOD'];
+        $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+        
+        // CLI için varsayılan değerler
+        if (php_sapi_name() === 'cli') {
+            $uri = $uri ?: '/';
+            $method = 'GET';
+        }
         
         // PUT ve DELETE istekleri için HTTP_X_HTTP_METHOD_OVERRIDE header'ını kontrol et
         if (isset($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE'])) {
@@ -67,7 +83,28 @@ class Router {
         // Query string'i çıkar
         $cleanUri = strtok($uri, '?');
         
+        // Admin route kontrolü - Güvenlik
+        if (strpos($cleanUri, 'admin') === 0) {
+            // Admin route'ları için AdminMiddleware kontrolü
+            if (!class_exists('app\\Middleware\\AdminMiddleware')) {
+                require_once 'app/Middleware/AdminMiddleware.php';
+            }
+            \app\Middleware\AdminMiddleware::handle();
+        }
+        
+        // Debug: Route'ları logla (sadece geliştirme ortamında)
+        if (defined('DEBUG_MODE') && DEBUG_MODE) {
+            error_log("Router Debug - Method: " . $method . ", URI: " . $cleanUri);
+        }
+        
         $match = $this->match($method, $cleanUri);
+
+        // Debug: Match sonucu
+        if (defined('DEBUG_MODE') && DEBUG_MODE) {
+            error_log("Router Match: " . ($match ? 'true' : 'false') . " for URI: $cleanUri");
+        }
+        
+
 
         if ($match) {
             $controller = $match['controller'];
@@ -111,7 +148,7 @@ class Router {
             
             call_user_func_array([$controller, $action], $allParameters);
         } else {
-            // Hata sayfasına yönlendir veya özel bir hata işleme mekanizması kullan
+            // Hata sayfasına yönlendir
             header("HTTP/1.0 404 Not Found");
             echo "404 - Sayfa Bulunamadı";
             exit();

@@ -1,8 +1,5 @@
 <?php
 require_once 'vendor/autoload.php';
-require_once 'core/Router.php';
-require_once 'core/Controller.php';
-require_once 'core/Database.php';
 require_once 'app/helpers/url_helper.php';
 require_once 'config/database.php';
 
@@ -12,28 +9,13 @@ use app\Models\Kullanici;
 
 
 // Production ayarları
+define('DEBUG_MODE', false);
 
 // Oturum ayarları
 session_start();
 
 
-// Autoload fonksiyonu
-spl_autoload_register(function ($class) {
-    $class = str_replace('\\', '/', $class);
-    $file_path = __DIR__ . '/' . $class . '.php';
-    
-    // Eğer dosya yoksa, eski yol için de kontrol et
-    if (!file_exists($file_path)) {
-        $legacy_path = __DIR__ . '/app/Models/' . basename($class) . '.php';
-        if (file_exists($legacy_path)) {
-            $file_path = $legacy_path;
-        }
-    }
-    
-    if (file_exists($file_path)) {
-        require_once $file_path;
-    }
-});
+// Composer autoload zaten yüklendi
 
 
 
@@ -42,7 +24,7 @@ spl_autoload_register(function ($class) {
 use core\AuthManager;
 
 $authManager = AuthManager::getInstance();
-$currentUri = trim($_SERVER['REQUEST_URI'], '/');
+$currentUri = isset($_SERVER['REQUEST_URI']) ? trim($_SERVER['REQUEST_URI'], '/') : '';
 
 // Kullanıcı giriş yapmışsa ve ana sayfa/giriş sayfasındaysa yönlendir
 if ($currentUri === '') {
@@ -66,9 +48,9 @@ if ($currentUri === '') {
 }
 
 // API istekleri için ayrı routing
-$requestUri = $_SERVER['REQUEST_URI'];
+$requestUri = $_SERVER['REQUEST_URI'] ?? '/';
 $parsedUrl = parse_url($requestUri);
-$path = $parsedUrl['path'];
+$path = $parsedUrl['path'] ?? '/';
 
 if (strpos($path, '/api/') === 0) {
     // API routes
@@ -77,9 +59,24 @@ if (strpos($path, '/api/') === 0) {
 } else {
     // Normal web routes
     $router = new Router();
+    
+    // Router'ı global olarak tanımla
+    global $router;
+    $GLOBALS['router'] = $router;
+    
+    // Route dosyalarını yükle
     require_once 'routes/web.php';
-    require_once 'routes/admin.php';
-    require_once 'routes/todo.php';
-    require_once 'routes/modul.php';
-    $router->dispatch($_SERVER['REQUEST_URI']);
+    
+    // Diğer route dosyalarını kontrol ederek yükle
+    if (file_exists('routes/admin.php')) {
+        require_once 'routes/admin.php';
+    }
+    if (file_exists('routes/todo.php')) {
+        require_once 'routes/todo.php';
+    }
+    if (file_exists('routes/modul.php')) {
+        require_once 'routes/modul.php';
+    }
+    
+    $router->dispatch($_SERVER['REQUEST_URI'] ?? '/');
 }

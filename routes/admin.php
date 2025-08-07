@@ -1,6 +1,9 @@
 <?php
 use core\Router;
 
+// Router instance'ını kullan
+global $router;
+
 $router->get('admin', 'Admin\AnasayfaController@index');
 $router->get('admin/giris', 'Auth\GirisController@login');
 $router->post('admin/giris', 'Auth\GirisController@loginPost');

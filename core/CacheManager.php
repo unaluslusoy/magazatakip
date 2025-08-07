@@ -74,7 +74,7 @@ class CacheManager {
                 $this->redis->select($this->config['redis']['database']);
                 $this->useRedis = true;
                 
-                error_log('✅ Redis bağlantısı başarılı');
+                // error_log('✅ Redis bağlantısı başarılı');
             }
         } catch (Exception $e) {
             error_log('❌ Redis bağlantı hatası: ' . $e->getMessage());
@@ -371,6 +371,3 @@ class CacheManager {
         return 0; // Redis automatically handles expiration
     }
 }
-?>
-
-

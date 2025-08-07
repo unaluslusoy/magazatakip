@@ -1,6 +1,8 @@
 <?php
 use core\Router;
 
+// Router instance'ını kullan
+global $router;
 
 $router->get('', 'HomeController@index');
 $router->get('auth/giris', 'Auth\GirisController@index');
@@ -26,11 +28,17 @@ $router->get('isemri/sil/{id}', 'Kullanici\IsEmri\IsEmriController@sil');
 $router->get('ciro/ekle', 'Kullanici\Ciro\CiroController@ekle');
 $router->post('ciro/ekle', 'Kullanici\Ciro\CiroController@ekle');
 $router->get('ciro/listele', 'Kullanici\Ciro\CiroController@listele');
+$router->get('ciro/listele/refresh', 'Kullanici\Ciro\CiroController@listeleRefresh');
 $router->get('ciro/duzenle/{id}', 'Kullanici\Ciro\CiroController@duzenle');
 $router->post('ciro/duzenle/{id}', 'Kullanici\Ciro\CiroController@duzenle');
-$router->post('ciro/sil/{id}', 'Kullanici\Ciro\CiroController@sil');
+$router->get('ciro/sil/{id}', 'Kullanici\Ciro\CiroController@sil');
+
+// API Test ve Dokümantasyon Rotaları
+$router->get('ciro/api-test', 'Kullanici\Ciro\CiroController@apiTest');
+$router->get('api-docs', 'Kullanici\Ciro\CiroController@apiDocs');
 
 // Kullanıcı Profil Rotaları
+$router->get('profil', 'Kullanici\ProfilController@index');
 $router->get('kullanici/profil', 'Kullanici\ProfilController@index');
 $router->post('kullanici/profil/guncelle', 'Kullanici\ProfilController@guncelle');
 $router->post('kullanici/profil/sifre-degistir', 'Kullanici\ProfilController@sifreDegistir');
@@ -52,5 +60,13 @@ $router->get('fatura_talep/listesi', 'Kullanici\FaturaTalep\FaturaTalepControlle
 $router->get('fatura_talep/duzenle/{id}', 'Kullanici\FaturaTalep\FaturaTalepController@duzenle');
 $router->post('fatura_talep/duzenle/{id}', 'Kullanici\FaturaTalep\FaturaTalepController@duzenle');
 $router->post('fatura_talep/sil/{id}', 'Kullanici\FaturaTalep\FaturaTalepController@sil');
+
+// Gider Rotaları
+$router->get('gider/listesi', 'Kullanici\GiderController@listesi');
+$router->get('gider/ekle', 'Kullanici\GiderController@ekle');
+$router->post('gider/ekle', 'Kullanici\GiderController@ekle');
+$router->get('gider/duzenle/{id}', 'Kullanici\GiderController@duzenle');
+$router->post('gider/duzenle/{id}', 'Kullanici\GiderController@duzenle');
+$router->get('gider/sil/{id}', 'Kullanici\GiderController@sil');
 
 // Diğer kullanıcı rotaları devam eder

@@ -9,10 +9,10 @@ class CiroModel extends Model {
     public function ciroEkle($data) {
         $this->db->beginTransaction();
 
-        $query = "INSERT INTO ciro_takibi 
-              (magaza_id, ekleme_tarihi, gun, nakit, kredi_karti, carliston, getir_carsi, trendyolgo, multinet, sodexo, edenred, setcard, tokenflex, iwallet,metropol, gider, aciklama, toplam) 
+        $query = "INSERT INTO cirolar 
+              (magaza_id, ekleme_tarihi, gun, nakit, kredi_karti, carliston, getir_carsi, trendyolgo, multinet, sodexo, edenred, setcard, tokenflex, iwallet, metropol, ticket, didi, gider, aciklama, toplam, gorsel) 
               VALUES 
-              (:magaza_id, :ekleme_tarihi, :gun, :nakit, :kredi_karti, :carliston, :getir_carsi, :trendyolgo, :multinet, :sodexo, :edenred, :setcard, :tokenflex, :iwallet, :metropol, :gider, :aciklama, :toplam)";
+              (:magaza_id, :ekleme_tarihi, :gun, :nakit, :kredi_karti, :carliston, :getir_carsi, :trendyolgo, :multinet, :sodexo, :edenred, :setcard, :tokenflex, :iwallet, :metropol, :ticket, :didi, :gider, :aciklama, :toplam, :gorsel)";
 
         $stmt = $this->db->prepare($query);
         // Verileri bağlama
@@ -31,31 +31,42 @@ class CiroModel extends Model {
         $stmt->bindParam(':tokenflex', $data['tokenflex']);
         $stmt->bindParam(':iwallet', $data['iwallet']);
         $stmt->bindParam(':metropol', $data['metropol']);
+        $stmt->bindParam(':ticket', $data['ticket']);
+        $stmt->bindParam(':didi', $data['didi']);
         $stmt->bindParam(':gider', $data['gider']);
         $stmt->bindParam(':aciklama', $data['aciklama']);
         $stmt->bindParam(':toplam', $data['toplam']);
+        $stmt->bindParam(':gorsel', $data['gorsel']);
         // Sorguyu çalıştırma
-        return $stmt->execute();
+        $result = $stmt->execute();
+        if ($result) {
+            $this->db->commit();
+        } else {
+            $this->db->rollBack();
+        }
+        return $result;
     }
 
-
     public function getMagazalar() {
-        $query = "SELECT id, ad FROM magazalar";
-        $stmt = $this->db->query($query);
+        $query = "SELECT SQL_NO_CACHE id, ad FROM magazalar ORDER BY ad";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute();
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
     public function ciroVarMi() {
-        $query = "SELECT COUNT(*) as toplam FROM ciro_takibi";
+        $query = "SELECT SQL_NO_CACHE COUNT(*) as sayi FROM cirolar";
         $stmt = $this->db->prepare($query);
         $stmt->execute();
         $result = $stmt->fetch(\PDO::FETCH_ASSOC);
-
-        return $result['toplam'] > 0;
+        
+        $count = $result['sayi'];
+        error_log("CiroModel::ciroVarMi() - Toplam kayıt sayısı: " . $count);
+        
+        return $count > 0;
     }
     public function ciroGuncelle($id, $veriler) {
-        $query = "UPDATE ciro_takibi SET
+        $query = "UPDATE cirolar SET
                 magaza_id = :magaza_id,
-                ekleme_tarihi = :ekleme_tarihi,
                 gun = :gun,
                 nakit = :nakit,
                 kredi_karti = :kredi_karti,
@@ -64,13 +75,16 @@ class CiroModel extends Model {
                 trendyolgo = :trendyolgo,
                 multinet = :multinet,
                 sodexo = :sodexo,
-                ticket = :ticket,
                 edenred = :edenred,
                 setcard = :setcard,
+                tokenflex = :tokenflex,
+                iwallet = :iwallet,
+                metropol = :metropol,
+                ticket = :ticket,
                 didi = :didi,
-                gider = :gider,
+                toplam = :toplam,
                 aciklama = :aciklama,
-                durum = :durum
+                gorsel = :gorsel
               WHERE id = :id";
 
         $stmt = $this->db->prepare($query);
@@ -81,20 +95,56 @@ class CiroModel extends Model {
     }
 
     public function ciroGetir($id) {
-        $query = "SELECT * FROM ciro_takibi WHERE id = :id";
+        $query = "SELECT SQL_NO_CACHE c.*, m.ad as magaza_adi 
+                  FROM cirolar c 
+                  LEFT JOIN magazalar m ON c.magaza_id = m.id 
+                  WHERE c.id = :id";
+        
         $stmt = $this->db->prepare($query);
         $stmt->execute(['id' => $id]);
+        
         return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
     public function ciroSil($id) {
-        $query = "DELETE FROM ciro_takibi WHERE id = :id";
+        $query = "DELETE FROM cirolar WHERE id = :id";
         $stmt = $this->db->prepare($query);
         return $stmt->execute(['id' => $id]);
     }
 
-    public function ciroListele()
-    {
+    public function ciroListele() {
+        // Veritabanı bağlantısını yenile
+        $this->db = null;
+        
+        // Config dosyasını yükle
+        if (!defined('DB_HOST')) {
+            require_once __DIR__ . '/../../../../config/database.php';
+        }
+        
+        $this->db = new \PDO(
+            "mysql:host=" . \DB_HOST . ";dbname=" . \DB_NAME . ";charset=utf8mb4",
+            \DB_USER,
+            \DB_PASS,
+            [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+                \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+                \PDO::ATTR_EMULATE_PREPARES => false,
+                \PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci"
+            ]
+        );
+        
+        $query = "SELECT SQL_NO_CACHE c.*, m.ad as magaza_adi 
+                  FROM cirolar c 
+                  LEFT JOIN magazalar m ON c.magaza_id = m.id 
+                  ORDER BY c.gun DESC, c.id DESC";
+        
+        $stmt = $this->db->prepare($query);
+        $stmt->execute();
+        
+        $result = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        
+        // Debug log
+        error_log("CiroModel::ciroListele() - Bulunan kayıt sayısı: " . count($result));
+        
+        return $result;
     }
-
-
 }

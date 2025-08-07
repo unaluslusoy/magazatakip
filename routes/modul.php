@@ -1,6 +1,9 @@
 <?php
 use core\Router;
 
+// Router instance'ını kullan
+global $router;
+
 $router->get('modul', 'Modul\ModulController@index');
 $router->get('modul/ekle', 'Modul\ModulController@create');
 $router->post('modul/store', 'Modul\ModulController@store');

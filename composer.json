@@ -14,7 +14,9 @@
     ],
     "autoload": {
         "psr-4": {
-            "Magazatakip\\PublicHtml\\": "src/"
+            "Magazatakip\\PublicHtml\\": "src/",
+            "app\\": "app/",
+            "core\\": "core/"
         }
     },
     "require": {

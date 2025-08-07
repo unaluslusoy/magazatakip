@@ -162,5 +162,37 @@ class IsEmriModel extends Model {
         $result = $stmt->fetch(\PDO::FETCH_ASSOC);
         return $result['count'];
     }
+
+    /**
+     * Bekleyen iş emirlerinin sayısını getir
+     */
+    public function getPendingCount($magaza_id) {
+        return $this->getCountByStatus('Yeni', $magaza_id);
+    }
+
+    /**
+     * Devam eden iş emirlerinin sayısını getir
+     */
+    public function getInProgressCount($magaza_id) {
+        return $this->getCountByStatus('Devam Ediyor', $magaza_id);
+    }
+
+    /**
+     * Tamamlanan iş emirlerinin sayısını getir
+     */
+    public function getCompletedCount($magaza_id) {
+        return $this->getCountByStatus('Tamamlandı', $magaza_id);
+    }
+
+    /**
+     * Toplam iş emirlerinin sayısını getir
+     */
+    public function getTotalCount($magaza_id) {
+        $stmt = $this->db->prepare("SELECT COUNT(*) as count FROM {$this->table} WHERE magaza_id = :magaza_id");
+        $stmt->bindParam(':magaza_id', $magaza_id);
+        $stmt->execute();
+        $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return $result['count'];
+    }
 }
 ?>

@@ -3,9 +3,12 @@
 namespace app\Controllers;
 
 use app\Models\Kullanici;
+use app\Models\Ciro;
+use app\Models\Gider;
 use core\Controller;
 use app\Models\Kullanici\IsEmri\IsEmriModel;
 use app\Middleware\AuthMiddleware;
+use Exception;
 
 class AnasayfaController extends Controller {
     
@@ -15,41 +18,53 @@ class AnasayfaController extends Controller {
     }
     
     public function index() {
+        // Önbellek önleme header'ları
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
+        try {
+            // Kullanıcı bilgilerini veritabanından al
+            $kullaniciModel = new Kullanici();
+            $kullanici = $kullaniciModel->get($_SESSION['user_id']);
+            
+            if (!$kullanici) {
+                header('Location: /auth/giris');
+                exit();
+            }
+            
+            $magaza_id = $kullanici['magaza_id'];
+            
+            // Aylık ciro toplamı
+            $ciroModel = new Ciro();
+            $aylikCiro = $ciroModel->getMonthlyTotal($magaza_id);
+            
+            // Aylık gider toplamı
+            $giderModel = new Gider();
+            $aylikGider = $giderModel->getMonthlyTotal($magaza_id);
+            
+            // Net kar hesaplama
+            $netKar = $aylikCiro - $aylikGider;
+            
+            // İş emirleri istatistikleri - gerçek verileri çek
+            $isEmriModel = new IsEmriModel();
+            $istek = [
+                'acikGorevler' => $isEmriModel->getPendingCount($magaza_id),
+                'kapaliGorevler' => $isEmriModel->getCompletedCount($magaza_id),
+                'devamEdenGorevler' => $isEmriModel->getInProgressCount($magaza_id)
+            ];
 
-        $kullanici_id = $_SESSION['user_id'];
-        $kullaniciModel = new Kullanici();
-        $kullanici = $kullaniciModel->get($kullanici_id);
-
-        // Kullanici bulunamadı veya geçersiz
-        if (!$kullanici || empty($kullanici)) {
-            // Session temizle ve login'e yönlendir  
-            session_destroy();
-            header('Location: /auth/giris');
-            exit();
+            $this->view('kullanici/anasayfa', [
+                'kullanici' => $kullanici, 
+                'istek' => $istek,
+                'aylikCiro' => $aylikCiro,
+                'aylikGider' => $aylikGider,
+                'netKar' => $netKar
+            ]);
+            
+        } catch (Exception $e) {
+            error_log("AnasayfaController hata: " . $e->getMessage());
+            echo "Bir hata oluştu: " . $e->getMessage();
         }
-
-        // Magaza ID kontrolü
-        if (!isset($kullanici['magaza_id']) || empty($kullanici['magaza_id'])) {
-            // Magaza bilgisi eksik
-            session_destroy();
-            header('Location: /auth/giris');
-            exit();
-        }
-
-        $magaza_id = $kullanici['magaza_id'];
-
-        $gorevModel = new IsEmriModel();
-
-        $acikGorevler = $gorevModel->getCountByStatus('Yeni', $magaza_id);
-        $kapaliGorevler = $gorevModel->getCountByStatus('Tamamlandı', $magaza_id);
-        $devamEdenGorevler = $gorevModel->getCountByStatus('Devam Ediyor', $magaza_id);
-
-        $istek = [
-            'acikGorevler' => $acikGorevler,
-            'kapaliGorevler' => $kapaliGorevler,
-            'devamEdenGorevler' => $devamEdenGorevler
-        ];
-
-        $this->view('kullanici/anasayfa', ['kullanici' => $kullanici, 'istek' => $istek]);
     }
 }
