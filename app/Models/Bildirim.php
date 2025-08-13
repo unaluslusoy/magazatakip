@@ -8,6 +8,61 @@ class Bildirim extends Model
 {
     protected $table = 'bildirimler';
 
+    public function createForAdmin($title, $message, $url = '/', $senderUserId = null)
+    {
+        // Tüm admin kullanıcılarına bireysel kayıt oluştur
+        try {
+            $stmt = $this->db->prepare("SELECT id FROM kullanicilar WHERE yonetici = 1");
+            $stmt->execute();
+            $adminIds = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+
+            if (empty($adminIds)) {
+                // Admin yoksa failsafe: hedef_kullanici_id null olarak tek kayıt
+                $data = [
+                    'kullanici_id' => $senderUserId,
+                    'hedef_kullanici_id' => null,
+                    'baslik' => $title,
+                    'mesaj' => $message,
+                    'url' => $url,
+                    'alici_tipi' => 'tum',
+                    'gonderim_kanali' => 'web',
+                    'oncelik' => 'normal',
+                    'durum' => 'beklemede',
+                    'okundu' => 0,
+                    'gonderim_tarihi' => date('Y-m-d H:i:s')
+                ];
+                return $this->create($data);
+            }
+
+            $inserted = 0;
+            foreach ($adminIds as $adminId) {
+                // İşlemi yapan admin ise kendisine bildirim oluşturma
+                if ($senderUserId !== null && (int)$adminId === (int)$senderUserId) {
+                    continue;
+                }
+                $data = [
+                    'kullanici_id' => $senderUserId,
+                    'hedef_kullanici_id' => (int)$adminId,
+                    'baslik' => $title,
+                    'mesaj' => $message,
+                    'url' => $url,
+                    'alici_tipi' => 'bireysel',
+                    'gonderim_kanali' => 'web',
+                    'oncelik' => 'normal',
+                    'durum' => 'beklemede',
+                    'okundu' => 0,
+                    'gonderim_tarihi' => date('Y-m-d H:i:s')
+                ];
+                $ok = $this->create($data);
+                if ($ok) { $inserted++; }
+            }
+            return $inserted > 0;
+        } catch (\PDOException $e) {
+            error_log('createForAdmin hata: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     public function getPaginatedNotifications($page = 1, $perPage = 10, $dateFilter = 'all', $aliciFilter = 'all', $durumFilter = 'all', $searchTerm = '')
     {
         try {

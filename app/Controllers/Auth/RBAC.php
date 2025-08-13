@@ -64,7 +64,8 @@ class RBAC {
             'admin.bildirimler.send',
             'admin.bildirimler.list',
             'admin.reports.view',
-            'admin.settings.edit'
+            'admin.settings.edit',
+            'admin.tamsoft.view'
         ]
     ];
     
@@ -114,7 +115,8 @@ class RBAC {
         '/admin/personeller' => 'admin.personel.list',
         '/admin/personel/ekle' => 'admin.personel.create',
         '/admin/bildirimler' => 'admin.bildirimler.list',
-        '/admin/bildirim_gonder' => 'admin.bildirimler.send'
+        '/admin/bildirim_gonder' => 'admin.bildirimler.send',
+        '/admin/tamsoft/stok' => 'admin.tamsoft.view'
     ];
     
     /**

@@ -45,18 +45,16 @@ require_once 'app/Views/layouts/navbar.php';
                 <form action="/admin/bildirim_gonder" method="POST" class="form fv-plugins-bootstrap5 fv-plugins-framework">
                     <!--begin::Input group-->
                     <div class="row g-9 mb-8">
-                        <div class="col-md-6 fv-row">
+                        <div class="col-md-8 fv-row">
                             <label class="fs-6 fw-semibold mb-2" for="baslik">Bildirim Başlığı:</label>
                             <input class="form-control form-control-solid" type="text" id="baslik" name="baslik" required>
                         </div>
-                        <div class="col-md-6 fv-row">
-                            <label class="fs-6 fw-semibold mb-2" for="gonderim_kanali">Gönderim Kanalı:</label>
-                            <select class="form-select form-select-solid" id="gonderim_kanali" name="gonderim_kanali" required>
-                                <option value="">Seçiniz</option>
-                                <option value="web">Web</option>
-                                <option value="mobil">Mobil</option>
-                                <option value="email">E-posta</option>
-
+                        <div class="col-md-4 fv-row">
+                            <label class="fs-6 fw-semibold mb-2" for="oncelik">Öncelik:</label>
+                            <select class="form-select form-select-solid" id="oncelik" name="oncelik" required>
+                                <option value="normal">Normal</option>
+                                <option value="yuksek">Yüksek</option>
+                                <option value="dusuk">Düşük</option>
                             </select>
                         </div>
                     </div>
@@ -75,48 +73,46 @@ require_once 'app/Views/layouts/navbar.php';
                     <div class="row g-9 mb-8">
                         <div class="col-md-6 fv-row">
                             <label class="fs-6 fw-semibold mb-2" for="alici_tipi">Alıcı Tipi:</label>
-                            <select class="form-select form-select-solid" id="alici_tipi" name="alici_tipi" required>
-                                <option value="tum">Tüm Kullanıcılar</option>
-                                <option value="bireysel">Bireysel</option>
-                                <option value="grup">Grup</option>
-                            </select>
+                             <select class="form-select form-select-solid" id="alici_tipi" name="alici_tipi" required>
+                                 <option value="tum" <?= !empty($prefillAliciTipi) && $prefillAliciTipi==='tum' ? 'selected' : '' ?>>Tüm Kullanıcılar</option>
+                                 <option value="bireysel" <?= !empty($prefillAliciTipi) && $prefillAliciTipi==='bireysel' ? 'selected' : '' ?>>Bireysel</option>
+                                 <option value="grup" <?= !empty($prefillAliciTipi) && $prefillAliciTipi==='grup' ? 'selected' : '' ?>>Grup</option>
+                             </select>
                         </div>
                         <div class="col-md-6 fv-row">
-                            <label class="fs-6 fw-semibold mb-2" for="oncelik">Öncelik:</label>
-                            <select class="form-select form-select-solid" id="oncelik" name="oncelik" required>
-                                <option value="normal">Normal</option>
-                                <option value="yuksek">Yüksek</option>
-                                <option value="dusuk">Düşük</option>
-                            </select>
+                            <label class="fs-6 fw-semibold mb-2" for="url">Yönlendirme URL (opsiyonel):</label>
+                            <input class="form-control form-control-solid" type="url" id="url" name="url" placeholder="https://magazatakip.com.tr/kullanici/bildirimler">
+                            <div class="form-text">Dolu değilse, bildirimler sayfasına yönlendirilir.</div>
                         </div>
                     </div>
                     <!--end::Input group-->
 
-                    <!--begin::Input group-->
-                    <div class="row g-9 mb-8">
-                        <div class="col-md-6 fv-row">
-                            <label class="fs-6 fw-semibold mb-2" for="url">Yönlendirme URL:</label>
-                            <input class="form-control form-control-solid" type="url" id="url" name="url" placeholder="https://example.com">
-                        </div>
-                        <div class="col-md-6 fv-row">
-                            <label class="fs-6 fw-semibold mb-2" for="icon">İkon URL:</label>
-                            <input class="form-control form-control-solid" type="url" id="icon" name="icon" placeholder="https://example.com/icon.png">
+                    <!--begin::Info-->
+                    <div class="alert alert-info">
+                        <div class="d-flex align-items-center">
+                            <i class="ki-outline ki-information-5 fs-2 me-3"></i>
+                            <div>
+                                <strong>Bilgi:</strong> Bu formda kullanıcı listesinde yalnızca <u>cihaz token'ı olan</u> ve bildirime izin vermiş kullanıcılar gösterilir. "Bireysel" seçtiğinizde tek kişi seçmelisiniz.
+                            </div>
                         </div>
                     </div>
-                    <!--end::Input group-->
+                    <!--end::Info-->
 
                     <!--begin::Input group - Kullanıcı Seçimi (Bireysel/Grup için)-->
                     <div class="row g-9 mb-8" id="kullanici_secimi" style="display: none;">
                         <div class="col-12 fv-row">
                             <label class="fs-6 fw-semibold mb-2">Kullanıcı Seçimi:</label>
-                            <div class="form-control form-control-solid" style="max-height: 200px; overflow-y: auto;">
+                            <div class="mb-3">
+                                <input type="text" id="kullanici_ara" class="form-control form-control-solid" placeholder="Ad, e‑posta veya mağaza ara...">
+                            </div>
+                            <div class="form-control form-control-solid" style="max-height: 260px; overflow-y: auto;" id="kullanici_listesi">
                                 <?php if (!empty($kullanicilar)): ?>
-                                    <?php foreach ($kullanicilar as $kullanici): ?>
+                                     <?php foreach ($kullanicilar as $kullanici): ?>
                                         <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="kullanicilar[]" value="<?= $kullanici['id'] ?>" id="kullanici_<?= $kullanici['id'] ?>">
+                                            <input class="form-check-input" type="checkbox" name="kullanicilar[]" value="<?= $kullanici['id'] ?>" id="kullanici_<?= $kullanici['id'] ?>" <?= (!empty($prefillKullaniciId) && (int)$prefillKullaniciId === (int)$kullanici['id']) ? 'checked' : '' ?>>
                                             <label class="form-check-label" for="kullanici_<?= $kullanici['id'] ?>">
-                                                <?= htmlspecialchars($kullanici['ad'] . ' ' . $kullanici['soyad']) ?> 
-                                                <span class="text-muted">(<?= htmlspecialchars($kullanici['email']) ?>)</span>
+                                                <?= htmlspecialchars(($kullanici['ad'] ?? '') . ' ' . ($kullanici['soyad'] ?? '')) ?> 
+                                                <span class="text-muted">(<?= htmlspecialchars($kullanici['email'] ?? '') ?><?= isset($kullanici['isletim_sistemi']) ? ' • ' . htmlspecialchars($kullanici['isletim_sistemi']) : '' ?>)</span>
                                             </label>
                                         </div>
                                     <?php endforeach; ?>
@@ -128,15 +124,7 @@ require_once 'app/Views/layouts/navbar.php';
                     </div>
                     <!--end::Input group-->
 
-                    <!--begin::Input group-->
-                    <div class="row g-9 mb-8">
-                        <div class="col-12 fv-row">
-                            <label class="fs-6 fw-semibold mb-2" for="etiketler">Etiketler:</label>
-                            <input class="form-control form-control-solid" type="text" id="etiketler" name="etiketler" placeholder="etiket1, etiket2, etiket3">
-                            <div class="form-text">Virgülle ayırarak etiketler ekleyebilirsiniz.</div>
-                        </div>
-                    </div>
-                    <!--end::Input group-->
+                    <input type="hidden" name="gonderim_kanali" value="web" />
 
                     <!--begin::Card footer-->
                     <div class="card-footer d-flex justify-content-end py-6 px-9">
@@ -169,6 +157,18 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             kullaniciSecimi.style.display = 'none';
         }
+
+        // Bireysel seçimde tek seçim kuralı uygula: bir seçim yapılınca diğerlerini kaldır
+        const checkboxes = document.querySelectorAll('input[name="kullanicilar[]"]');
+        if (this.value === 'bireysel') {
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', function onChange() {
+                    if (cb.checked) {
+                        checkboxes.forEach(other => { if (other !== cb) other.checked = false; });
+                    }
+                });
+            });
+        }
     });
     
     // Form gönderilmeden önce validasyon
@@ -181,8 +181,28 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Lütfen en az bir kullanıcı seçin.');
             return false;
         }
+
+        if (aliciTipi === 'bireysel' && secilenKullanicilar.length !== 1) {
+            e.preventDefault();
+            alert('Bireysel gönderim için tam olarak bir kullanıcı seçmelisiniz.');
+            return false;
+        }
     });
     
+    // Liste içi arama (ad, e-posta, mağaza)
+    const searchInput = document.getElementById('kullanici_ara');
+    const listContainer = document.getElementById('kullanici_listesi');
+    if (searchInput && listContainer) {
+        searchInput.addEventListener('input', function() {
+            const q = this.value.toLowerCase();
+            const items = listContainer.querySelectorAll('.form-check');
+            items.forEach(item => {
+                const label = item.querySelector('label')?.innerText.toLowerCase() || '';
+                item.style.display = label.includes(q) ? '' : 'none';
+            });
+        });
+    }
+
     // Tüm kullanıcıları seç/seçme
     const selectAllBtn = document.createElement('button');
     selectAllBtn.type = 'button';

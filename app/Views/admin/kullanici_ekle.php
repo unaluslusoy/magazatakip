@@ -96,13 +96,20 @@ require_once 'app/Views/layouts/navbar.php';
                                     </div>
                                 </div>
                                 <div class="card-body pt-0">
-                                    <!--begin::Ad-->
-                                    <div class="mb-8 fv-row">
-                                        <label class="required fs-6 fw-semibold mb-2">Ad Soyad</label>
-                                        <input type="text" class="form-control form-control-solid" 
-                                               placeholder="Kullanıcının adını girin" name="ad" id="ad" required />
+                                    <!--begin::Ad & Soyad-->
+                                    <div class="row">
+                                        <div class="col-md-6 mb-8 fv-row">
+                                            <label class="required fs-6 fw-semibold mb-2">Ad</label>
+                                            <input type="text" class="form-control form-control-solid" 
+                                                   placeholder="Ad" name="ad" id="ad" required />
+                                        </div>
+                                        <div class="col-md-6 mb-8 fv-row">
+                                            <label class="required fs-6 fw-semibold mb-2">Soyad</label>
+                                            <input type="text" class="form-control form-control-solid" 
+                                                   placeholder="Soyad" name="soyad" id="soyad" required />
+                                        </div>
                                     </div>
-                                    <!--end::Ad-->
+                                    <!--end::Ad & Soyad-->
 
                                     <!--begin::Email-->
                                     <div class="mb-8 fv-row">
@@ -346,6 +353,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const formData = {
             ad: document.getElementById('ad').value,
+            soyad: (document.getElementById('soyad')?.value || ''),
             email: document.getElementById('email').value,
             magaza_id: document.getElementById('magaza_id').value || null,
             personel_id: document.getElementById('personel_id').value || null,

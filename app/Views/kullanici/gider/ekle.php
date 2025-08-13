@@ -53,6 +53,7 @@
                                 
                                 <div class="card-body">
                                     <form method="post" action="/gider/ekle" enctype="multipart/form-data" id="giderForm">
+                                        <?= csrf_field(); ?>
                                         <!-- Gider Başlığı -->
                                         <div class="row mb-6">
                                             <label class="col-lg-4 col-form-label required fw-semibold fs-6">Gider Başlığı</label>

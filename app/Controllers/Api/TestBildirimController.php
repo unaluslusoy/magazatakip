@@ -77,15 +77,7 @@ class TestBildirimController extends Controller {
                 return;
             }
             
-            if (empty($kullanici['cihaz_token'])) {
-                http_response_code(400);
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Kullanıcının cihaz token\'ı bulunamadı',
-                    'timestamp' => time()
-                ], JSON_UNESCAPED_UNICODE);
-                return;
-            }
+            // v16: alias (external_id) destekleniyor; cihaz_token zorunlu olmayabilir
             
             // OneSignal ayarlarını al
             $ayarlar = $this->oneSignalAyarlarModel->getAyarlar();
@@ -110,7 +102,7 @@ class TestBildirimController extends Controller {
                     'data' => [
                         'notification_id' => $result['id'],
                         'user_id' => $userId,
-                        'device_token' => $kullanici['cihaz_token'],
+                        'device_token' => $kullanici['cihaz_token'] ?? null,
                         'platform' => $kullanici['isletim_sistemi']
                     ],
                     'timestamp' => time()
@@ -124,6 +116,12 @@ class TestBildirimController extends Controller {
                 ];
             }
             
+            // Admin'e bildirim kaydı oluştur (id=1)
+            try {
+                $bildirimModel = new \app\Models\Bildirim();
+                $bildirimModel->createForAdmin($title, $message, $url ?? '/', $_SESSION['user_id'] ?? null);
+            } catch (\Exception $e) { /* sessiz geç */ }
+
             echo json_encode($response, JSON_UNESCAPED_UNICODE);
             
         } catch (\Exception $e) {
@@ -228,11 +226,11 @@ class TestBildirimController extends Controller {
     /**
      * OneSignal API'ye bildirim gönder
      */
-    private function sendOneSignalNotification($kullanici, $title, $message, $url, $ayarlar) {
+        private function sendOneSignalNotification($kullanici, $title, $message, $url, $ayarlar) {
         try {
+            // v16: alias (external_id) öncelikli, yoksa player_ids
             $data = [
                 'app_id' => $ayarlar['onesignal_app_id'],
-                'include_player_ids' => [$kullanici['cihaz_token']],
                 'headings' => ['tr' => $title],
                 'contents' => ['tr' => $message],
                 'data' => [
@@ -241,6 +239,12 @@ class TestBildirimController extends Controller {
                     'url' => $url
                 ]
             ];
+            if (!empty($kullanici['id'])) {
+                $data['include_aliases'] = [ 'external_id' => [ (string)$kullanici['id'] ] ];
+                $data['channel_for_external_user_ids'] = 'push';
+            } elseif (!empty($kullanici['cihaz_token'])) {
+                $data['include_player_ids'] = [ $kullanici['cihaz_token'] ];
+            }
             
             $url = 'https://onesignal.com/api/v1/notifications';
             
@@ -267,7 +271,7 @@ class TestBildirimController extends Controller {
                 return ['success' => false, 'error' => 'cURL Hatası: ' . $error];
             }
             
-            if ($httpCode !== 200) {
+            if ($httpCode < 200 || $httpCode >= 300) {
                 return ['success' => false, 'error' => 'HTTP Kodu: ' . $httpCode . ' - Yanıt: ' . $response];
             }
             

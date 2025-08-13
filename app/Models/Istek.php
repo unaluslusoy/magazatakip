@@ -7,17 +7,23 @@ class Istek extends Model {
     protected $table = 'istekler';
 
     public function getAll() {
-        $stmt = $this->db->query("SELECT istekler.*, personel.ad AS personel_adi, personel.soyad AS personel_soyad
+        $stmt = $this->db->query("SELECT istekler.*, 
+                                      personel.ad AS personel_adi, personel.soyad AS personel_soyad,
+                                      k.ad AS kullanici_adi, k.soyad AS kullanici_soyad
                               FROM {$this->table} 
                               LEFT JOIN personel ON istekler.personel_id = personel.id
+                              LEFT JOIN kullanicilar k ON istekler.kullanici_id = k.id
                               ORDER BY istekler.id DESC");
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
     public function get($id) {
-        $stmt = $this->db->prepare("SELECT istekler.*, personeller.ad AS personel_adi, personeller.soyad AS personel_soyad 
+        $stmt = $this->db->prepare("SELECT istekler.*, 
+                                        personel.ad AS personel_adi, personel.soyad AS personel_soyad,
+                                        k.ad AS kullanici_adi, k.soyad AS kullanici_soyad
                                 FROM {$this->table} 
-                                LEFT JOIN personeller ON istekler.personel_id = personeller.id 
+                                LEFT JOIN personel ON istekler.personel_id = personel.id 
+                                LEFT JOIN kullanicilar k ON istekler.kullanici_id = k.id
                                 WHERE istekler.id = :id");
         $stmt->execute(['id' => $id]);
         return $stmt->fetch(\PDO::FETCH_ASSOC);
@@ -26,7 +32,8 @@ class Istek extends Model {
     public function create($data) {
         $stmt = $this->db->prepare("INSERT INTO {$this->table} (kullanici_id, baslik, aciklama, magaza, derece, tarih, durum, personel_id, is_aciklamasi, baslangic_tarihi, bitis_tarihi) 
                                     VALUES (:kullanici_id, :baslik, :aciklama, :magaza, :derece, NOW(), 'yeni', :personel_id, :is_aciklamasi, :baslangic_tarihi, :bitis_tarihi)");
-        return $stmt->execute($data);
+        $ok = $stmt->execute($data);
+        return $ok ? (int)$this->db->lastInsertId() : false;
     }
 
     public function update($id, $data) {

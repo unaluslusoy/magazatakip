@@ -13,7 +13,8 @@ function getIstekById($id) {
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 ?>
-<form method="post" action="/admin/istek/guncelle/<?= $istek['id']; ?>">
+    <form method="post" action="/admin/istek/guncelle/<?= $istek['id']; ?>">
+        <?= csrf_field(); ?>
 	<div class="mb-3">
 		<label for="baslik" class="form-label">Başlık:</label>
 		<input type="text" name="baslik" id="baslik" class="form-control" value="<?= $istek['baslik']; ?>" disabled>

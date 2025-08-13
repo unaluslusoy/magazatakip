@@ -142,6 +142,7 @@ class KullaniciController
 
             $data = [
                 'ad' => htmlspecialchars($input['ad'], ENT_QUOTES, 'UTF-8'),
+                'soyad' => htmlspecialchars($input['soyad'] ?? '', ENT_QUOTES, 'UTF-8'),
                 'email' => filter_var($input['email'], FILTER_SANITIZE_EMAIL),
                 'sifre' => password_hash($input['password'], PASSWORD_BCRYPT),
                 'magaza_id' => !empty($input['magaza_id']) ? intval($input['magaza_id']) : null,
@@ -240,6 +241,7 @@ class KullaniciController
 
             $data = [
                 'ad' => htmlspecialchars($input['ad'], ENT_QUOTES, 'UTF-8'),
+                'soyad' => htmlspecialchars($input['soyad'] ?? '', ENT_QUOTES, 'UTF-8'),
                 'email' => filter_var($input['email'], FILTER_SANITIZE_EMAIL),
                 'magaza_id' => !empty($input['magaza_id']) ? intval($input['magaza_id']) : null,
                 'yonetici' => isset($input['yonetici']) ? 1 : 0

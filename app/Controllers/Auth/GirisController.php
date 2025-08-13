@@ -41,6 +41,12 @@ class GirisController extends Controller {
         $loginResult = $authManager->login($email, $password, $remember);
         
         if ($loginResult['success']) {
+            // Girişten hemen sonra cihaz token tazeleme isteği için küçük bir işaret
+            $_SESSION['alert_message'] = [
+                'text' => 'Giriş başarılı. Bildirimler etkinleştiriliyor...',
+                'icon' => 'success',
+                'confirmButtonText' => 'Tamam'
+            ];
             header('Location: ' . $loginResult['redirect']);
             exit();
         } else {

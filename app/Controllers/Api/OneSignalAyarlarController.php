@@ -30,6 +30,36 @@ class OneSignalAyarlarController extends Controller {
     }
     
     /**
+     * OneSignal ayarlarını güncelle (REST via API)
+     */
+    public function save() {
+        try {
+            $input = json_decode(file_get_contents('php://input'), true);
+            if (!$input) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Geçersiz JSON'], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            $data = [
+                'onesignal_app_id' => $input['onesignal_app_id'] ?? '',
+                'onesignal_api_key' => $input['onesignal_api_key'] ?? ''
+            ];
+
+            $result = (new OneSignalAyarlar())->updateAyarlar($data);
+            if ($result) {
+                echo json_encode(['success' => true, 'message' => 'Ayarlar kaydedildi']);
+            } else {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Ayarlar kaydedilemedi']);
+            }
+        } catch (\Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    /**
      * OneSignal ayarlarını getir (sadece App ID)
      */
     public function getOneSignalConfig() {

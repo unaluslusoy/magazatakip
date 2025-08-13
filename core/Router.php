@@ -4,6 +4,17 @@ namespace core;
 class Router {
     public $routes = [];
 
+    private function logRequest($message) {
+        try {
+            $logDir = __DIR__ . '/../logs';
+            if (!is_dir($logDir)) { @mkdir($logDir, 0775, true); }
+            $line = '[' . date('Y-m-d H:i:s') . '] ' . ($message ?? '') . "\n";
+            @file_put_contents($logDir . '/router.log', $line, FILE_APPEND);
+        } catch (\Throwable $e) {
+            // no-op
+        }
+    }
+
     public function get($uri, $controller) {
         $this->routes['GET'][$uri] = $controller;
         // Debug: Route ekleme
@@ -49,9 +60,32 @@ class Router {
                 $isMatch = true;
                 
                 foreach ($routeParts as $key => $part) {
+                    $currentSegment = $uriParts[$key] ?? '';
+
+                    // {param} biçimli placeholders
                     if (preg_match('/^{\w+}$/', $part)) {
-                        $parameters[] = $uriParts[$key];
-                    } elseif ($part !== $uriParts[$key]) {
+                        $parameters[] = $currentSegment;
+                        continue;
+                    }
+
+                    // CodeIgniter tarzı placeholderlar: (:num), (:any)
+                    if ($part === '(:num)') {
+                        if (ctype_digit($currentSegment)) {
+                            $parameters[] = $currentSegment;
+                            continue;
+                        }
+                        $isMatch = false;
+                        break;
+                    }
+
+                    if ($part === '(:any)') {
+                        // herhangi bir segment
+                        $parameters[] = $currentSegment;
+                        continue;
+                    }
+
+                    // Birebir eşleşme
+                    if ($part !== $currentSegment) {
                         $isMatch = false;
                         break;
                     }
@@ -68,6 +102,9 @@ class Router {
 
     public function dispatch($uri) {
         $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+        $start = microtime(true);
+        $cleanUriForLog = trim(strtok($uri, '?'), '/');
+        $this->logRequest("BEGIN {$method} /{$cleanUriForLog}");
         
         // CLI için varsayılan değerler
         if (php_sapi_name() === 'cli') {
@@ -80,18 +117,56 @@ class Router {
             $method = strtoupper($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE']);
         }
         
-        // Query string'i çıkar
-        $cleanUri = strtok($uri, '?');
+        // Query string'i çıkar ve normalize et
+        $cleanUri = trim(strtok($uri, '?'), '/');
         
-        // Admin route kontrolü - Güvenlik
+        // Admin route kontrolü - Güvenlik (başında 'admin' olan her path)
         if (strpos($cleanUri, 'admin') === 0) {
             // Admin route'ları için AdminMiddleware kontrolü
             if (!class_exists('app\\Middleware\\AdminMiddleware')) {
                 require_once 'app/Middleware/AdminMiddleware.php';
             }
             \app\Middleware\AdminMiddleware::handle();
+
+            // Admin POST/PUT/DELETE isteklerinde CSRF kontrolü
+            if (in_array($method, ['POST', 'PUT', 'DELETE'], true)) {
+                if (!class_exists('app\\Middleware\\CsrfMiddleware')) {
+                    require_once 'app/Middleware/CsrfMiddleware.php';
+                }
+                \app\Middleware\CsrfMiddleware::handle();
+            }
+        }
+
+        // Kullanıcı alanı için middleware (public rotalar hariç)
+        if (strpos($cleanUri, 'api/') !== 0 && strpos($cleanUri, 'admin') !== 0) {
+            $publicRoutes = ['','auth/giris','auth/kayit'];
+            if (!in_array($cleanUri, $publicRoutes, true)) {
+                if (!class_exists('app\\Middleware\\UserMiddleware')) {
+                    require_once 'app/Middleware/UserMiddleware.php';
+                }
+                \app\Middleware\UserMiddleware::handle();
+            }
         }
         
+        // CSRF kontrolü ileriki adımda admin formları için etkinleştirilecek
+
+        // Genel erişim kontrolü (public olmayan rotalar için login zorunlu)
+        if (!class_exists('core\\AuthManager')) {
+            require_once __DIR__ . '/AuthManager.php';
+        }
+        $authManager = AuthManager::getInstance();
+        $routeForAccess = '/' . $cleanUri;
+        if ($routeForAccess === '/') {
+            $routeForAccess = '/';
+        }
+        $access = $authManager->checkRouteAccess($routeForAccess);
+        if (isset($access['allowed']) && $access['allowed'] === false) {
+            $redirectUrl = $access['redirect'] ?? '/auth/giris';
+            $this->logRequest("DENY {$method} /{$cleanUri} -> {$redirectUrl}");
+            header('Location: ' . $redirectUrl);
+            exit();
+        }
+
         // Debug: Route'ları logla (sadece geliştirme ortamında)
         if (defined('DEBUG_MODE') && DEBUG_MODE) {
             error_log("Router Debug - Method: " . $method . ", URI: " . $cleanUri);
@@ -134,6 +209,7 @@ class Router {
             }
             
             $controller = new $controllerName();
+            $this->logRequest("CALL {$controllerName}@{$action}");
             
             // Kontrol: Action metodu var mı?
             if (!method_exists($controller, $action)) {
@@ -147,8 +223,11 @@ class Router {
             $allParameters = $parameters;
             
             call_user_func_array([$controller, $action], $allParameters);
+            $durMs = round((microtime(true) - $start) * 1000);
+            $this->logRequest("END {$method} /{$cleanUri} {$durMs}ms");
         } else {
             // Hata sayfasına yönlendir
+            $this->logRequest("NOT_FOUND {$method} /{$cleanUri}");
             header("HTTP/1.0 404 Not Found");
             echo "404 - Sayfa Bulunamadı";
             exit();

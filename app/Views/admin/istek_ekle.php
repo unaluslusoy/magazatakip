@@ -1,5 +1,6 @@
 <!-- app/Views/admin/istek_ekle.php -->
 <form method="post" action="/admin/istek/ekle" class="form fv-plugins-bootstrap5 fv-plugins-framework" id="kt_modal_add_istek_form">
+    <?= csrf_field(); ?>
 	<div class="modal-header">
 		<h2 class="fw-bold">İş Emri Ekle</h2>
 		<div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal" aria-label="Close">

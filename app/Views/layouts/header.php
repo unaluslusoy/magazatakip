@@ -20,12 +20,36 @@
 	<link href="/public/plugins/global/plugins.bundle.css?v=<?php echo time(); ?>" rel="stylesheet" type="text/css" />
 	<link href="/public/css/style.bundle.css?v=<?php echo time(); ?>" rel="stylesheet" type="text/css" />
     <script src="/public/plugins/global/plugins.bundle.js?v=<?php echo time(); ?>"></script>
+    <meta name="csrf-token" content="<?php echo htmlspecialchars(csrf_token()); ?>">
 	<script> if (window.top != window.self) { window.top.location.replace(window.self.location.href); }</script>
-    <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" defer></script>
-    <script src="/public/js/token-registration.js" defer></script>
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js?v=<?php echo time(); ?>" defer></script>
+    <script>
+        // Oturum açıksa OneSignal alias eşlemesi için CURRENT_USER_ID'yi global olarak yayınla
+        window.CURRENT_USER_ID = <?php echo isset($_SESSION['user_id']) ? json_encode((string)$_SESSION['user_id']) : 'null'; ?>;
+    </script>
+    <style>
+        .alert { border-radius: 6px; border: 1px solid transparent; }
+        .alert-success { background: #d1e7dd; color: #0f5132; border-color:#badbcc; }
+        .alert-danger { background: #f8d7da; color: #842029; border-color:#f5c2c7; }
+        .alert-info { background: #cff4fc; color:#055160; border-color:#b6effb; }
+        /* Modals ve SweetAlert uyarıları her zaman overlay'lerin üstünde olsun */
+        .swal2-container { z-index: 20000 !important; }
+        .modal { z-index: 20010 !important; }
+        .modal-backdrop { z-index: 20000 !important; }
+    </style>
+    <script src="/public/js/token-registration.js?v=<?php echo time(); ?>" defer></script>
 
 </head>
 <body id="kt_app_body" data-kt-app-sidebar-enabled="true" data-kt-app-sidebar-fixed="true" data-kt-app-sidebar-push-header="true" data-kt-app-sidebar-push-toolbar="true" data-kt-app-sidebar-push-footer="true" class="app-default">
+<!-- Global Page Loader Overlay -->
+<div id="pageLoaderOverlay" class="position-fixed top-0 start-0 w-100 h-100 d-none" style="z-index: 9000; background: rgba(255,255,255,0.8);">
+    <div class="d-flex w-100 h-100 justify-content-center align-items-center">
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+            <div class="mt-3 fw-semibold text-muted">Sayfa yükleniyor...</div>
+        </div>
+    </div>
+</div>
 <script>
     const defaultThemeMode = 'light'; // light|dark|system
     let themeMode;
@@ -48,15 +72,24 @@
 </script>
 <?php if (isset($_SESSION['alert_message'])): ?>
     <script>
-        Swal.fire({
-            text: "<?php echo $_SESSION['alert_message']['text']; ?>",
-            icon: "<?php echo $_SESSION['alert_message']['icon']; ?>",
-            buttonsStyling: false,
-            confirmButtonText: "<?php echo $_SESSION['alert_message']['confirmButtonText']; ?>",
-            customClass: {
-                confirmButton: "btn btn-primary"
-            }
-        });
+        (function(){
+            try {
+                var msg = <?php echo json_encode($_SESSION['alert_message']['text'] ?? ''); ?>;
+                var icon = <?php echo json_encode($_SESSION['alert_message']['icon'] ?? 'info'); ?>;
+                var confirmText = <?php echo json_encode($_SESSION['alert_message']['confirmButtonText'] ?? 'Tamam'); ?>;
+                if (window.Swal && msg) {
+                    Swal.fire({
+                        text: msg,
+                        icon: icon || 'info',
+                        buttonsStyling: false,
+                        confirmButtonText: confirmText,
+                        customClass: { confirmButton: 'btn btn-primary' }
+                    });
+                } else if (typeof showToast === 'function' && msg) {
+                    showToast(msg, icon === 'success' ? 'success' : (icon === 'error' ? 'danger' : 'info'));
+                }
+            } catch (e) {}
+        })();
     </script>
     <?php unset($_SESSION['alert_message']); ?>
 <?php endif; ?>

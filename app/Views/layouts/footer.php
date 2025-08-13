@@ -50,6 +50,25 @@
 </script>
 <!--end::Auth Guard-->
 
+<!--begin::Page Navigation Loader-->
+<script src="/public/js/page-transitions.js?v=<?php echo time(); ?>" defer></script>
+<!--end::Page Navigation Loader-->
+
+<!-- Global Preview Modal (image) -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ön İzleme</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="previewImage" src="#" alt="Ön İzleme" class="img-fluid rounded" />
+            </div>
+        </div>
+    </div>
+</div>
+
 <!--end::Javascript-->
 </body>
 <!--end::Body-->

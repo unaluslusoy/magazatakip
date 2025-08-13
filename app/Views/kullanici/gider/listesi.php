@@ -1,7 +1,6 @@
 <?php require_once __DIR__ . '/../layouts/layout/header.php'; ?>
 
-<!-- API Service -->
-<script src="/app/Views/kullanici/api-service.js"></script>
+<!-- API Service header'da yükleniyor -->
 
 <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
     <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
@@ -262,7 +261,29 @@ class GiderManager {
 // Sayfa yüklendiğinde GiderManager'ı başlat
 document.addEventListener('DOMContentLoaded', function() {
     window.giderManager = new GiderManager();
+    // Pull-to-refresh entegrasyonu
+    window.refreshPageData = async function() {
+        if (window.giderManager) {
+            await window.giderManager.loadGiderListesi();
+        }
+    }
 });
 </script>
+
+<!-- Mobil sabit aksiyon çubuğu -->
+<div class="d-md-none" style="position: fixed; bottom: 0; left: 0; right: 0; z-index: 1030;">
+    <div class="bg-white border-top d-flex justify-content-around align-items-center py-2 shadow-sm">
+        <button type="button" class="btn btn-light d-flex flex-column align-items-center" onclick="window.refreshPageData && window.refreshPageData()">
+            <i class="ki-outline ki-refresh fs-2"></i>
+            <small>Yenile</small>
+        </button>
+        <a href="/gider/ekle" class="btn btn-primary d-flex flex-column align-items-center">
+            <i class="ki-outline ki-plus fs-2"></i>
+            <small>Ekle</small>
+        </a>
+    </div>
+    <!-- Alt çubuk yüksekliği için boşluk -->
+    <div style="height: 64px; background: transparent;"></div>
+ </div>
 
 <?php require_once __DIR__ . '/../layouts/layout/footer.php'; ?> 

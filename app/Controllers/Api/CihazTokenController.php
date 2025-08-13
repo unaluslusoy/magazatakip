@@ -12,9 +12,17 @@ class CihazTokenController extends Controller {
         $this->kullaniciModel = new Kullanici();
         
         // API için CORS headers
-        header('Access-Control-Allow-Origin: *');
+        // PWA standalone isteğinde çerezler için Origin kısıtla
+        $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+        if ($origin && preg_match('#^https?://(www\.)?magazatakip\.com\.tr$#', $origin)) {
+            header('Access-Control-Allow-Origin: ' . $origin);
+            header('Vary: Origin');
+        } else {
+            header('Access-Control-Allow-Origin: https://magazatakip.com.tr');
+        }
         header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
         header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+        header('Access-Control-Allow-Credentials: true');
         header('Content-Type: application/json; charset=utf-8');
         
         // Cache prevention headers
@@ -304,5 +312,50 @@ class CihazTokenController extends Controller {
         ];
         
         return $platformMap[$platform] ?? ucfirst($platform);
+    }
+
+    /**
+     * Debug: aktif kullanıcının token bilgisini JSON döndür
+     */
+    public function debug() {
+        try {
+            if (!isset($_SESSION['user_id'])) {
+                http_response_code(401);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Kullanıcı girişi gerekli',
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            $userId = (int)$_SESSION['user_id'];
+            $user = $this->kullaniciModel->get($userId);
+            if (!$user) {
+                http_response_code(404);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Kullanıcı bulunamadı'
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            echo json_encode([
+                'success' => true,
+                'data' => [
+                    'user_id' => $userId,
+                    'email' => $user['email'] ?? null,
+                    'device_token' => $user['cihaz_token'] ?? null,
+                    'platform' => $user['isletim_sistemi'] ?? null,
+                    'bildirim_izni' => isset($user['bildirim_izni']) ? (bool)$user['bildirim_izni'] : null,
+                    'session_exists' => true
+                ]
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (\Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Debug hata: ' . $e->getMessage()
+            ], JSON_UNESCAPED_UNICODE);
+        }
     }
 }

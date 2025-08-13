@@ -84,7 +84,7 @@ class Kullanici extends Model {
     }
     public function getAllUsers(): false|array
     {
-        $stmt = $this->db->prepare("SELECT id, ad FROM {$this->table}");
+        $stmt = $this->db->prepare("SELECT id, ad, soyad, email FROM {$this->table} ORDER BY ad, soyad");
         $stmt->execute();
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
@@ -92,6 +92,20 @@ class Kullanici extends Model {
     public function getBildirimIzinliKullanicilar(): false|array
     {
         $stmt = $this->db->query("SELECT id, email, telefon, cihaz_token, isletim_sistemi FROM {$this->table} WHERE bildirim_izni = 1 AND (cihaz_token IS NOT NULL OR email IS NOT NULL OR telefon IS NOT NULL)");
+        $stmt->execute();
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Web push için uygun kullanıcılar (sadece cihaz_token mevcut olanlar)
+     */
+    public function getWebPushUygunKullanicilar(): false|array
+    {
+        $sql = "SELECT k.id, k.ad, k.soyad, k.email, k.telefon, k.cihaz_token, k.isletim_sistemi, m.ad AS magaza_isim
+                FROM {$this->table} k
+                LEFT JOIN magazalar m ON k.magaza_id = m.id
+                WHERE k.bildirim_izni = 1 AND k.cihaz_token IS NOT NULL";
+        $stmt = $this->db->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
@@ -106,6 +120,26 @@ class Kullanici extends Model {
         $query = "SELECT id, email, telefon, cihaz_token, isletim_sistemi 
               FROM {$this->table} 
               WHERE id IN ($placeholders) AND bildirim_izni = 1";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->execute($userIds);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Web push için seçilen kullanıcılar (yalnızca cihaz_token'ı olanlar)
+     */
+    public function getSelectedUsersWeb($userIds): false|array
+    {
+        if (empty($userIds)) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+        $query = "SELECT k.id, k.ad, k.soyad, k.email, k.telefon, k.cihaz_token, k.isletim_sistemi, m.ad AS magaza_isim
+                  FROM {$this->table} k
+                  LEFT JOIN magazalar m ON k.magaza_id = m.id
+                  WHERE k.id IN ($placeholders) AND k.bildirim_izni = 1 AND k.cihaz_token IS NOT NULL";
 
         $stmt = $this->db->prepare($query);
         $stmt->execute($userIds);

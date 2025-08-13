@@ -53,6 +53,7 @@ require_once __DIR__ . '/../layouts/layout/navbar.php';
                         
                         <div class="card-body">
                             <form class="form" method="post" action="/ciro/ekle" enctype="multipart/form-data" id="ciroForm">
+                                <?= csrf_field(); ?>
                                 <!-- Mağaza Bilgisi -->
                                 <div class="row mb-6">
                                     <div class="col-12 col-md-6 col-lg-4">

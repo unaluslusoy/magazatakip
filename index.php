@@ -9,7 +9,24 @@ use app\Models\Kullanici;
 
 
 // Production ayarları
-define('DEBUG_MODE', false);
+define('DEBUG_MODE', true);
+// PHP hata görüntülemeyi kapat, loglamayı aç (JSON çıktılarının bozulmaması için)
+ini_set('display_errors', DEBUG_MODE ? '1' : '0');
+ini_set('display_startup_errors', DEBUG_MODE ? '1' : '0');
+error_reporting(DEBUG_MODE ? E_ALL : (E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED & ~E_STRICT));
+ini_set('log_errors', '1');
+// Not: Özel error_log yolu istenirse aşağıdaki satır açılabilir ve var olan bir klasöre işaret etmeli
+// ini_set('error_log', __DIR__ . '/storage/logs/php-error.log');
+
+// Ortam değişkenlerini yükle (.env varsa)
+if (class_exists('Dotenv\\Dotenv')) {
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+    try {
+        $dotenv->load();
+    } catch (Exception $e) {
+        // .env olmayabilir; sessiz geç
+    }
+}
 
 // Oturum ayarları
 session_start();

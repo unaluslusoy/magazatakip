@@ -297,9 +297,11 @@ class BildirimApiController extends Controller {
                 return;
             }
             
+            $readCount = $this->bildirimModel->getReadCount($_SESSION['user_id']);
             $stats = [
                 'okunmamis' => $this->bildirimModel->getUnreadCount($_SESSION['user_id']),
-                'okunmus' => $this->bildirimModel->getReadCount($_SESSION['user_id']),
+                'okundu' => $readCount,
+                'okunmus' => $readCount,
                 'toplam' => $this->bildirimModel->getTotalCount($_SESSION['user_id']),
                 'bugun' => $this->bildirimModel->getTodayCount($_SESSION['user_id'])
             ];

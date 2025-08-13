@@ -6,6 +6,7 @@ require_once 'app/Views/layouts/navbar.php';
 ?>
 
 <form method="post" action="/admin/magaza/ekle">
+    <?= csrf_field(); ?>
 	<div class="mb-3">
 		<label for="ad" class="form-label">Magaza:</label>
 		<input type="text" name="ad" id="ad" class="form-control" required>

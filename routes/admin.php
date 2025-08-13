@@ -87,8 +87,13 @@ $router->post('admin/geri_bildirimler/guncelleDurum', 'Admin\GeriBildirimControl
 
 // Site ayarları rotaları
 $router->get('/admin/site-ayarlar', 'Admin\SiteAyarlarController@index');
-$router->post('/admin/site-ayarlar/kaydet', 'Admin\SiteAyarlarController@kaydet');
+$router->post('/admin/site-ayarlar/kaydet', 'Admin\SiteAyarlarController@siteAyarlarKaydet');
+$router->post('/admin/site-ayarlar/genel-kaydet', 'Admin\SiteAyarlarController@siteAyarlarKaydet');
+$router->post('/admin/site-ayarlar/iletisim-kaydet', 'Admin\SiteAyarlarController@siteAyarlarKaydet');
+$router->post('/admin/site-ayarlar/sosyal-kaydet', 'Admin\SiteAyarlarController@siteAyarlarKaydet');
 $router->post('/admin/site-ayarlar/onesignal-kaydet', 'Admin\SiteAyarlarController@oneSignalKaydet');
+$router->post('/admin/site-ayarlar/mail-kaydet', 'Admin\SiteAyarlarController@mailKaydet');
+$router->post('/admin/site-ayarlar/mail-test', 'Admin\SiteAyarlarController@mailTestGonder');
 
 // Bildirim rotaları
 $router->get('/admin/bildirimler', 'Admin\BildirimController@index');
@@ -108,6 +113,43 @@ $router->post('/admin/bildirim_gonder', 'Admin\BildirimController@bildirimiGonde
 $router->get('/admin/bildirimler/sil/(:num)', 'Admin\BildirimController@delete');
 $router->get('/admin/bildirimler/okundu/(:num)', 'Admin\BildirimController@markAsRead');
 $router->get('/admin/bildirimler/detay/(:num)', 'Admin\BildirimController@detay');
+
+// Tamsoft
+$router->get('/admin/tamsoft/stok', 'Admin\TamsoftController@stokListesi');
+$router->get('/admin/tamsoft/token-test', 'Admin\TamsoftController@tokenTest');
+$router->get('/admin/tamsoft/depolar', 'Admin\TamsoftController@depolar');
+$router->get('/admin/tamsoft/estok-preview', 'Admin\TamsoftController@estokPreview');
+$router->get('/admin/tamsoft/ayarlar', 'Admin\\TamsoftController@ayarlar');
+$router->post('/admin/tamsoft/ayarlar', 'Admin\\TamsoftController@ayarlar');
+
+// Trendyol Go
+$router->get('/admin/trendyolgo', 'Admin\\TrendyolGoController@index');
+$router->get('/admin/trendyolgo/ayarlar', 'Admin\\TrendyolGoController@ayarlar');
+$router->post('/admin/trendyolgo/ayarlar', 'Admin\\TrendyolGoController@ayarlar');
+$router->get('/admin/trendyolgo/urunler', 'Admin\\TrendyolGoController@urunler');
+$router->get('/admin/trendyolgo/magazalar', 'Admin\\TrendyolGoController@magazalar');
+$router->post('/admin/trendyolgo/magazalar', 'Admin\\TrendyolGoController@magazalar');
+$router->get('/admin/trendyolgo/magaza/sil/{id}', 'Admin\\TrendyolGoController@magazaSil');
+// Ürün içe aktarma job tetikleme ve durum sorgu
+$router->post('/admin/trendyolgo/urunler/import-trigger', 'Admin\\TrendyolGoController@urunImportTrigger');
+$router->get('/admin/trendyolgo/urunler/import-status/{id}', 'Admin\\TrendyolGoController@urunImportStatus');
+// Sağlık testi ve yeni sayfalar
+$router->get('/admin/trendyolgo/health', 'Admin\\TrendyolGoController@healthCheck');
+$router->get('/admin/trendyolgo/siparisler', 'Admin\\TrendyolGoController@siparisler');
+$router->get('/admin/trendyolgo/iptaller', 'Admin\\TrendyolGoController@iptaller');
+$router->get('/admin/trendyolgo/loglar', 'Admin\\TrendyolGoController@loglar');
+$router->post('/admin/trendyolgo/loglar/temizle', 'Admin\\TrendyolGoController@logTemizle');
+
+// GetirÇarşı
+$router->get('/admin/getir', 'Admin\\GetirController@index');
+$router->get('/admin/getir/ayarlar', 'Admin\\GetirController@ayarlar');
+$router->post('/admin/getir/ayarlar', 'Admin\\GetirController@ayarlar');
+$router->post('/admin/getir/ayarlar/generate-webhook-key', 'Admin\\GetirController@generateWebhookKey');
+$router->get('/admin/getir/loglar', 'Admin\\GetirController@loglar');
+$router->post('/admin/getir/loglar/temizle', 'Admin\\GetirController@logTemizle');
+
+// Activity Logs
+$router->get('admin/activity-logs', 'Admin\\ActivityLogController@index');
 
 // OneSignal Test Routes
 $router->get('/admin/onesignal-test', 'Admin\OneSignalTestController@index');

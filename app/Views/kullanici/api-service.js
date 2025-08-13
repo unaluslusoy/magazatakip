@@ -21,6 +21,14 @@ class ApiService {
      */
     async makeRequest(url, options = {}) {
         const finalOptions = { ...this.defaultOptions, ...options };
+        // CSRF header ekle (varsa)
+        try {
+            const csrf = (typeof window !== 'undefined' && window.csrfToken) ? window.csrfToken : (document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || null);
+            if (csrf) {
+                finalOptions.headers = finalOptions.headers || {};
+                finalOptions.headers['X-CSRF-Token'] = csrf;
+            }
+        } catch (e) {}
         
         try {
             const response = await fetch(url, finalOptions);
@@ -30,6 +38,12 @@ class ApiService {
             }
             
             const data = await response.json();
+            // Sunucu güncelleme yanıtında client önbelleğini güncel tutmak için SW'ye mesaj
+            try {
+                if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({ type: 'INVALIDATE_CACHE', urls: [url] });
+                }
+            } catch (e) {}
             return data;
         } catch (error) {
             console.error('API isteği hatası:', error);

@@ -3,7 +3,8 @@ require_once 'app/Views/kullanici/layout/header.php';
 require_once 'app/Views/kullanici/layout/navbar.php';
 ?>
     <h2>Yeni İstek Oluştur</h2>
-	<form method="post" action="/istek/olustur">
+    <form method="post" action="/istek/olustur">
+        <?= csrf_field(); ?>
 		<div class="mb-3">
 			<label for="baslik" class="form-label">Başlık:</label>
 			<input type="text" name="baslik" id="baslik" class="form-control" required>

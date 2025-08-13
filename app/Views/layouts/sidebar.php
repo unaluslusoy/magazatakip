@@ -41,13 +41,110 @@
                                 </a>
                             </div>
                             <!--end::Menu item-->
+                    <!--begin::Menu item-->
+                    <div class="menu-item menu-accordion" data-kt-menu-trigger="click">
+                        <a href="#" class="menu-link py-3">
+                            <span class="menu-bullet">
+                                <i class="bi bi-diagram-3"></i>
+                            </span>
+                            <span class="menu-title">Entegrasyonlar</span>
+                            <span class="menu-arrow"></span>
+                        </a>
+                        <div class="menu-sub menu-sub-accordion pt-3">
+                            <!-- Tamsoft Ana Menü -->
+                            <div class="menu-item menu-accordion" data-kt-menu-trigger="click">
+                                <a href="#" class="menu-link py-3">
+                                    <span class="menu-bullet">
+                                        <i class="bi bi-plug"></i>
+                                    </span>
+                                    <span class="menu-title">Tamsoft</span>
+                                    <span class="menu-arrow"></span>
+                                </a>
+                                <div class="menu-sub menu-sub-accordion pt-3">
+                                    <div class="menu-item">
+                                        <a href="/admin/tamsoft/stok" class="menu-link py-3">
+                                            <span class="menu-bullet"><i class="bi bi-box-seam"></i></span>
+                                            <span class="menu-title">Stok Listesi</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a href="/admin/tamsoft/ayarlar" class="menu-link py-3">
+                                            <span class="menu-bullet"><i class="bi bi-gear"></i></span>
+                                            <span class="menu-title">Ayarlar</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Trendyol Go -->
+                            <div class="menu-item menu-accordion" data-kt-menu-trigger="click">
+                                <a href="#" class="menu-link py-3">
+                                    <span class="menu-bullet">
+                                        <i class="bi bi-lightning"></i>
+                                    </span>
+                                    <span class="menu-title">Trendyol Go</span>
+                                    <span class="menu-arrow"></span>
+                                </a>
+                                <div class="menu-sub menu-sub-accordion pt-3">
+                                    <div class="menu-item">
+                                        <a href="/admin/trendyolgo" class="menu-link py-3">
+                                            <span class="menu-bullet"><i class="bi bi-speedometer2"></i></span>
+                                            <span class="menu-title">Anasayfa</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a href="/admin/trendyolgo/urunler" class="menu-link py-3">
+                                            <span class="menu-bullet"><i class="bi bi-list"></i></span>
+                                            <span class="menu-title">Ürün Listesi</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a href="/admin/trendyolgo/magazalar" class="menu-link py-3">
+                                            <span class="menu-bullet"><i class="bi bi-shop"></i></span>
+                                            <span class="menu-title">Mağaza Listesi</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a href="/admin/trendyolgo/ayarlar" class="menu-link py-3">
+                                            <span class="menu-bullet"><i class="bi bi-gear"></i></span>
+                                            <span class="menu-title">Ayarlar</span>
+                                        </a>
+                                    </div>
+                                </div>
+                             <!-- GetirÇarşı -->
+                             <div class="menu-item menu-accordion" data-kt-menu-trigger="click">
+                                 <a href="#" class="menu-link py-3">
+                                     <span class="menu-bullet">
+                                         <i class="bi bi-bag"></i>
+                                     </span>
+                                     <span class="menu-title">GetirÇarşı</span>
+                                     <span class="menu-arrow"></span>
+                                 </a>
+                                 <div class="menu-sub menu-sub-accordion pt-3">
+                                     <div class="menu-item">
+                                         <a href="/admin/getir" class="menu-link py-3">
+                                             <span class="menu-bullet"><i class="bi bi-speedometer2"></i></span>
+                                             <span class="menu-title">Anasayfa</span>
+                                         </a>
+                                     </div>
+                                     <div class="menu-item">
+                                         <a href="/admin/getir/ayarlar" class="menu-link py-3">
+                                             <span class="menu-bullet"><i class="bi bi-gear"></i></span>
+                                             <span class="menu-title">Ayarlar</span>
+                                         </a>
+                                     </div>
+                                 </div>
+                             </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--end::Menu item-->
                         </div>
                         <!--end::Menu sub-->
                         <!--begin::Menu sub-->
                         <div class="menu-sub menu-sub-accordion pt-3">
                             <!--begin::Menu item-->
                             <div class="menu-item">
-                                <a href="/admin/onesignal/ayarlar" class="menu-link py-3">
+                                <a href="/admin/site-ayarlar" class="menu-link py-3">
                                 <span class="menu-bullet">
                                    <i class="bi bi-person-lines-fill"></i>
                                 </span>

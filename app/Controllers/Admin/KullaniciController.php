@@ -29,6 +29,7 @@ class KullaniciController extends Controller {
 
     public function store() {
         $ad = $_POST['ad'];
+        $soyad = $_POST['soyad'] ?? null;
         $email = $_POST['email'];
         $password = $_POST['password'];
         $rol = $_POST['rol'];
@@ -41,6 +42,7 @@ class KullaniciController extends Controller {
         $kullaniciModel = new Kullanici();
         $kullaniciModel->create([
             'ad' => $ad,
+            'soyad' => $soyad,
             'email' => $email,
             'sifre' => $hashed_password,
             'yonetici' => $rol,
@@ -112,6 +114,7 @@ class KullaniciController extends Controller {
         }
 
         $ad = htmlspecialchars($_POST['ad'], ENT_QUOTES, 'UTF-8');
+        $soyad = isset($_POST['soyad']) ? htmlspecialchars($_POST['soyad'], ENT_QUOTES, 'UTF-8') : '';
         $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
         $yonetici = isset($_POST['yonetici']) ? 1 : 0;
 
@@ -125,6 +128,7 @@ class KullaniciController extends Controller {
         
         $data = [
             'ad' => $ad,
+            'soyad' => $soyad,
             'email' => $email,
             'magaza_id' => $magaza_id,
             'yonetici' => $yonetici
@@ -273,6 +277,7 @@ class KullaniciController extends Controller {
 
             $data = [
                 'ad' => htmlspecialchars($input['ad'], ENT_QUOTES, 'UTF-8'),
+                'soyad' => htmlspecialchars($input['soyad'] ?? '', ENT_QUOTES, 'UTF-8'),
                 'email' => filter_var($input['email'], FILTER_SANITIZE_EMAIL),
                 'magaza_id' => !empty($input['magaza_id']) ? intval($input['magaza_id']) : null,
                 'yonetici' => isset($input['yonetici']) && $input['yonetici'] ? 1 : 0
@@ -449,6 +454,7 @@ class KullaniciController extends Controller {
 
             $data = [
                 'ad' => htmlspecialchars($input['ad'], ENT_QUOTES, 'UTF-8'),
+                'soyad' => htmlspecialchars($input['soyad'] ?? '', ENT_QUOTES, 'UTF-8'),
                 'email' => filter_var($input['email'], FILTER_SANITIZE_EMAIL),
                 'sifre' => password_hash($input['password'], PASSWORD_BCRYPT),
                 'magaza_id' => !empty($input['magaza_id']) ? intval($input['magaza_id']) : null,

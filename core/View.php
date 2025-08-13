@@ -1,13 +1,7 @@
 <?php
+// Bu dosya eski bir view yardımcı sınıfına aitti ve doğrudan require ile view çağrıldığı için artık gereksiz.
+// Uyumluluk için boş bir sınıf tanımı bırakıyoruz.
 
+namespace core;
 
-namespace Core;
-
-class View
-{
-    public static function render($view, $data = [])
-    {
-        extract($data);
-        require_once '../app/Views/' . $view . '.php';
-    }
-}
+class View {}

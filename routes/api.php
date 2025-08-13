@@ -5,6 +5,9 @@ use core\Router;
 // API Authentication middleware için  
 require_once 'app/Middleware/ApiAuthMiddleware.php';
 
+// Global API middleware (whitelist hariç)
+\app\Middleware\ApiAuthMiddleware::handle();
+
 $apiRouter = new Router();
 
 // API base path: /api/*
@@ -75,13 +78,20 @@ $apiRouter->post('api/device/token/save', 'Api\CihazTokenController@saveDeviceTo
 $apiRouter->delete('api/device/token/remove', 'Api\CihazTokenController@removeDeviceToken');
 $apiRouter->get('api/device/info', 'Api\CihazTokenController@getDeviceInfo');
 $apiRouter->put('api/device/notification-permission', 'Api\CihazTokenController@updateNotificationPermission');
+// Debug: şu anki kullanıcı ve tokeni hızlı görmek için
+$apiRouter->get('api/device/debug', 'Api\CihazTokenController@debug');
 
 // OneSignal Ayarları API Rotaları
 $apiRouter->get('api/onesignal/config', 'Api\OneSignalAyarlarController@getOneSignalConfig');
 $apiRouter->get('api/onesignal/status', 'Api\OneSignalAyarlarController@checkOneSignalStatus');
+// OneSignal ayarlarını REST ile kaydet
+$apiRouter->put('api/onesignal/save', 'Api\OneSignalAyarlarController@save');
 
 // Test Bildirimi API Rotaları
 $apiRouter->post('api/notification/test', 'Api\TestBildirimController@sendTestNotification');
 $apiRouter->post('api/notification/test-all', 'Api\TestBildirimController@sendTestNotificationToAll');
+
+// Getir webhook (public)
+$apiRouter->post('api/getir/newOrder', 'Api\GetirWebhookController@newOrder');
 
 return $apiRouter;

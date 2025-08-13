@@ -118,6 +118,7 @@ require_once 'app/Views/layouts/navbar.php';
             <div class="card-body py-4">
                 <!--begin::Form-->
                 <form action="/admin/onesignal-test/gonder" method="POST" class="form fv-plugins-bootstrap5 fv-plugins-framework">
+                    <?= csrf_field(); ?>
                     <!--begin::Input group-->
                     <div class="row g-9 mb-8">
                         <div class="col-md-6 fv-row">

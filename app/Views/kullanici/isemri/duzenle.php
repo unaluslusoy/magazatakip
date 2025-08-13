@@ -22,6 +22,7 @@
                             <?php endif; ?>
 
                             <form class="form fv-plugins-bootstrap5 fv-plugins-framework" method="post" action="/isemri/duzenle/<?= $isEmri['id'] ?>" enctype="multipart/form-data">
+                                <?= csrf_field(); ?>
                                 <div class="fv-row mb-7 fv-plugins-icon-container">
                                     <label class="fs-6 fw-semibold form-label mt-3">
                                         <span class="required">Başlık</span>

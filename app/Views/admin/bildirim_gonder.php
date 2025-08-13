@@ -7,6 +7,7 @@
 <body>
     <h1>Bildirim Gönder</h1>
     <form action="/admin/bildirim_gonder" method="POST">
+        <?= csrf_field(); ?>
         <label for="kullanici_id">Kullanıcı ID:</label>
         <input type="text" id="kullanici_id" name="kullanici_id"><br><br>
         <label for="baslik">Başlık:</label>

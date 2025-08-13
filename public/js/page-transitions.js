@@ -1,3 +1,12 @@
+(function(){
+  const overlay = document.getElementById('pageLoaderOverlay');
+  if (!overlay) return;
+  let count = 0; const show=()=>overlay.classList.remove('d-none'); const hide=()=>overlay.classList.add('d-none');
+  const inc=()=>{ if(++count>0) show(); }; const dec=()=>{ count=Math.max(0,count-1); if(count===0) hide(); };
+  window.addEventListener('beforeunload',()=>{ show(); });
+  document.addEventListener('click',e=>{ const a=e.target.closest('a'); if(!a) return; const href=a.getAttribute('href'); const target=a.getAttribute('target'); if(!href||href.startsWith('#')||href.startsWith('javascript:')||target==='_blank'||a.hasAttribute('data-no-loader')||a.closest('[data-no-loader]')) return; inc(); setTimeout(dec,15000); }, true);
+  document.addEventListener('submit',e=>{ const f=e.target; if (!f || f.hasAttribute('data-no-loader')|| f.closest('[data-no-loader]')) return; inc(); setTimeout(dec,15000); }, true);
+})();
 // Advanced Page Transitions for Mobile PWA
 class PageTransitions {
     constructor(options = {}) {

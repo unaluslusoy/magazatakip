@@ -40,6 +40,7 @@ require_once 'app/Views/layouts/header.php';
                     <div class="d-flex flex-center flex-column flex-column-fluid pb-15 pb-lg-20">
                         <!--begin::Form-->
                         <form class="form w-100" novalidate="novalidate" id="kt_sign_in_form" method="post" action="/auth/giris">
+                            <?= csrf_field(); ?>
                             <input type="hidden" name="cihaz_token" id="cihaz_token">
                             <input type="hidden" name="isletim_sistemi" id="isletim_sistemi">
                             <!--begin::Heading-->

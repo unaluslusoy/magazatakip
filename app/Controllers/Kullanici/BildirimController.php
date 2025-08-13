@@ -75,10 +75,12 @@ class BildirimController extends Controller
         $kullaniciId = $_SESSION['user_id'] ?? null;
         if (!$kullaniciId) {
             http_response_code(401);
+            header('Content-Type: application/json; charset=utf-8');
             echo json_encode(['success' => false, 'message' => 'Oturum geçersiz']);
             return;
         }
 
+        header('Content-Type: application/json; charset=utf-8');
         if ($this->bildirimModel->markKullaniciBildirimAsRead($id, $kullaniciId)) {
             echo json_encode(['success' => true, 'message' => 'Bildirim okundu olarak işaretlendi']);
         } else {
@@ -88,6 +90,12 @@ class BildirimController extends Controller
 
     public function getUnreadCount()
     {
+        // JSON header ve no-cache
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-cache, no-store, must-revalidate, max-age=0, private');
+        header('Pragma: no-cache');
+        header('Expires: -1');
+
         $kullaniciId = $_SESSION['user_id'] ?? null;
         if (!$kullaniciId) {
             http_response_code(401);
@@ -100,7 +108,8 @@ class BildirimController extends Controller
             echo json_encode(['success' => true, 'count' => $count]);
         } catch (\Exception $e) {
             error_log("Okunmamış bildirim sayısı alınırken hata: " . $e->getMessage());
-            echo json_encode(['success' => false, 'count' => 0]);
+            http_response_code(500);
+            echo json_encode(['success' => false, 'count' => 0, 'message' => 'Sunucu hatası']);
         }
     }
 } 

@@ -4,7 +4,7 @@ namespace app\Models\Kullanici\Ciro;
 use core\Model;
 
 class CiroModel extends Model {
-    protected $table = 'ciro'; // Tablo adınızı burada belirtin
+    protected $table = 'cirolar'; // Doğru tablo adı
 
     public function ciroEkle($data) {
         $this->db->beginTransaction();
@@ -112,39 +112,65 @@ class CiroModel extends Model {
     }
 
     public function ciroListele() {
-        // Veritabanı bağlantısını yenile
-        $this->db = null;
-        
-        // Config dosyasını yükle
-        if (!defined('DB_HOST')) {
-            require_once __DIR__ . '/../../../../config/database.php';
-        }
-        
-        $this->db = new \PDO(
-            "mysql:host=" . \DB_HOST . ";dbname=" . \DB_NAME . ";charset=utf8mb4",
-            \DB_USER,
-            \DB_PASS,
-            [
-                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
-                \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
-                \PDO::ATTR_EMULATE_PREPARES => false,
-                \PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci"
-            ]
-        );
-        
+        // Mevcut PDO bağlantısını kullan
         $query = "SELECT SQL_NO_CACHE c.*, m.ad as magaza_adi 
-                  FROM cirolar c 
+                  FROM {$this->table} c 
                   LEFT JOIN magazalar m ON c.magaza_id = m.id 
                   ORDER BY c.gun DESC, c.id DESC";
-        
         $stmt = $this->db->prepare($query);
         $stmt->execute();
-        
         $result = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-        
-        // Debug log
         error_log("CiroModel::ciroListele() - Bulunan kayıt sayısı: " . count($result));
-        
         return $result;
+    }
+
+    /**
+     * Aylık toplam ciro
+     */
+    public function getMonthlyTotal($magaza_id = null, $year = null, $month = null) {
+        if (!$year) { $year = date('Y'); }
+        if (!$month) { $month = date('m'); }
+        $sql = "SELECT SQL_NO_CACHE SUM(toplam) AS toplam FROM {$this->table} WHERE YEAR(gun) = :year AND MONTH(gun) = :month";
+        $params = [':year' => $year, ':month' => $month];
+        if ($magaza_id) {
+            $sql .= " AND magaza_id = :magaza_id";
+            $params[':magaza_id'] = $magaza_id;
+        }
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return $row['toplam'] ?? 0;
+    }
+
+    /**
+     * Bugünün toplam ciro
+     */
+    public function getTodayTotal($magaza_id = null) {
+        $sql = "SELECT SQL_NO_CACHE SUM(toplam) AS toplam FROM {$this->table} WHERE DATE(gun) = CURDATE()";
+        $params = [];
+        if ($magaza_id) {
+            $sql .= " AND magaza_id = :magaza_id";
+            $params[':magaza_id'] = $magaza_id;
+        }
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return $row['toplam'] ?? 0;
+    }
+
+    /**
+     * Toplam ciro
+     */
+    public function getTotal($magaza_id = null) {
+        $sql = "SELECT SQL_NO_CACHE SUM(toplam) AS toplam FROM {$this->table}";
+        $params = [];
+        if ($magaza_id) {
+            $sql .= " WHERE magaza_id = :magaza_id";
+            $params[':magaza_id'] = $magaza_id;
+        }
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return $row['toplam'] ?? 0;
     }
 }

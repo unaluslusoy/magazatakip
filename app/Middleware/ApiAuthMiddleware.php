@@ -9,14 +9,37 @@ class ApiAuthMiddleware
     public static function handle()
     {
         // CORS headers for API
-        header('Access-Control-Allow-Origin: *');
+        // PWA (standalone) için çerezli isteklerde origin'i kısıtlayın
+        $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+        if ($origin && preg_match('#^https?://(www\.)?magazatakip\.com\.tr$#', $origin)) {
+            header('Access-Control-Allow-Origin: ' . $origin);
+            header('Vary: Origin');
+        } else {
+            header('Access-Control-Allow-Origin: https://magazatakip.com.tr');
+        }
         header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type, Authorization');
+        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-CSRF-Token, X-Requested-With');
+        header('Access-Control-Allow-Credentials: true');
         
         // Handle preflight OPTIONS request
         if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-            http_response_code(200);
+            http_response_code(204);
+            header('Content-Length: 0');
             exit();
+        }
+
+        $path = trim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH), '/');
+
+        // Public (whitelist) API uçları - authentication gerektirmez
+        $publicEndpoints = [
+            'api/auth/login',
+            'api/onesignal/config',
+            'api/onesignal/status',
+            'api/getir/newOrder',
+        ];
+
+        if (in_array($path, $publicEndpoints, true)) {
+            return; // Whitelist: geçişe izin ver
         }
 
         $authManager = AuthManager::getInstance();
@@ -33,10 +56,22 @@ class ApiAuthMiddleware
             return;
         }
 
-        // Admin kontrolü (API endpoint'lerine göre ayarlanabilir)
-        if (!$authManager->isAdmin()) {
-            self::forbiddenResponse('Admin yetkisi gerekli');
-            return;
+        // Admin gerektiren API prefix'leri
+        $adminRequiredPrefixes = [
+            'api/kullanicilar',
+            'api/kullanici',
+            'api/personeller',
+            'api/personel',
+            'api/magazalar',
+            'api/magaza',
+            'api/notification', // test bildirimleri
+        ];
+
+        if (self::pathStartsWith($path, $adminRequiredPrefixes)) {
+            if (!$authManager->isAdmin()) {
+                self::forbiddenResponse('Admin yetkisi gerekli');
+                return;
+            }
         }
 
         // Activity güncelle
@@ -67,5 +102,15 @@ class ApiAuthMiddleware
             'code' => 403
         ], JSON_UNESCAPED_UNICODE);
         exit();
+    }
+
+    private static function pathStartsWith($path, array $prefixes)
+    {
+        foreach ($prefixes as $prefix) {
+            if (strpos($path, $prefix) === 0) {
+                return true;
+            }
+        }
+        return false;
     }
 }

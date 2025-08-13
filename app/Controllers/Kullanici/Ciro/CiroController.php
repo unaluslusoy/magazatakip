@@ -5,6 +5,7 @@ namespace app\Controllers\Kullanici\Ciro;
 use app\Models\Kullanici\Ciro\CiroModel;
 use app\Models\Kullanici;
 use app\Models\Magaza;
+use app\Services\ActivityNotifier;
 use app\Middleware\AuthMiddleware;
 use core\Controller;
 
@@ -84,6 +85,16 @@ class CiroController extends Controller {
 
             // Veritabanına kaydetme
             if ($this->ciroModel->ciroEkle($data)) {
+                try {
+                    $userId = $_SESSION['user_id'] ?? null;
+                    if ($userId) {
+                        (new ActivityNotifier())->recordAndNotify((int)$userId, 'create', 'ciro', null, [
+                            'magaza_id' => $data['magaza_id'] ?? null,
+                            'gun' => $data['gun'] ?? null,
+                            'toplam' => $data['toplam'] ?? null
+                        ]);
+                    }
+                } catch (\Throwable $t) { error_log('CiroController@ekle notify/log error: ' . $t->getMessage()); }
                 $_SESSION['message'] = 'Ciro başarıyla eklendi.';
                 $_SESSION['message_type'] = 'success';
                 header('Location: /ciro/listele');
@@ -223,6 +234,14 @@ class CiroController extends Controller {
             $ciroGuncelle = $this->ciroModel->ciroGuncelle($id, $veriler);
 
             if ($ciroGuncelle) {
+                try {
+                    $userId = $_SESSION['user_id'] ?? null;
+                    if ($userId) {
+                        (new ActivityNotifier())->recordAndNotify((int)$userId, 'update', 'ciro', (int)$id, [
+                            'degisen_alanlar' => array_keys($veriler)
+                        ]);
+                    }
+                } catch (\Throwable $t) { error_log('CiroController@duzenle notify/log error: ' . $t->getMessage()); }
                 $_SESSION['message'] = 'Ciro başarıyla güncellendi!';
                 $_SESSION['message_type'] = 'success';
                 header('Location: /ciro/listele');
@@ -274,6 +293,12 @@ class CiroController extends Controller {
         $silmeSonucu = $this->ciroModel->ciroSil($id);
 
         if ($silmeSonucu) {
+            try {
+                $userId = $_SESSION['user_id'] ?? null;
+                if ($userId) {
+                    (new ActivityNotifier())->recordAndNotify((int)$userId, 'delete', 'ciro', (int)$id);
+                }
+            } catch (\Throwable $t) { error_log('CiroController@sil notify/log error: ' . $t->getMessage()); }
             $_SESSION['message'] = 'Ciro kaydı başarıyla silindi!';
             $_SESSION['message_type'] = 'success';
         } else {

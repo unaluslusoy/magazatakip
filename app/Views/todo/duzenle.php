@@ -1,5 +1,6 @@
 <h1>Görev Düzenle</h1>
 <form method="post" action="/todo/update">
+    <?= csrf_field(); ?>
     <label for="task">Görev:</label>
     <input type="text" name="task" id="task">
     <label for="user">Kullanıcı Ata:</label>

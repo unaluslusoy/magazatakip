@@ -3,6 +3,7 @@ namespace app\Controllers\Api;
 
 use app\Models\Gider;
 use app\Models\Kullanici;
+use app\Services\ActivityNotifier;
 use core\Controller;
 
 class GiderApiController extends Controller {
@@ -211,6 +212,17 @@ class GiderApiController extends Controller {
                     'message' => 'Gider kaydı başarıyla eklendi',
                     'timestamp' => time()
                 ];
+
+                try {
+                    $userId = $_SESSION['user_id'] ?? null;
+                    if ($userId) {
+                        (new ActivityNotifier())->recordAndNotify((int)$userId, 'create', 'gider', null, [
+                            'magaza_id' => $input['magaza_id'] ?? null,
+                            'tarih' => $input['tarih'] ?? null,
+                            'miktar' => $input['miktar'] ?? null
+                        ]);
+                    }
+                } catch (\Throwable $t) { error_log('Gider add notify/log error: ' . $t->getMessage()); }
             } else {
                 http_response_code(500);
                 $response = [
@@ -293,6 +305,15 @@ class GiderApiController extends Controller {
                     'message' => 'Gider kaydı başarıyla güncellendi',
                     'timestamp' => time()
                 ];
+
+                try {
+                    $userId = $_SESSION['user_id'] ?? null;
+                    if ($userId) {
+                        (new ActivityNotifier())->recordAndNotify((int)$userId, 'update', 'gider', (int)$id, [
+                            'degisen_alanlar' => array_keys($input)
+                        ]);
+                    }
+                } catch (\Throwable $t) { error_log('Gider update notify/log error: ' . $t->getMessage()); }
             } else {
                 http_response_code(500);
                 $response = [
@@ -354,6 +375,13 @@ class GiderApiController extends Controller {
                     'message' => 'Gider kaydı başarıyla silindi',
                     'timestamp' => time()
                 ];
+
+                try {
+                    $userId = $_SESSION['user_id'] ?? null;
+                    if ($userId) {
+                        (new ActivityNotifier())->recordAndNotify((int)$userId, 'delete', 'gider', (int)$id);
+                    }
+                } catch (\Throwable $t) { error_log('Gider delete notify/log error: ' . $t->getMessage()); }
             } else {
                 http_response_code(500);
                 $response = [

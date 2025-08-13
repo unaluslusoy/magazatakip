@@ -15,7 +15,7 @@
     <!-- Ana tema rengi -->
     <meta name="theme-color" content="#FFFFFF">
     <!-- iOS Safari -->
-    <meta name="apple-mobile-web-app-status-bar-style" content="default"
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     
     <link rel="icon" href="/public/media/logos/default.svg" type="image/svg+xml">
     <link rel="alternate icon" href="/public/media/logos/favicon.ico" type="image/x-icon">
@@ -34,11 +34,14 @@
     <!-- PWA Manifest -->
     <link rel="manifest" href="/public/manifest.json">
 
-    <!-- OneSignal SDK -->
-    <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" defer></script>
+    <!-- OneSignal SDK v16 -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js?v=<?php echo time(); ?>" defer></script>
+    <!-- Chart.js for dashboard charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
     
     <!-- Token Registration -->
-    <script src="/public/js/token-registration.js" defer></script>
+    <script src="/public/js/token-registration.js?v=<?php echo time(); ?>" defer></script>
     
     <!-- PWA Core Scripts -->
     <script defer>
@@ -102,6 +105,7 @@
     <link href="/public/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" />
     <link href="/public/css/style.bundle.css" rel="stylesheet" type="text/css" />
     <link href="/public/css/pull-to-refresh-themes.css" rel="stylesheet" type="text/css" />
+    <meta name="csrf-token" content="<?php echo htmlspecialchars(csrf_token()); ?>">
     
     <!-- Mobile Optimizations -->
     <style>
@@ -126,10 +130,13 @@
                 overscroll-behavior: contain;
             }
             
-            /* Dokunmatik geri bildirim */
-            .btn:active, .card:active {
+            /* Dokunmatik geri bildirim - kartlarda basma efekti kapalı */
+            .btn:active {
                 transform: scale(0.98);
                 transition: transform 0.1s ease;
+            }
+            .card:active {
+                transform: none !important;
             }
             
             /* Mobil için daha büyük hedef alanlar */
@@ -162,6 +169,27 @@
             }
         }
     </style>
+
+    <!-- Önbellek önleme meta tag'leri -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
+    <!-- API Service (global) -->
+    <script src="/app/Views/kullanici/api-service.js?v=<?php echo time(); ?>"></script>
+
+    <script>
+        // Oturumdaki kullanıcı ID'sini front-end'e aktar (OneSignal login için)
+        window.CURRENT_USER_ID = <?php echo isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 'null'; ?>;
+    </script>
+    <style>
+        /* Bootstrap'siz sayfalarda da alert görünümü için minimum stil */
+        .alert { border-radius: 6px; border: 1px solid transparent; }
+        .alert-success { background: #d1e7dd; color: #0f5132; border-color:#badbcc; }
+        .alert-danger { background: #f8d7da; color: #842029; border-color:#f5c2c7; }
+        .alert-info { background: #cff4fc; color:#055160; border-color:#b6effb; }
+    </style>
+
 
 </head>
 <body id="kt_app_body" data-kt-app-page-loading-enabled="true" data-kt-app-layout="dark-header" data-kt-app-header-fixed="true" data-kt-app-toolbar-enabled="true" class="antialiased flex h-full text-base text-foreground bg-background kt-header-fixed">

@@ -235,11 +235,11 @@ document.addEventListener('DOMContentLoaded', function() {
             <td class="d-flex align-items-center">
                 <div class="symbol symbol-circle symbol-50px overflow-hidden me-3">
                     <div class="symbol-label">
-                        <div class="symbol-label fs-3 bg-light-primary text-primary">${user.ad.charAt(0).toUpperCase()}${user.soyad.charAt(0).toUpperCase()}</div>
+                        <div class="symbol-label fs-3 bg-light-primary text-primary">${(user.ad || '').charAt(0).toUpperCase()}${(user.soyad || '').charAt(0).toUpperCase()}</div>
                     </div>
                 </div>
                 <div class="d-flex flex-column">
-                    <a href="/admin/kullanici/duzenle/${user.id}" class="text-gray-800 text-hover-primary mb-1 fw-bold">${user.ad} ${user.soyad}</a>
+                    <a href="/admin/kullanici/duzenle/${user.id}" class="text-gray-800 text-hover-primary mb-1 fw-bold">${(user.ad || '')} ${(user.soyad || '')}</a>
                     <span class="text-muted fw-semibold text-muted d-block fs-7">ID: ${user.id}</span>
                 </div>
             </td>
@@ -273,7 +273,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </a>
                     </div>
                     <div class="menu-item px-3">
-                        <a href="#" class="menu-link px-3" onclick="deleteUser(${user.id}, '${user.ad} ${user.soyad}')">
+                        <a href="#" class="menu-link px-3" onclick="deleteUser(${user.id}, '${(user.ad || '')} ${(user.soyad || '')}')">
                             <i class="ki-duotone ki-trash fs-5 me-2">
                                 <span class="path1"></span>
                                 <span class="path2"></span>
@@ -399,12 +399,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }).then(function (result) {
             if (result.value) {
-                // Silme işlemi
+                // Silme işlemi (HTTP Method Override ile daha geniş uyumluluk)
                 fetch(`/admin/kullanici/api-delete/${userId}`, {
-                    method: 'DELETE',
+                    method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-HTTP-Method-Override': 'DELETE',
+                        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
                     },
                     credentials: 'include'
                 })

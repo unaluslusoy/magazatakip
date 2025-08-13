@@ -67,6 +67,7 @@ $timestamp = time();
                         </div>
                         <div class="card-body p-4">
                             <form action="/ciro/duzenle/<?= $ciro['id'] ?>" method="post" enctype="multipart/form-data" id="ciroForm">
+                                <?= csrf_field(); ?>
                                 <!-- Önbellek önleme hidden input -->
                                 <input type="hidden" name="timestamp" value="<?= $timestamp ?>">
                                 

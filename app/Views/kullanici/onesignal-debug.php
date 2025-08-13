@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OneSignal Debug - Mağaza Takip</title>
     
-    <!-- OneSignal SDK -->
-    <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" defer></script>
+    <!-- OneSignal SDK v16 -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js?v=<?php echo time(); ?>" defer></script>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -247,7 +247,10 @@
                     await this.initializeOneSignal();
                     
                     // Token al
-                    const userId = await OneSignal.getUserId();
+                    // v16: User.getId veya PushSubscription.id
+                    let userId = null;
+                    try { userId = (typeof OneSignal.User.getId === 'function') ? await OneSignal.User.getId() : null; } catch(e) {}
+                    if (!userId) { try { userId = OneSignal?.User?.PushSubscription?.id || null; } catch(e) {} }
                     
                     if (userId) {
                         this.currentToken = userId;
@@ -264,7 +267,7 @@
             
             async initializeOneSignal() {
                 try {
-                    this.log('OneSignal başlatılıyor...', 'info');
+                    this.log('OneSignal v16 başlatılıyor...', 'info');
                     
                     const response = await fetch('/api/onesignal/config');
                     const config = await response.json();
@@ -273,19 +276,12 @@
                         throw new Error('OneSignal config alınamadı');
                     }
                     
-                    window.OneSignal = window.OneSignal || [];
-                    
+                    window.OneSignalDeferred = window.OneSignalDeferred || [];
                     return new Promise((resolve, reject) => {
-                        OneSignal.push(function() {
-                            OneSignal.init({
-                                appId: config.data.app_id,
-                                allowLocalhostAsSecureOrigin: true,
-                                notifyButton: { enable: false },
-                                autoRegister: true,
-                                autoResubscribe: true
-                            });
-                            
-                            this.log('OneSignal başlatıldı', 'success');
+                        OneSignalDeferred.push(async (OneSignal) => {
+                            await OneSignal.init({ appId: config.data.app_id, allowLocalhostAsSecureOrigin: true });
+                            try { if (window.CURRENT_USER_ID) await OneSignal.login(String(window.CURRENT_USER_ID)); } catch(e){}
+                            this.log('OneSignal v16 başlatıldı', 'success');
                             resolve();
                         });
                     });
@@ -301,8 +297,8 @@
                     this.log('İzin durumu kontrol ediliyor...', 'info');
                     
                     if (typeof window.OneSignal !== 'undefined') {
-                        const isEnabled = await OneSignal.isPushNotificationsEnabled();
-                        this.log('OneSignal izin durumu: ' + (isEnabled ? 'Aktif' : 'Pasif'), isEnabled ? 'success' : 'warning');
+                        const optedIn = !!(OneSignal?.User?.PushSubscription?.optedIn);
+                        this.log('OneSignal izin durumu: ' + (optedIn ? 'Aktif' : 'Pasif'), optedIn ? 'success' : 'warning');
                     }
                     
                     if ('Notification' in window) {
@@ -319,7 +315,9 @@
                     this.log('Bildirim izni isteniyor...', 'info');
                     
                     if (typeof window.OneSignal !== 'undefined') {
-                        await OneSignal.registerForPushNotifications();
+                        if (OneSignal?.Notifications?.requestPermission) {
+                            await OneSignal.Notifications.requestPermission();
+                        }
                         this.log('OneSignal izin istendi', 'success');
                     } else if ('Notification' in window) {
                         const permission = await Notification.requestPermission();

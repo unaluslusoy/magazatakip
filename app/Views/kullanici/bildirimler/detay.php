@@ -14,7 +14,7 @@ require_once __DIR__ . '/../layouts/layout/navbar.php';
         <!--begin::Header-->
         <div class="d-flex align-items-center justify-content-between mb-6">
             <div class="d-flex align-items-center">
-                <a href="/kullanici/bildirimler" class="btn btn-icon btn-light btn-active-light-primary me-3">
+                <a href="/kullanici/bildirimler" class="btn btn-icon btn-light me-3" title="Geri">
                     <i class="ki-outline ki-arrow-left fs-2"></i>
                 </a>
                 <div>
@@ -22,12 +22,18 @@ require_once __DIR__ . '/../layouts/layout/navbar.php';
                     <p class="text-muted fs-6 mb-0">Bildirim bilgilerini görüntüleyin</p>
                 </div>
             </div>
-            
-            <?php if (!$bildirim['okundu']): ?>
-                <button class="btn btn-warning btn-sm mark-as-read-btn" data-id="<?= $bildirim['id'] ?>">
-                    <i class="ki-outline ki-check fs-2 me-1"></i>Okundu İşaretle
-                </button>
-            <?php endif; ?>
+            <div class="btn-group">
+                <?php if (!$bildirim['okundu']): ?>
+                    <button class="btn btn-warning btn-sm mark-as-read-btn" data-id="<?= $bildirim['id'] ?>">
+                        <i class="ki-outline ki-check fs-2 me-1"></i>Okundu
+                    </button>
+                <?php endif; ?>
+                <?php if (!empty($bildirim['url'])): ?>
+                    <a href="<?= htmlspecialchars($bildirim['url']) ?>" target="_blank" class="btn btn-success btn-sm">
+                        <i class="ki-outline ki-arrow-right fs-2 me-1"></i>Aç
+                    </a>
+                <?php endif; ?>
+            </div>
         </div>
         <!--end::Header-->
 
@@ -192,20 +198,8 @@ require_once __DIR__ . '/../layouts/layout/navbar.php';
                 
                 <!--begin::Actions-->
                 <div class="d-flex justify-content-between align-items-center mt-6 pt-4 border-top">
-                    <div class="d-flex align-items-center">
-                        <span class="text-muted fs-7 me-3">
-                            <i class="ki-outline ki-information fs-5 me-1"></i>
-                            Bildirim ID: #<?= $bildirim['id'] ?>
-                        </span>
-                    </div>
-                    
+                    <div class="text-muted fs-7"><i class="ki-outline ki-information fs-5 me-1"></i>Bildirim ID: #<?= $bildirim['id'] ?></div>
                     <div class="d-flex gap-2">
-                        <?php if (!empty($bildirim['url'])): ?>
-                            <a href="<?= htmlspecialchars($bildirim['url']) ?>" target="_blank" class="btn btn-success">
-                                <i class="ki-outline ki-arrow-right fs-2 me-1"></i>Linke Git
-                            </a>
-                        <?php endif; ?>
-                        
                         <a href="/kullanici/bildirimler" class="btn btn-light-primary">
                             <i class="ki-outline ki-arrow-left fs-2 me-1"></i>Geri Dön
                         </a>
@@ -221,3 +215,20 @@ require_once __DIR__ . '/../layouts/layout/navbar.php';
 <!--end::Content-->
 
 <?php require_once __DIR__ . '/../layouts/layout/footer.php'; ?> 
+<script>
+// Detay sayfası açıldığında okunmadıysa otomatik okundu işareti
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        const markBtn = document.querySelector('.mark-as-read-btn');
+        if (markBtn) {
+            const id = markBtn.getAttribute('data-id');
+            // Arka planda API çağrısı
+            try {
+                await (window.bildirimApiService && window.bildirimApiService.markAsRead ? window.bildirimApiService.markAsRead(id) : Promise.resolve());
+                // Butonu gizle
+                markBtn.style.display = 'none';
+            } catch (e) { /* sessizce yut */ }
+        }
+    } catch (e) {}
+});
+</script>

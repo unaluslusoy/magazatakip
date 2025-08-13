@@ -4,6 +4,7 @@ require_once 'app/Views/layouts/navbar.php';
 ?>
 <h2>Mağaza Güncelle</h2>
 <form method="post" action="/admin/magaza/guncelle/<?= $magaza['id']; ?>">
+    <?= csrf_field(); ?>
 	<div class="mb-3">
 		<label for="ad" class="form-label">Mağaza:</label>
 		<input type="text" name="ad" id="ad" class="form-control" value="<?= $magaza['ad']; ?>" required>

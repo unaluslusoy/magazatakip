@@ -56,8 +56,8 @@ class Model {
         foreach ($data as $key => $value) {
             $stmt->bindValue(":{$key}", $value);
         }
-        $stmt->execute();
-        return $this->db->lastInsertId();
+        $ok = $stmt->execute();
+        return $ok ? (int)$this->db->lastInsertId() : false;
     }
 
     public function update($id, $data) {

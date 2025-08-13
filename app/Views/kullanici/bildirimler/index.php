@@ -6,8 +6,7 @@ require_once __DIR__ . '/../layouts/layout/header.php';
 require_once __DIR__ . '/../layouts/layout/navbar.php';
 ?>
 
-<!-- API Service -->
-<script src="/app/Views/kullanici/api-service.js"></script>
+<!-- API Service header'da yükleniyor -->
 
 <?php if (isset($_SESSION['message']) && isset($_SESSION['message_type'])): ?>
     <div class="alert alert-<?= $_SESSION['message_type'] ?> alert-dismissible fade show" role="alert">
@@ -22,6 +21,20 @@ require_once __DIR__ . '/../layouts/layout/navbar.php';
     <!--begin::Content container-->
     <div class="container-fluid" id="kt_app_content_container">
         
+        <!--begin::Push Status Banner-->
+        <div id="push-status-banner" class="alert alert-info d-none" role="alert">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <strong>Bildirimler kapalı görünüyor.</strong> Bildirimleri alabilmek için izin verin veya yeniden abone olun.
+                </div>
+                <div class="d-flex gap-2">
+                    <button id="btn-request-permission" class="btn btn-sm btn-primary">İzin Ver / Yeniden Abone Ol</button>
+                    <button id="btn-refresh-status" class="btn btn-sm btn-light">Durumu Yenile</button>
+                </div>
+            </div>
+        </div>
+        <!--end::Push Status Banner-->
+
         <!--begin::Stats Cards-->
         <div class="row g-4 mb-6">
             <div class="col-6 col-md-3">
@@ -128,7 +141,7 @@ require_once __DIR__ . '/../layouts/layout/navbar.php';
         <div class="row g-4" id="bildirimler-container">
             <?php if (!empty($bildirimler)): ?>
                 <?php foreach ($bildirimler as $bildirim): ?>
-                    <div class="col-12">
+                    <div class="col-12" data-bildirim-id="<?= $bildirim['id'] ?>">
                         <div class="card border-0 shadow-sm h-100 <?= !$bildirim['okundu'] ? 'border-start border-warning border-4' : '' ?>">
                             <div class="card-body p-4">
                                 <div class="d-flex align-items-start justify-content-between mb-3">
@@ -148,7 +161,7 @@ require_once __DIR__ . '/../layouts/layout/navbar.php';
                                                     <?= htmlspecialchars($bildirim['baslik']) ?>
                                                 </h5>
                                                 <?php if (!$bildirim['okundu']): ?>
-                                                    <span class="badge badge-light-warning ms-2">Yeni</span>
+                                                    <span class="badge badge-light-warning ms-2" data-role="yeni-rozet">Yeni</span>
                                                 <?php endif; ?>
                                             </div>
                                             
@@ -166,24 +179,13 @@ require_once __DIR__ . '/../layouts/layout/navbar.php';
                                     </div>
                                     
                                     <!--begin::Actions-->
-                                    <div class="dropdown">
-                                        <button class="btn btn-icon btn-sm btn-light btn-active-light-primary" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <i class="ki-outline ki-gear fs-2"></i>
-                                        </button>
-                                        <ul class="dropdown-menu">
-                                            <li>
-                                                <a class="dropdown-item" href="/kullanici/bildirimler/detay/<?= $bildirim['id'] ?>">
-                                                    <i class="ki-outline ki-eye fs-2 me-2"></i>Görüntüle
-                                                </a>
-                                            </li>
-                                            <?php if (!$bildirim['okundu']): ?>
-                                                <li>
-                                                    <a class="dropdown-item mark-as-read" href="#" data-id="<?= $bildirim['id'] ?>">
-                                                        <i class="ki-outline ki-check fs-2 me-2"></i>Okundu İşaretle
-                                                    </a>
-                                                </li>
-                                            <?php endif; ?>
-                                        </ul>
+                                    <div class="btn-group">
+                                        
+                                        <?php if (!$bildirim['okundu']): ?>
+                                            <span class=" mark-as-read" data-id="<?= $bildirim['id'] ?>" data-role="okundu-btn">
+                                                <i class="ki-outline ki-check fs-2 me-1"></i>Okundu
+                                            </span>
+                                        <?php endif; ?>
                                     </div>
                                     <!--end::Actions-->
                                 </div>
@@ -253,6 +255,45 @@ require_once __DIR__ . '/../layouts/layout/navbar.php';
 <!--end::Content-->
 
 <script>
+// OneSignal abonelik durumunu kontrol et ve banner göster
+async function checkPushStatusAndShowBanner() {
+    try {
+        if (typeof OneSignal === 'undefined') {
+            console.warn('OneSignal SDK yüklenmemiş');
+            return;
+        }
+        let optedIn = false;
+        try { optedIn = !!(OneSignal?.User?.PushSubscription?.optedIn); } catch(e) {}
+        const perm = (typeof Notification !== 'undefined') ? Notification.permission : 'default';
+        const banner = document.getElementById('push-status-banner');
+        if (!optedIn || perm !== 'granted') { banner?.classList.remove('d-none'); } else { banner?.classList.add('d-none'); }
+    } catch (e) { console.warn('Push durum kontrol hatası', e); }
+}
+
+async function requestPermissionAndResubscribe() {
+    try {
+        if (typeof OneSignal === 'undefined') return;
+        if (OneSignal?.Notifications?.requestPermission) { await OneSignal.Notifications.requestPermission(); }
+        else if ('Notification' in window) { await Notification.requestPermission(); }
+        if (OneSignal?.User?.PushSubscription?.optIn) { try { await OneSignal.User.PushSubscription.optIn(); } catch(e) {} }
+        try { if (window.CURRENT_USER_ID) { await OneSignal.login(String(window.CURRENT_USER_ID)); } } catch(e) {}
+        try {
+            if (window.deviceTokenService && OneSignal?.User?.getId) {
+                const token = await OneSignal.User.getId();
+                if (token) { await window.deviceTokenService.saveDeviceToken(token, 'Desktop', true); }
+            }
+        } catch(e) {}
+        await checkPushStatusAndShowBanner();
+        alert('Bildirim izni güncellendi. Lütfen tekrar deneyin.');
+    } catch (e) { alert('Bildirim izni verilemedi: ' + (e?.message || e)); }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(checkPushStatusAndShowBanner, 1000);
+    document.getElementById('btn-request-permission')?.addEventListener('click', requestPermissionAndResubscribe);
+    document.getElementById('btn-refresh-status')?.addEventListener('click', checkPushStatusAndShowBanner);
+});
+
 // API tabanlı bildirim yönetimi
 class BildirimManager {
     constructor() {
@@ -322,10 +363,20 @@ class BildirimManager {
             
             if (response.success) {
                 // UI'yi güncelle
-                const bildirimCard = document.querySelector(`[data-bildirim-id="${bildirimId}"]`);
-                if (bildirimCard) {
-                    bildirimCard.classList.remove('border-warning');
-                    bildirimCard.classList.add('border-success');
+                const bildirimCol = document.querySelector(`[data-bildirim-id="${bildirimId}"]`);
+                if (bildirimCol) {
+                    const card = bildirimCol.querySelector('.card');
+                    if (card) {
+                        card.classList.remove('border-warning', 'border-start', 'border-4');
+                    }
+                    const rozet = bildirimCol.querySelector('[data-role="yeni-rozet"]');
+                    if (rozet) {
+                        rozet.remove();
+                    }
+                    const okunduBtn = bildirimCol.querySelector('[data-role="okundu-btn"]');
+                    if (okunduBtn) {
+                        okunduBtn.remove();
+                    }
                 }
                 
                 // İstatistikleri yenile

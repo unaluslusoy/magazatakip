@@ -3,8 +3,7 @@ require_once __DIR__ . '/../layouts/layout/header.php';
 require_once __DIR__ . '/../layouts/layout/navbar.php';
 ?>
 
-<!-- API Service -->
-<script src="/app/Views/kullanici/api-service.js"></script>
+<!-- API Service header'da yükleniyor -->
 
     <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
         <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
@@ -465,7 +464,7 @@ require_once __DIR__ . '/../layouts/layout/navbar.php';
                                                                             $resimUzantilari = ["jpg", "jpeg", "png", "gif", "webp"];
                                                                             ?>
                                                                     <div class="col-6 col-md-4 col-lg-3 mb-3">
-                                                                        <div class="card hover-elevate-up shadow-sm">
+                                                                        <div class="card shadow-sm">
                                                                             <?php if (in_array($uzanti, $resimUzantilari)): ?>
                                                                                 <img src="/public/uploads/isemri/<?= htmlspecialchars($dosya["dosya_yolu"]) ?>" 
                                                                                      class="card-img-top" 
@@ -1112,6 +1111,12 @@ class IsEmriManager {
 // Sayfa yüklendiğinde IsEmriManager'ı başlat
 document.addEventListener('DOMContentLoaded', function() {
     window.isEmriManager = new IsEmriManager();
+    // Pull-to-refresh entegrasyonu
+    window.refreshPageData = async function() {
+        if (window.isEmriManager) {
+            await window.isEmriManager.loadIsEmriListesi();
+        }
+    }
 });
 
 // Service Worker registration (isteğe bağlı)
@@ -1123,6 +1128,26 @@ if ('serviceWorker' in navigator) {
     });
 }
 </script>
+
+<!-- Mobil sabit aksiyon çubuğu -->
+<div class="d-md-none" style="position: fixed; bottom: 0; left: 0; right: 0; z-index: 1030;">
+    <div class="bg-white border-top d-flex justify-content-around align-items-center py-2 shadow-sm">
+        <button type="button" class="btn btn-light d-flex flex-column align-items-center" onclick="window.refreshPageData && window.refreshPageData()">
+            <i class="ki-outline ki-refresh fs-2"></i>
+            <small>Yenile</small>
+        </button>
+        <a href="/isemri/olustur" class="btn btn-primary d-flex flex-column align-items-center">
+            <i class="ki-outline ki-plus fs-2"></i>
+            <small>Oluştur</small>
+        </a>
+        <button type="button" class="btn btn-light d-flex flex-column align-items-center" onclick="(function(){var btn=document.querySelector('[data-bs-target=\'#filtre-alani\']'); if(btn){btn.click();}})()">
+            <i class="ki-outline ki-filter fs-2"></i>
+            <small>Filtre</small>
+        </button>
+    </div>
+    <!-- Alt çubuk yüksekliği için boşluk -->
+    <div style="height: 64px; background: transparent;"></div>
+ </div>
 
 <?php
 require_once __DIR__ . '/../layouts/layout/footer.php';

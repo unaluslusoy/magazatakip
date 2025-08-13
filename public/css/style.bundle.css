@@ -1,3 +1,18 @@
+/* Mobile improvements for admin istek list */
+@media (max-width: 576px) {
+  .card-header .card-title { width: 100%; }
+  .card .badge { margin-bottom: 4px; }
+  #kt_customers_table .card .card-header, #kt_customers_table .card .card-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  #kt_customers_table .card .card-title, #kt_customers_table .card .card-text {
+    font-size: 0.95rem;
+  }
+  #kt_customers_table .card .card-body img { width: 36px; height: 36px; }
+  .dataTables_wrapper .dataTables_filter { width: 100%; }
+}
 @charset "UTF-8";/*!
  * Bootstrap  v5.3.3 (https://getbootstrap.com/)
  * Copyright 2011-2024 The Bootstrap Authors

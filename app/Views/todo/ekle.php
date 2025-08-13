@@ -1,5 +1,6 @@
 <h1>Yeni Görev Ekle</h1>
 <form method="post" action="/todo/store">
+    <?= csrf_field(); ?>
     <label for="task">Görev:</label>
     <input type="text" name="task" id="task">
     <label for="user">Kullanıcı Ata:</label>

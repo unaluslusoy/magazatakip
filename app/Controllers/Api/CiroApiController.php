@@ -2,6 +2,7 @@
 namespace app\Controllers\Api;
 
 use app\Models\Kullanici\Ciro\CiroModel;
+use app\Services\ActivityNotifier;
 use core\Controller;
 
 class CiroApiController extends Controller {
@@ -146,6 +147,17 @@ class CiroApiController extends Controller {
                     'message' => 'Ciro kaydı başarıyla eklendi',
                     'timestamp' => time()
                 ];
+
+                try {
+                    $userId = $_SESSION['user_id'] ?? null;
+                    if ($userId) {
+                        (new ActivityNotifier())->recordAndNotify((int)$userId, 'create', 'ciro', null, [
+                            'magaza_id' => $input['magaza_id'] ?? null,
+                            'gun' => $input['gun'] ?? null,
+                            'toplam' => $input['toplam'] ?? null
+                        ]);
+                    }
+                } catch (\Throwable $t) { error_log('Ciro add notify/log error: ' . $t->getMessage()); }
             } else {
                 http_response_code(500);
                 $response = [
@@ -203,6 +215,15 @@ class CiroApiController extends Controller {
                     'message' => 'Ciro kaydı başarıyla güncellendi',
                     'timestamp' => time()
                 ];
+
+                try {
+                    $userId = $_SESSION['user_id'] ?? null;
+                    if ($userId) {
+                        (new ActivityNotifier())->recordAndNotify((int)$userId, 'update', 'ciro', (int)$id, [
+                            'degisen_alanlar' => array_keys($input)
+                        ]);
+                    }
+                } catch (\Throwable $t) { error_log('Ciro update notify/log error: ' . $t->getMessage()); }
             } else {
                 http_response_code(500);
                 $response = [
@@ -237,6 +258,13 @@ class CiroApiController extends Controller {
                     'message' => 'Ciro kaydı başarıyla silindi',
                     'timestamp' => time()
                 ];
+
+                try {
+                    $userId = $_SESSION['user_id'] ?? null;
+                    if ($userId) {
+                        (new ActivityNotifier())->recordAndNotify((int)$userId, 'delete', 'ciro', (int)$id);
+                    }
+                } catch (\Throwable $t) { error_log('Ciro delete notify/log error: ' . $t->getMessage()); }
             } else {
                 http_response_code(500);
                 $response = [

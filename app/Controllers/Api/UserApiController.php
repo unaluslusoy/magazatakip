@@ -5,6 +5,9 @@ use app\Models\Kullanici;
 use app\Models\Kullanici\Ciro\CiroModel;
 use app\Models\Gider;
 use app\Models\Kullanici\IsEmri\IsEmriModel;
+use app\Models\System\ActivityLog;
+use app\Models\Bildirim;
+use app\Services\BildirimService;
 use core\Controller;
 
 class UserApiController extends Controller {
@@ -125,6 +128,35 @@ class UserApiController extends Controller {
                     'message' => 'Profil başarıyla güncellendi',
                     'timestamp' => time()
                 ];
+
+                // Aktivite log + admin bildirimi (best-effort)
+                try {
+                    $userId = $_SESSION['user_id'] ?? null;
+                    if ($userId) {
+                        // Activity Log
+                        (new ActivityLog())->log($userId, 'update', 'profile', $userId, [
+                            'degisen_alanlar' => array_keys($input)
+                        ]);
+                        // DB bildirimi (admin id=1)
+                        (new Bildirim())->createForAdmin(
+                            'Profil Güncellendi',
+                            'Kullanıcı #' . $userId . ' profilini güncelledi.',
+                            '/admin/bildirimler',
+                            $userId
+                        );
+                        // Push bildirimi (OneSignal)
+                        $admin = (new Kullanici())->get(1);
+                        if ($admin) {
+                            (new BildirimService())->tekBildirimGonder(
+                                $admin,
+                                'Profil Güncellendi',
+                                'Kullanıcı #' . $userId . ' profilini güncelledi.',
+                                'web',
+                                '/admin/bildirimler'
+                            );
+                        }
+                    }
+                } catch (\Throwable $t) { error_log('Profile update notify/log error: ' . $t->getMessage()); }
             } else {
                 http_response_code(500);
                 $response = [
@@ -182,6 +214,30 @@ class UserApiController extends Controller {
                     'message' => 'Şifre başarıyla değiştirildi',
                     'timestamp' => time()
                 ];
+
+                // Aktivite log + admin bildirimi (best-effort)
+                try {
+                    $userId = $_SESSION['user_id'] ?? null;
+                    if ($userId) {
+                        (new ActivityLog())->log($userId, 'update', 'password', $userId, [ 'degistirildi' => true ]);
+                        (new Bildirim())->createForAdmin(
+                            'Şifre Değiştirildi',
+                            'Kullanıcı #' . $userId . ' şifresini değiştirdi.',
+                            '/admin/bildirimler',
+                            $userId
+                        );
+                        $admin = (new Kullanici())->get(1);
+                        if ($admin) {
+                            (new BildirimService())->tekBildirimGonder(
+                                $admin,
+                                'Şifre Değiştirildi',
+                                'Kullanıcı #' . $userId . ' şifresini değiştirdi.',
+                                'web',
+                                '/admin/bildirimler'
+                            );
+                        }
+                    }
+                } catch (\Throwable $t) { error_log('Password change notify/log error: ' . $t->getMessage()); }
             } else {
                 http_response_code(400);
                 $response = [

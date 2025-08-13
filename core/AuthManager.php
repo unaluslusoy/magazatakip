@@ -391,29 +391,38 @@ class AuthManager {
      * Route erişim kontrolü
      */
     public function checkRouteAccess($route) {
-        // Admin route kontrolü
-        if (strpos($route, '/admin') === 0) {
-            if (!$this->isAdmin()) {
-                return [
-                    'allowed' => false,
-                    'redirect' => '/anasayfa',
-                    'message' => 'Bu sayfaya erişim yetkiniz yok.'
-                ];
-            }
+        // RBAC ile merkezi kontrol
+        if (!class_exists('app\\Controllers\\Auth\\RBAC')) {
+            require_once __DIR__ . '/../app/Controllers/Auth/RBAC.php';
         }
-        
-        // Genel authenticated route kontrolü
+
+        // Public rotalar
         $publicRoutes = ['/auth/giris', '/auth/kayit', '/'];
-        if (!in_array($route, $publicRoutes)) {
-            if (!$this->hasActiveSession()) {
-                return [
-                    'allowed' => false,
-                    'redirect' => '/auth/giris',
-                    'message' => 'Bu sayfaya erişmek için giriş yapmalısınız.'
-                ];
-            }
+        if (in_array($route, $publicRoutes, true)) {
+            return ['allowed' => true];
         }
-        
+
+        // Oturum gerekli
+        if (!$this->hasActiveSession()) {
+            return [
+                'allowed' => false,
+                'redirect' => '/auth/giris',
+                'message' => 'Bu sayfaya erişmek için giriş yapmalısınız.'
+            ];
+        }
+
+        // RBAC route bazlı izin kontrolü
+        $allowedByRole = \app\Controllers\Auth\RBAC::checkRouteAccess($route);
+        if (!$allowedByRole) {
+            // Admin değilse kullanıcı dashboard'a; admin değilse anasayfa
+            $redirect = $this->isAdmin() ? '/admin' : '/anasayfa';
+            return [
+                'allowed' => false,
+                'redirect' => $redirect,
+                'message' => 'Bu sayfaya erişim yetkiniz yok.'
+            ];
+        }
+
         return ['allowed' => true];
     }
     

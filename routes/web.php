@@ -62,6 +62,9 @@ $router->post('fatura_talep/sil/{id}', 'Kullanici\FaturaTalep\FaturaTalepControl
 
 // Gider Rotaları
 $router->get('gider/listesi', 'Kullanici\GiderController@listesi');
+
+// Ayarlar
+$router->get('ayarlar', 'Kullanici\\AyarlarController@index');
 $router->get('gider/ekle', 'Kullanici\GiderController@ekle');
 $router->post('gider/ekle', 'Kullanici\GiderController@ekle');
 $router->get('gider/duzenle/{id}', 'Kullanici\GiderController@duzenle');

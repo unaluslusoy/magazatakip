@@ -2,6 +2,7 @@
 namespace app\Controllers\Api;
 
 use app\Models\Kullanici\IsEmri\IsEmriModel;
+use app\Services\ActivityNotifier;
 use core\Controller;
 
 class IsEmriApiController extends Controller {
@@ -157,6 +158,16 @@ class IsEmriApiController extends Controller {
                     'message' => 'İş emri başarıyla oluşturuldu',
                     'timestamp' => time()
                 ];
+
+                try {
+                    $userId = $_SESSION['user_id'] ?? null;
+                    if ($userId) {
+                        (new ActivityNotifier())->recordAndNotify((int)$userId, 'create', 'is_emri', null, [
+                            'baslik' => $input['baslik'] ?? null,
+                            'oncelik' => $input['oncelik'] ?? null
+                        ]);
+                    }
+                } catch (\Throwable $t) { error_log('İşEmri create notify/log error: ' . $t->getMessage()); }
             } else {
                 http_response_code(500);
                 $response = [
@@ -215,6 +226,15 @@ class IsEmriApiController extends Controller {
                     'message' => 'İş emri başarıyla güncellendi',
                     'timestamp' => time()
                 ];
+
+                try {
+                    $userId = $_SESSION['user_id'] ?? null;
+                    if ($userId) {
+                        (new ActivityNotifier())->recordAndNotify((int)$userId, 'update', 'is_emri', (int)$id, [
+                            'degisen_alanlar' => array_keys($input)
+                        ]);
+                    }
+                } catch (\Throwable $t) { error_log('İşEmri update notify/log error: ' . $t->getMessage()); }
             } else {
                 http_response_code(500);
                 $response = [
@@ -259,6 +279,13 @@ class IsEmriApiController extends Controller {
                     'message' => 'İş emri başarıyla silindi',
                     'timestamp' => time()
                 ];
+
+                try {
+                    $userId = $_SESSION['user_id'] ?? null;
+                    if ($userId) {
+                        (new ActivityNotifier())->recordAndNotify((int)$userId, 'delete', 'is_emri', (int)$id);
+                    }
+                } catch (\Throwable $t) { error_log('İşEmri delete notify/log error: ' . $t->getMessage()); }
             } else {
                 http_response_code(500);
                 $response = [

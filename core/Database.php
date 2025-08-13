@@ -10,12 +10,14 @@ class Database {
     private PDO $conn;
 
     private function __construct() {
-        $host = 'localhost';
-        $dbname = 'magazatakip_pg';
-        $username = 'magazatakip_pg';
-        $password = 'Magaza.123!';
-        $port = 3306;
-        $charset = 'utf8mb4';
+        // Ortam değişkenleri veya config/database.php üzerinden oku
+        $config = require __DIR__ . '/../config/database.php';
+        $host = $config['host'] ?? 'localhost';
+        $dbname = $config['dbname'] ?? '';
+        $username = $config['username'] ?? '';
+        $password = $config['password'] ?? '';
+        $port = (int) (getenv('DB_PORT') ?: 3306);
+        $charset = getenv('DB_CHARSET') ?: 'utf8mb4';
 
         $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset={$charset}";
         $options = [

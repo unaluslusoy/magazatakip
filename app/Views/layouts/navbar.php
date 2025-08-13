@@ -141,9 +141,12 @@ if (isset($_SESSION['user_id'])) {
 			<!--end::Page title-->
 			<!--begin::Navbar-->
 			<div class="app-navbar flex-shrink-0 gap-2 gap-lg-4">
-                <div class="app-navbar-item">
-                    <a href="/admin/bildirimler" class="btn btn-icon rounded-circle w-35px h-35px bg-light-warning border border-warning-clarity" data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-attach="parent" data-kt-menu-placement="bottom-end" id="kt_menu_item_wow">
+                <div class="app-navbar-item d-flex align-items-center gap-2">
+                    <a href="/admin/bildirimler" class="btn btn-icon rounded-circle w-35px h-35px bg-light-warning border border-warning-clarity" title="Bildirimler">
                         <i class="ki-outline ki-notification-on text-warning fs-3"></i>
+                    </a>
+                    <a href="/admin/activity-logs" class="btn btn-icon rounded-circle w-35px h-35px bg-light-secondary border" title="Aktivite Logları">
+                        <i class="ki-outline ki-time text-secondary fs-3"></i>
                     </a>
                 </div>
                 
@@ -272,10 +275,9 @@ if (isset($_SESSION['user_id'])) {
 						</div>
 						<!--end::Menu item-->
 						<!--begin::Menu item-->
-						<div class="menu-item px-5">
-							                            <a class="menu-link px-5" href="#" onclick="performLogout()" style="cursor: pointer;">Çıkış Yap</a>
-
-						</div>
+                        <div class="menu-item px-5">
+                            <a class="menu-link px-5" href="/logout.php" onclick="performLogout()" style="cursor: pointer;">Çıkış Yap</a>
+                        </div>
 						<!--end::Menu item-->
 					</div>
 					<!--end::User account menu-->

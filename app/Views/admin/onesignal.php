@@ -26,6 +26,7 @@
 <?php endif; ?>
 
 <form action="/admin/onesignal/kaydet" method="POST">
+    <?= csrf_field(); ?>
     <h2>OneSignal Ayarları</h2>
     <label for="app_id">OneSignal App ID:</label>
     <input type="text" id="app_id" name="app_id" value="<?php echo $ayarlar['app_id'] ?? ''; ?>" required>
@@ -55,6 +56,7 @@
 
 <h2>Bildirim Gönder</h2>
 <form action="/admin/onesignal/bildirim-gonder" method="POST">
+    <?= csrf_field(); ?>
     <label for="tip">Bildirim Tipi:</label>
     <select id="tip" name="tip" required>
         <option value="push">Push Bildirim</option>

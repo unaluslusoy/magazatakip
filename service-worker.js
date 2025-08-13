@@ -1,5 +1,8 @@
-const CACHE_NAME = 'magaza-takip-cache-v6';
-const APP_VERSION = '1.3.2';
+// OneSignal v16 SW script en üstte olmalı
+try { importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js'); } catch (e) {}
+
+const CACHE_NAME = 'magaza-takip-cache-v9';
+const APP_VERSION = '1.3.5';
 const OFFLINE_URL = '/offline.html';
 
 // Version management
@@ -95,7 +98,10 @@ self.addEventListener('install', function(event) {
                 }
                 
                 // Yeni service worker'ı hemen aktif et
-                return self.skipWaiting();
+                // Hemen aktif ol
+                await self.skipWaiting();
+                await self.clients.claim();
+                return true;
                 
             } catch (error) {
                 console.error('❌ Service Worker install failed:', error);
@@ -104,62 +110,101 @@ self.addEventListener('install', function(event) {
         })()
     );
 });
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('OneSignalSDKWorker.js')
-        .then(function(registration) {
-            console.log('OneSignal Service Worker registered with scope:', registration.scope);
-        }).catch(function(error) {
-        console.log('OneSignal Service Worker registration failed:', error);
-    });
-}
+// NOTE: OneSignal SDK worker import is handled below via importScripts.
 self.addEventListener('activate', function(event) {
     console.log('Service Worker activating...');
     event.waitUntil(
-        caches.keys().then(function(cacheNames) {
-            return Promise.all([
-                // Eski cache'leri temizle
-                ...cacheNames.filter(function(cacheName) {
-                    return cacheName !== CACHE_NAME;
-                }).map(function(cacheName) {
-                    console.log('Deleting old cache:', cacheName);
-                    return caches.delete(cacheName);
-                }),
-                // Tüm clientları kontrol et
-                self.clients.claim()
-            ]);
-        })
+        (async () => {
+            const cacheNames = await caches.keys();
+            await Promise.all(
+                cacheNames.filter(name => name !== CACHE_NAME).map(name => {
+                    console.log('Deleting old cache:', name);
+                    return caches.delete(name);
+                })
+            );
+            await self.clients.claim();
+            // Tüm client'lara controller değişimini duyur (update prompt tekrarını engeller)
+            await notifyClients('UPDATE_APPLIED', { version: APP_VERSION, cache: CACHE_NAME });
+        })()
     );
 });
 
+// Network-first for HTML and API; Cache-first for static assets
 self.addEventListener('fetch', function(event) {
-    // Sadece GET isteklerini cache'le
-    if (event.request.method !== 'GET') return;
-    
-    event.respondWith(
-        caches.match(event.request).then(function(response) {
-            if (response) {
-                console.log('Cache hit for:', event.request.url);
-                return response;
-            }
-            
-            return fetch(event.request).then(function(response) {
-                // Network'ten gelen valid yanıtları cache'le
-                if (!response || response.status !== 200 || response.type !== 'basic') {
-                    return response;
-                }
-                
-                const responseToCache = response.clone();
-                caches.open(CACHE_NAME).then(function(cache) {
-                    cache.put(event.request, responseToCache);
+    const req = event.request;
+
+    // Yazma istekleri: asla cache'e karışma
+    if (req.method !== 'GET') {
+        return;
+    }
+
+    const url = new URL(req.url);
+
+    // OneSignal SDK ve kritik runtime scriptler: her zaman network'den al (cache bypass)
+    const isOneSignal = /OneSignalSDK/i.test(url.pathname) || /cdn.onesignal.com/i.test(url.hostname);
+    const isRuntimeScript = url.pathname.endsWith('/public/js/token-registration.js');
+    if (isOneSignal || isRuntimeScript) {
+        event.respondWith(fetch(req, { cache: 'no-store' }).catch(() => fetch(req)));
+        return;
+    }
+    const isSameOrigin = url.origin === self.location.origin;
+    const acceptHeader = req.headers.get('accept') || '';
+    const isHtml = req.mode === 'navigate' || acceptHeader.includes('text/html');
+    const isApi = isSameOrigin && url.pathname.startsWith('/api/');
+
+    if (isApi) {
+        // API istekleri: her zaman network, cacheleme yok ve varyantları atla
+        event.respondWith((async () => {
+            try {
+                const res = await fetch(req, { cache: 'no-store', credentials: 'include' });
+                return res;
+            } catch (e) {
+                // Ağ hatası durumunda 503 yerine 200 dön; istemci success=false üzerinden yönetir
+                // Ayrıca client'lara offline bilgisini ilet
+                try { await notifyClients('API_OFFLINE', { path: req.url }); } catch(_) {}
+                return new Response(JSON.stringify({ success: false, message: 'offline', path: req.url }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
                 });
-                
-                return response;
-            }).catch(function() {
-                // Offline durumdaysa, HTML sayfaları için offline sayfasını döndür
-                if (event.request.mode === 'navigate') {
-                    return caches.match(OFFLINE_URL);
+            }
+        })());
+        return;
+    }
+
+    if (isHtml) {
+        // HTML sayfaları: network-first, başarısızsa offline
+        event.respondWith(
+            fetch(new Request(req, { cache: 'no-store' }))
+                .then(response => response)
+                .catch(async () => {
+                    const cached = await caches.match(req);
+                    return cached || caches.match(OFFLINE_URL);
+                })
+        );
+        return;
+    }
+
+    // Statik varlıklar: cache-first (ama no-cache query-string varsa network tercih et)
+    event.respondWith(
+        caches.match(req, { ignoreVary: true, ignoreSearch: false }).then(function(response) {
+            const forceFresh = url.searchParams.has('v') || url.searchParams.has('_t') || url.searchParams.has('_cache');
+            if (forceFresh) {
+                return fetch(req, { cache: 'no-store' }).then(networkRes => {
+                    if (networkRes && networkRes.status === 200) {
+                        const resClone = networkRes.clone();
+                        caches.open(CACHE_NAME).then(cache => cache.put(req, resClone));
+                    }
+                    return networkRes;
+                }).catch(() => response);
+            }
+            return response || fetch(req).then(function(networkRes) {
+                // Uygun yanıtları cache'e koy
+                if (networkRes && networkRes.status === 200 && (networkRes.type === 'basic' || networkRes.type === 'opaque')) {
+                    const resClone = networkRes.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put(req, resClone));
                 }
-            });
+                return networkRes;
+            }).catch(() => undefined);
         })
     );
 });
@@ -180,7 +225,7 @@ function syncData() {
         resolve();
     });
 }
-importScripts('https://cdn.onesignal.com/sdks/OneSignalSDKWorker.js');
+// OneSignal SW importu yukarıda yapıldı.
 
 // Update handling
 self.addEventListener('message', function(event) {
@@ -211,6 +256,14 @@ self.addEventListener('message', function(event) {
                     });
                 }
                 break;
+            case 'INVALIDATE_CACHE':
+                // Belirtilen URL'leri cache'den düşür
+                event.waitUntil((async () => {
+                    const cache = await caches.open(CACHE_NAME);
+                    const urls = (event.data && event.data.urls) || [];
+                    await Promise.all(urls.map(u => cache.delete(u).catch(() => null)));
+                })());
+                break;
                 
             default:
                 console.log('Unknown message type:', type);
@@ -231,45 +284,18 @@ self.addEventListener('message', function(event) {
 
 // Notification click handling  
 self.addEventListener('notificationclick', function(event) {
-    const notificationData = event.notification.data;
-    const url = notificationData.url;
-
-    event.notification.close();
-
-    if (url) {
-        clients.openWindow(url);
-    }
+    try {
+        const notificationData = event.notification?.data || {};
+        const url = notificationData.url || '/kullanici/bildirimler';
+        event.notification.close();
+        if (url) {
+            event.waitUntil(clients.openWindow(url));
+        }
+    } catch (e) {}
 });
 
 // Push notification handling
-self.addEventListener('push', function(event) {
-    if (event.data) {
-        const data = event.data.json();
-        
-        const options = {
-            body: data.body || 'Yeni bildirim',
-            icon: '/public/images/icons/icon-192x192.png',
-            badge: '/public/images/icons/icon-96x96.png',
-            data: {
-                url: data.url || '/'
-            },
-            actions: [
-                {
-                    action: 'open',
-                    title: 'Aç'
-                },
-                {
-                    action: 'close', 
-                    title: 'Kapat'
-                }
-            ]
-        };
-        
-        event.waitUntil(
-            self.registration.showNotification(data.title || 'Mağaza Takip', options)
-        );
-    }
-});
+// OneSignal bildirimlerini kendi SW'ı işler; çakışmayı önlemek için push handler kaldırıldı.
 
 // ==============================================
 // VERSION MANAGEMENT & UPDATE HELPER FUNCTIONS

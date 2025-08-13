@@ -97,6 +97,13 @@ class DeviceTokenService {
             this.setupOneSignalListeners();
             
             console.log('OneSignal başarıyla başlatıldı');
+
+            try {
+                if (window.CURRENT_USER_ID) {
+                    await OneSignal.login(String(window.CURRENT_USER_ID));
+                    console.log('OneSignal login yapıldı kullanıcı:', window.CURRENT_USER_ID);
+                }
+            } catch (e) { console.warn('OneSignal.login hatası', e); }
             
         } catch (error) {
             console.error('OneSignal başlatma hatası:', error);
@@ -107,28 +114,29 @@ class DeviceTokenService {
      * OneSignal event listener'larını ayarla
      */
     setupOneSignalListeners() {
-        // Bildirim izni değiştiğinde
-        OneSignal.on('subscriptionChange', async (isSubscribed) => {
-            console.log('Bildirim aboneliği değişti:', isSubscribed);
-            
-            if (isSubscribed) {
-                await this.handleSubscriptionGranted();
-            } else {
-                await this.handleSubscriptionRevoked();
-            }
-        });
-        
-        // Bildirim tıklandığında
-        OneSignal.on('notificationClick', (event) => {
-            console.log('Bildirim tıklandı:', event);
-            this.handleNotificationClick(event);
-        });
-        
-        // Bildirim alındığında
-        OneSignal.on('notificationDisplay', (event) => {
-            console.log('Bildirim alındı:', event);
-            this.handleNotificationReceived(event);
-        });
+        // v16: abonelik değişimi
+        if (OneSignal?.User?.PushSubscription?.addEventListener) {
+            OneSignal.User.PushSubscription.addEventListener('change', async (e) => {
+                const isSubscribed = !!(e?.current?.optedIn);
+                console.log('Bildirim aboneliği değişti:', isSubscribed);
+                if (isSubscribed) {
+                    await this.handleSubscriptionGranted();
+                } else {
+                    await this.handleSubscriptionRevoked();
+                }
+            });
+        }
+        // v16: bildirim olayları
+        if (OneSignal?.Notifications?.addEventListener) {
+            OneSignal.Notifications.addEventListener('click', (event) => {
+                console.log('Bildirim tıklandı:', event);
+                this.handleNotificationClick(event);
+            });
+            OneSignal.Notifications.addEventListener('foregroundWillDisplay', (event) => {
+                console.log('Bildirim alındı (foreground):', event);
+                this.handleNotificationReceived(event);
+            });
+        }
     }
     
     /**
@@ -136,7 +144,12 @@ class DeviceTokenService {
      */
     async handleSubscriptionGranted() {
         try {
-            const deviceToken = await OneSignal.getUserId();
+            // v16: Önce User.getId, yoksa PushSubscription.id
+            let deviceToken = null;
+            try { deviceToken = (typeof OneSignal.User.getId === 'function') ? await OneSignal.User.getId() : null; } catch(e) {}
+            if (!deviceToken) {
+                try { deviceToken = OneSignal?.User?.PushSubscription?.id || null; } catch(e) {}
+            }
             const platform = this.detectPlatform();
             
             if (deviceToken) {
@@ -165,16 +178,17 @@ class DeviceTokenService {
      */
     handleNotificationClick(event) {
         // Bildirim tıklandığında yapılacak işlemler
-        const notificationData = event.notification.additionalData;
-        
-        if (notificationData && notificationData.url) {
-            // Belirtilen URL'ye yönlendir
-            window.location.href = notificationData.url;
+        const dataUrl = event?.notification?.data?.url;
+        const extraUrl = event?.notification?.additionalData?.url;
+        const targetUrl = dataUrl || extraUrl || '/kullanici/bildirimler';
+
+        if (targetUrl) {
+            window.location.href = targetUrl;
         }
-        
-        // Bildirimi okundu olarak işaretle
-        if (notificationData && notificationData.notification_id) {
-            this.markNotificationAsRead(notificationData.notification_id);
+
+        const nid = event?.notification?.data?.notification_id || event?.notification?.additionalData?.notification_id;
+        if (nid) {
+            this.markNotificationAsRead(nid);
         }
     }
     
@@ -280,10 +294,10 @@ class DeviceTokenService {
             
             // Eğer token yoksa ve OneSignal mevcutsa, token al
             if (!deviceInfo.has_token && typeof OneSignal !== 'undefined') {
-                const isSubscribed = await OneSignal.isPushNotificationsEnabled();
-                if (isSubscribed) {
-                    await this.handleSubscriptionGranted();
-                }
+                // v16’da doğrudan permission/opt-in kontrolü
+                let optedIn = false;
+                try { optedIn = !!(OneSignal?.User?.PushSubscription?.optedIn); } catch(e) {}
+                if (optedIn) await this.handleSubscriptionGranted();
             }
         } catch (error) {
             console.error('Cihaz bilgisi kontrol hatası:', error);
@@ -374,14 +388,14 @@ class DeviceTokenService {
      */
     async requestNotificationPermission() {
         try {
-            if (typeof OneSignal !== 'undefined') {
-                await OneSignal.registerForPushNotifications();
+            if (typeof OneSignal !== 'undefined' && OneSignal?.Notifications?.requestPermission) {
+                await OneSignal.Notifications.requestPermission();
                 return true;
-            } else {
-                // OneSignal yoksa tarayıcı API'sini kullan
+            } else if ('Notification' in window) {
                 const permission = await Notification.requestPermission();
                 return permission === 'granted';
             }
+            return false;
         } catch (error) {
             console.error('Bildirim izni isteme hatası:', error);
             return false;

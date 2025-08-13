@@ -6,6 +6,7 @@ use app\Models\Kullanici;
 use app\Models\Magaza;
 use core\Controller;
 use core\Database;
+use app\Services\ActivityNotifier;
 use app\Middleware\AuthMiddleware;
 
 class IsEmriController extends Controller {
@@ -72,6 +73,16 @@ class IsEmriController extends Controller {
                     // Dosya bilgilerini ayrıca kaydet
                     $this->saveDosyaBilgileri($istek_id, $uploadedFiles);
                 }
+
+                try {
+                    $userId = $_SESSION['user_id'] ?? null;
+                    if ($userId && $istek_id) {
+                        (new ActivityNotifier())->recordAndNotify((int)$userId, 'create', 'is_emri', (int)$istek_id, [
+                            'baslik' => $baslik ?? null,
+                            'derece' => $derece ?? null
+                        ]);
+                    }
+                } catch (\Throwable $t) { error_log('IsEmriController@olustur notify/log error: ' . $t->getMessage()); }
 
                 // Başarılı kayıt sonrası yönlendirme
                 $_SESSION['success_message'] = 'İş emri başarıyla oluşturuldu.';
@@ -413,6 +424,15 @@ class IsEmriController extends Controller {
                 // İş emrini güncelle
                 $isEmriModel->update($id, $data);
 
+                try {
+                    $userId = $_SESSION['user_id'] ?? null;
+                    if ($userId) {
+                        (new ActivityNotifier())->recordAndNotify((int)$userId, 'update', 'is_emri', (int)$id, [
+                            'degisen_alanlar' => array_keys($data)
+                        ]);
+                    }
+                } catch (\Throwable $t) { error_log('IsEmriController@duzenle notify/log error: ' . $t->getMessage()); }
+
                 // Başarılı güncelleme sonrası yönlendirme
                 $_SESSION['success_message'] = 'İş emri başarıyla güncellendi.';
                 header('Location: /isemri/listesi');
@@ -477,6 +497,13 @@ class IsEmriController extends Controller {
             if ($silindi) {
                 // Başarılı silme sonrası mesaj
                 $_SESSION['success_message'] = 'İş emri başarıyla silindi.';
+
+                try {
+                    $userId = $_SESSION['user_id'] ?? null;
+                    if ($userId) {
+                        (new ActivityNotifier())->recordAndNotify((int)$userId, 'delete', 'is_emri', (int)$id);
+                    }
+                } catch (\Throwable $t) { error_log('IsEmriController@sil notify/log error: ' . $t->getMessage()); }
             } else {
                 // Silme başarısız olursa
                 $_SESSION['hata'] = 'İş emri silinemedi. Lütfen tekrar deneyin.';

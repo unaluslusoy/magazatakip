@@ -41,6 +41,7 @@
                         
                         <div class="card-body">
                             <form method="post" action="/gider/duzenle/<?= $gider['id'] ?>">
+                                <?= csrf_field(); ?>
                                 <div class="row mb-6">
                                     <label class="col-lg-4 col-form-label required fw-semibold fs-6">Gider Başlığı</label>
                                     <div class="col-lg-8">

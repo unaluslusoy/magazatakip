@@ -5,6 +5,9 @@ use core\Controller;
 use app\Models\Kullanici;
 use app\Models\Magaza;
 use app\Models\Gider;
+use app\Models\System\ActivityLog;
+use app\Models\Bildirim;
+use app\Services\ActivityNotifier;
 use app\Middleware\AuthMiddleware;
 use Exception;
 
@@ -82,7 +85,19 @@ class GiderController extends Controller {
                     }
                 }
                 
-                if ($giderModel->create($giderData)) {
+                $newId = $giderModel->create($giderData);
+                if ($newId) {
+                    // Activity + Bildirim + Push (best-effort)
+                    try {
+                        $userId = $_SESSION['user_id'] ?? null;
+                        if ($userId) {
+                            (new ActivityNotifier())->recordAndNotify((int)$userId, 'create', 'gider', (int)$newId, [
+                                'magaza_id' => $kullanici['magaza_id'] ?? null,
+                                'tarih' => $_POST['tarih'] ?? null,
+                                'miktar' => $miktar ?? null
+                            ]);
+                        }
+                    } catch (\Throwable $t) { error_log('GiderController@ekle notify/log error: ' . $t->getMessage()); }
                     $_SESSION['message'] = 'Gider başarıyla eklendi.';
                     $_SESSION['message_type'] = 'success';
                 } else {
@@ -153,6 +168,14 @@ class GiderController extends Controller {
                 }
                 
                 if ($giderModel->update($id, $giderData)) {
+                    try {
+                        $userId = $_SESSION['user_id'] ?? null;
+                        if ($userId) {
+                            (new ActivityNotifier())->recordAndNotify((int)$userId, 'update', 'gider', (int)$id, [
+                                'degisen_alanlar' => array_keys($giderData)
+                            ]);
+                        }
+                    } catch (\Throwable $t) { error_log('GiderController@duzenle notify/log error: ' . $t->getMessage()); }
                     $_SESSION['message'] = 'Gider başarıyla güncellendi.';
                     $_SESSION['message_type'] = 'success';
                 } else {
@@ -215,6 +238,12 @@ class GiderController extends Controller {
                 if ($gider['gorsel'] && file_exists($gider['gorsel'])) {
                     unlink($gider['gorsel']);
                 }
+                try {
+                    $userId = $_SESSION['user_id'] ?? null;
+                    if ($userId) {
+                        (new ActivityNotifier())->recordAndNotify((int)$userId, 'delete', 'gider', (int)$id);
+                    }
+                } catch (\Throwable $t) { error_log('GiderController@sil notify/log error: ' . $t->getMessage()); }
                 
                 $_SESSION['message'] = 'Gider başarıyla silindi.';
                 $_SESSION['message_type'] = 'success';

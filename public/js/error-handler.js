@@ -135,7 +135,7 @@ class ErrorHandler {
         // OneSignal SDK'yı yeniden yükle
         if (!window.OneSignal) {
             const script = document.createElement('script');
-            script.src = 'https://cdn.onesignal.com/sdks/OneSignalSDK.js';
+            script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
             script.onload = () => {
                 console.log('OneSignal SDK reloaded successfully');
                 // Token registration'ı yeniden başlat

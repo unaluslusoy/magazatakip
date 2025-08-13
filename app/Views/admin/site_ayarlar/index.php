@@ -53,6 +53,11 @@ require_once 'app/Views/layouts/navbar.php';
                             <i class="ki-outline ki-share fs-4 me-2"></i>Sosyal Medya
                         </a>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="mail-tab" data-bs-toggle="tab" href="#mail" role="tab" aria-controls="mail" aria-selected="false">
+                            <i class="ki-outline ki-sms fs-4 me-2"></i>Mail Ayarları
+                        </a>
+                    </li>
                 </ul>
                 <!--end::Tabs wrapper-->
 
@@ -61,6 +66,7 @@ require_once 'app/Views/layouts/navbar.php';
                     <!--begin::Genel Ayarlar Tab-->
                     <div class="tab-pane fade show active" id="genel" role="tabpanel" aria-labelledby="genel-tab">
                         <form action="/admin/site-ayarlar/genel-kaydet" method="POST" class="form fv-plugins-bootstrap5 fv-plugins-framework">
+                            <?= csrf_field(); ?>
                             <div class="row g-9 mb-8">
                                 <div class="col-md-6 fv-row">
                                     <label class="fs-6 fw-semibold mb-2" for="site_adi">Site Adı:</label>
@@ -115,6 +121,7 @@ require_once 'app/Views/layouts/navbar.php';
                     <!--begin::Bildirim Ayarları Tab-->
                     <div class="tab-pane fade" id="onesignal" role="tabpanel" aria-labelledby="onesignal-tab">
                         <form action="/admin/site-ayarlar/onesignal-kaydet" method="POST" class="form fv-plugins-bootstrap5 fv-plugins-framework">
+                            <?= csrf_field(); ?>
                             <div class="row g-9 mb-8">
                                 <div class="col-12">
                                     <h4 class="mb-4">OneSignal Ayarları</h4>
@@ -173,6 +180,7 @@ require_once 'app/Views/layouts/navbar.php';
                     <!--begin::İletişim Bilgileri Tab-->
                     <div class="tab-pane fade" id="iletisim" role="tabpanel" aria-labelledby="iletisim-tab">
                         <form action="/admin/site-ayarlar/iletisim-kaydet" method="POST" class="form fv-plugins-bootstrap5 fv-plugins-framework">
+                            <?= csrf_field(); ?>
                             <div class="row g-9 mb-8">
                                 <div class="col-md-6 fv-row">
                                     <label class="fs-6 fw-semibold mb-2" for="iletisim_email">İletişim E-posta:</label>
@@ -203,6 +211,7 @@ require_once 'app/Views/layouts/navbar.php';
                     <!--begin::Sosyal Medya Tab-->
                     <div class="tab-pane fade" id="sosyal" role="tabpanel" aria-labelledby="sosyal-tab">
                         <form action="/admin/site-ayarlar/sosyal-kaydet" method="POST" class="form fv-plugins-bootstrap5 fv-plugins-framework">
+                            <?= csrf_field(); ?>
                             <div class="row g-9 mb-8">
                                 <div class="col-md-6 fv-row">
                                     <label class="fs-6 fw-semibold mb-2" for="sosyal_medya_facebook">Facebook URL:</label>
@@ -233,6 +242,90 @@ require_once 'app/Views/layouts/navbar.php';
                         </form>
                     </div>
                     <!--end::Sosyal Medya Tab-->
+
+                    <!--begin::Mail Ayarları Tab-->
+                    <div class="tab-pane fade" id="mail" role="tabpanel" aria-labelledby="mail-tab">
+                        <form action="/admin/site-ayarlar/mail-kaydet" method="POST" class="form fv-plugins-bootstrap5 fv-plugins-framework">
+                            <?= csrf_field(); ?>
+                            <div class="row g-9 mb-8">
+                                <div class="col-12">
+                                    <h4 class="mb-4">Yandex SMTP Ayarları</h4>
+                                </div>
+                                <div class="col-md-4 fv-row">
+                                    <label class="fs-6 fw-semibold mb-2" for="smtp_driver">Driver:</label>
+                                    <select class="form-select form-select-solid" id="smtp_driver" name="smtp_driver">
+                                        <option value="smtp" <?= (($mailAyarlar['smtp_driver'] ?? 'smtp') === 'smtp') ? 'selected' : '' ?>>SMTP</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 fv-row">
+                                    <label class="fs-6 fw-semibold mb-2" for="smtp_host">Sunucu (Host):</label>
+                                    <input class="form-control form-control-solid" type="text" id="smtp_host" name="smtp_host" value="<?= $mailAyarlar['smtp_host'] ?? 'smtp.yandex.com' ?>" placeholder="smtp.yandex.com">
+                                </div>
+                                <div class="col-md-4 fv-row">
+                                    <label class="fs-6 fw-semibold mb-2" for="smtp_port">Port:</label>
+                                    <input class="form-control form-control-solid" type="number" id="smtp_port" name="smtp_port" value="<?= $mailAyarlar['smtp_port'] ?? 465 ?>" placeholder="465">
+                                </div>
+                            </div>
+
+                            <div class="row g-9 mb-8">
+                                <div class="col-md-4 fv-row">
+                                    <label class="fs-6 fw-semibold mb-2" for="smtp_encryption">Şifreleme:</label>
+                                    <select class="form-select form-select-solid" id="smtp_encryption" name="smtp_encryption">
+                                        <?php $enc = $mailAyarlar['smtp_encryption'] ?? 'ssl'; ?>
+                                        <option value="ssl" <?= ($enc === 'ssl') ? 'selected' : '' ?>>SSL</option>
+                                        <option value="tls" <?= ($enc === 'tls') ? 'selected' : '' ?>>TLS</option>
+                                        <option value="" <?= ($enc === '' || $enc === null) ? 'selected' : '' ?>>Yok</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 fv-row">
+                                    <label class="fs-6 fw-semibold mb-2" for="smtp_username">Kullanıcı Adı (E-posta):</label>
+                                    <input class="form-control form-control-solid" type="text" id="smtp_username" name="smtp_username" value="<?= $mailAyarlar['smtp_username'] ?? '' ?>" placeholder="noreply@alanadiniz.com.tr">
+                                </div>
+                                <div class="col-md-4 fv-row">
+                                    <label class="fs-6 fw-semibold mb-2" for="smtp_password">Parola:</label>
+                                    <input class="form-control form-control-solid" type="password" id="smtp_password" name="smtp_password" value="<?= $mailAyarlar['smtp_password'] ?? '' ?>" autocomplete="new-password">
+                                </div>
+                            </div>
+
+                            <div class="row g-9 mb-8">
+                                <div class="col-md-4 fv-row">
+                                    <label class="fs-6 fw-semibold mb-2" for="from_email">Gönderen E-posta:</label>
+                                    <input class="form-control form-control-solid" type="email" id="from_email" name="from_email" value="<?= $mailAyarlar['from_email'] ?? '' ?>">
+                                </div>
+                                <div class="col-md-4 fv-row">
+                                    <label class="fs-6 fw-semibold mb-2" for="from_name">Gönderen Adı:</label>
+                                    <input class="form-control form-control-solid" type="text" id="from_name" name="from_name" value="<?= $mailAyarlar['from_name'] ?? 'MagazaTakip' ?>">
+                                </div>
+                                <div class="col-md-4 fv-row">
+                                    <label class="fs-6 fw-semibold mb-2" for="reply_to_email">Yanıt E-postası (Reply-To):</label>
+                                    <input class="form-control form-control-solid" type="email" id="reply_to_email" name="reply_to_email" value="<?= $mailAyarlar['reply_to_email'] ?? '' ?>">
+                                </div>
+                            </div>
+
+                            <div class="card-footer d-flex justify-content-end py-6 px-9">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="ki-outline ki-check fs-2"></i>Kaydet
+                                </button>
+                            </div>
+                        </form>
+
+                        <div class="separator my-10"></div>
+                        <form action="/admin/site-ayarlar/mail-test" method="POST" class="form fv-plugins-bootstrap5 fv-plugins-framework">
+                            <?= csrf_field(); ?>
+                            <div class="row g-9 mb-8">
+                                <div class="col-md-6 fv-row">
+                                    <label class="fs-6 fw-semibold mb-2" for="test_email">Test E-posta Adresi:</label>
+                                    <input class="form-control form-control-solid" type="email" id="test_email" name="test_email" placeholder="ornek@alan.com" required>
+                                </div>
+                                <div class="col-md-6 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-light-primary">
+                                        <i class="ki-outline ki-paper-plane fs-2"></i> Test Mail Gönder
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <!--end::Mail Ayarları Tab-->
                 </div>
                 <!--end::Tab content-->
             </div>
