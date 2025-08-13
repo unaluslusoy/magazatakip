@@ -26,13 +26,21 @@
                 <div class="col-md-9">
                     <div class="row g-3">
                         <div class="col-md-3">
-                            <a class="card bg-light-primary hoverable d-block text-decoration-none" href="/admin/trendyolgo/urunler">
+                    <a class="card bg-light-primary hoverable d-block text-decoration-none" href="/admin/trendyolgo/urunler">
                                 <div class="card-body">
                                     <div class="fw-bold">Ürünler</div>
                                     <div class="text-muted fs-7">Trendyol ürünlerini listele</div>
                                 </div>
                             </a>
                         </div>
+                <div class="col-md-3">
+                    <a class="card bg-light-success hoverable d-block text-decoration-none" href="/admin/trendyolgo/stoklar">
+                        <div class="card-body">
+                            <div class="fw-bold">Şube Stokları</div>
+                            <div class="text-muted fs-7">Şubeye göre stok ve fiyatlar</div>
+                        </div>
+                    </a>
+                </div>
                         <div class="col-md-3">
                             <a class="card bg-light-info hoverable d-block text-decoration-none" href="/admin/trendyolgo/magazalar">
                                 <div class="card-body">

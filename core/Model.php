@@ -44,6 +44,8 @@ class Model {
                 $value = null;
             }
         }
+        // Referansı bırak
+        unset($value);
 
         // Boş olmayan alanları filtrele
         $data = array_filter($data, function($value) {

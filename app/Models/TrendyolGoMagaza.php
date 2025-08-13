@@ -21,6 +21,8 @@ class TrendyolGoMagaza extends Model
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 magaza_adi VARCHAR(200) NOT NULL,
                 store_id VARCHAR(100) NOT NULL,
+                last_sync DATETIME NULL,
+                last_success DATETIME NULL,
                 adres TEXT NULL,
                 telefon VARCHAR(50) NULL,
                 created_at DATETIME NULL,
@@ -33,6 +35,21 @@ class TrendyolGoMagaza extends Model
         }
     }
 
+	public function touchSync(string $storeId, bool $success): void
+	{
+		try {
+			$now = date('Y-m-d H:i:s');
+			if ($success) {
+				$stmt = $this->db->prepare("UPDATE {$this->table} SET last_sync = :n, last_success = :n WHERE store_id = :sid");
+				$stmt->execute([':n'=>$now, ':sid'=>$storeId]);
+			} else {
+				$stmt = $this->db->prepare("UPDATE {$this->table} SET last_sync = :n WHERE store_id = :sid");
+				$stmt->execute([':n'=>$now, ':sid'=>$storeId]);
+			}
+			if (function_exists('apcu_delete')) { @apcu_delete('tgo_stores_all'); }
+		} catch (\Throwable $e) {}
+	}
+
     public function getAll(): array
     {
         try {
@@ -43,6 +60,21 @@ class TrendyolGoMagaza extends Model
             return [];
         }
     }
+
+	public function getAllCached(int $ttlSeconds = 300): array
+	{
+		try {
+			if (function_exists('apcu_fetch')) {
+				$k = 'tgo_stores_all';
+				$val = apcu_fetch($k, $ok);
+				if ($ok && is_array($val)) { return $val; }
+				$val = $this->getAll();
+				apcu_store($k, $val, $ttlSeconds);
+				return $val;
+			}
+			return $this->getAll();
+		} catch (\Throwable $e) { return $this->getAll(); }
+	}
 
     public function getById(int $id): ?array
     {

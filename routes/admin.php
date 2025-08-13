@@ -127,9 +127,13 @@ $router->get('/admin/trendyolgo', 'Admin\\TrendyolGoController@index');
 $router->get('/admin/trendyolgo/ayarlar', 'Admin\\TrendyolGoController@ayarlar');
 $router->post('/admin/trendyolgo/ayarlar', 'Admin\\TrendyolGoController@ayarlar');
 $router->get('/admin/trendyolgo/urunler', 'Admin\\TrendyolGoController@urunler');
+$router->get('/admin/trendyolgo/urunler/data', 'Admin\\TrendyolGoController@urunlerData');
 $router->get('/admin/trendyolgo/magazalar', 'Admin\\TrendyolGoController@magazalar');
 $router->post('/admin/trendyolgo/magazalar', 'Admin\\TrendyolGoController@magazalar');
 $router->get('/admin/trendyolgo/magaza/sil/{id}', 'Admin\\TrendyolGoController@magazaSil');
+// Şube bazlı stok sayfası
+$router->get('/admin/trendyolgo/stoklar', 'Admin\\TrendyolGoController@stoklar');
+$router->get('/admin/trendyolgo/stoklar/data', 'Admin\\TrendyolGoController@stoklarData');
 // Ürün içe aktarma job tetikleme ve durum sorgu
 $router->post('/admin/trendyolgo/urunler/import-trigger', 'Admin\\TrendyolGoController@urunImportTrigger');
 $router->get('/admin/trendyolgo/urunler/import-status/{id}', 'Admin\\TrendyolGoController@urunImportStatus');
@@ -139,6 +143,11 @@ $router->get('/admin/trendyolgo/siparisler', 'Admin\\TrendyolGoController@sipari
 $router->get('/admin/trendyolgo/iptaller', 'Admin\\TrendyolGoController@iptaller');
 $router->get('/admin/trendyolgo/loglar', 'Admin\\TrendyolGoController@loglar');
 $router->post('/admin/trendyolgo/loglar/temizle', 'Admin\\TrendyolGoController@logTemizle');
+$router->post('/admin/trendyolgo/siparis/durum', 'Admin\\TrendyolGoController@siparisDurumGuncelle');
+$router->get('/admin/trendyolgo/diagnostic', 'Admin\\TrendyolGoController@diagnostic');
+$router->get('/admin/trendyolgo/diagnostic-stores', 'Admin\\TrendyolGoController@diagnosticStores');
+$router->post('/admin/trendyolgo/urunler/import', 'Admin\\TrendyolGoController@urunleriIceriAl');
+$router->post('/admin/trendyolgo/cron/import-all', 'Admin\\TrendyolGoController@cronImportAll');
 
 // GetirÇarşı
 $router->get('/admin/getir', 'Admin\\GetirController@index');

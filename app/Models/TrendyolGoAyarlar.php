@@ -42,7 +42,8 @@ class TrendyolGoAyarlar extends Model
             'satici_cari_id VARCHAR(50) NULL',
             'entegrasyon_ref_kodu VARCHAR(100) NULL',
             'api_secret VARCHAR(255) NULL',
-            'token VARCHAR(512) NULL'
+            'token VARCHAR(512) NULL',
+            'default_store_id VARCHAR(100) NULL'
         ];
         foreach ($columns as $col) {
             try {
@@ -79,6 +80,7 @@ class TrendyolGoAyarlar extends Model
                 'entegrasyon_ref_kodu' => $data['entegrasyon_ref_kodu'] ?? null,
                 'api_secret' => $data['api_secret'] ?? null,
                 'token' => $data['token'] ?? null,
+                'default_store_id' => $data['default_store_id'] ?? ($data['store_id'] ?? null),
                 'enabled' => !empty($data['enabled']) ? 1 : 0,
                 'schedule_minutes' => !empty($data['schedule_minutes']) ? (int)$data['schedule_minutes'] : null,
                 'updated_at' => $now
