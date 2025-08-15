@@ -81,4 +81,8 @@ class Model {
         $stmt->bindParam(':id', $id);
         return $stmt->execute();
     }
+
+    public function getDb(): \PDO {
+        return $this->db;
+    }
 }

@@ -51,26 +51,35 @@
                             <span class="menu-arrow"></span>
                         </a>
                         <div class="menu-sub menu-sub-accordion pt-3">
-                            <!-- Tamsoft Ana Menü -->
                             <div class="menu-item menu-accordion" data-kt-menu-trigger="click">
                                 <a href="#" class="menu-link py-3">
-                                    <span class="menu-bullet">
-                                        <i class="bi bi-plug"></i>
-                                    </span>
-                                    <span class="menu-title">Tamsoft</span>
+                                    <span class="menu-bullet"><i class="bi bi-box-seam"></i></span>
+                                    <span class="menu-title">Tamsoft ERP</span>
                                     <span class="menu-arrow"></span>
                                 </a>
                                 <div class="menu-sub menu-sub-accordion pt-3">
                                     <div class="menu-item">
-                                        <a href="/admin/tamsoft/stok" class="menu-link py-3">
-                                            <span class="menu-bullet"><i class="bi bi-box-seam"></i></span>
-                                            <span class="menu-title">Stok Listesi</span>
+                                        <a href="/admin/tamsoft-stok" class="menu-link py-3">
+                                            <span class="menu-bullet"><i class="bi bi-speedometer2"></i></span>
+                                            <span class="menu-title">Dashboard</span>
                                         </a>
                                     </div>
                                     <div class="menu-item">
-                                        <a href="/admin/tamsoft/ayarlar" class="menu-link py-3">
+                                        <a href="/admin/tamsoft-stok/ayarlar" class="menu-link py-3">
                                             <span class="menu-bullet"><i class="bi bi-gear"></i></span>
                                             <span class="menu-title">Ayarlar</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a href="/admin/tamsoft-stok/envanter" class="menu-link py-3">
+                                            <span class="menu-bullet"><i class="bi bi-box"></i></span>
+                                            <span class="menu-title">Stok Envanter</span>
+                                        </a>
+                                    </div>
+                                    <div class="menu-item">
+                                        <a href="/admin/tamsoft-stok/import" class="menu-link py-3">
+                                            <span class="menu-bullet"><i class="bi bi-upload"></i></span>
+                                            <span class="menu-title">Import (Manuel)</span>
                                         </a>
                                     </div>
                                 </div>

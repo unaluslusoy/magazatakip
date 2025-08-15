@@ -1,0 +1,159 @@
+{
+	"info": {
+		"_postman_id": "0b6fa8c7-a6da-4482-8104-f45f99881636",
+		"name": "PALMIYE",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "14738428"
+	},
+	"item": [
+		{
+			"name": "Workgroup Copy",
+			"item": [
+				{
+					"name": "Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let response = pm.response.json();\r",
+									"pm.collectionVariables.set(\"wg_token\", response.access_token);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "password",
+									"type": "text"
+								},
+								{
+									"key": "username",
+									"value": "PALMİYE",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "Palmiye123456.",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://tamsoftintegration.camlica.com.tr/token",
+							"protocol": "http",
+							"host": [
+								"tamsoftintegration",
+								"camlica",
+								"com",
+								"tr"
+							],
+							"path": [
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "DepoListesi",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{wg_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://tamsoftintegration.camlica.com.tr/api/Integration//DepoListesi",
+							"protocol": "http",
+							"host": [
+								"tamsoftintegration",
+								"camlica",
+								"com",
+								"tr"
+							],
+							"path": [
+								"api",
+								"Integration",
+								"",
+								"DepoListesi"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "EticaretStokListesi",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{wg_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://tamsoftintegration.camlica.com.tr/api/Integration/EticaretStokListesi?tarih=2024-01-01&depoid=1&miktarsifirdanbuyukstoklarlistelensin=False",
+							"protocol": "http",
+							"host": [
+								"tamsoftintegration",
+								"camlica",
+								"com",
+								"tr"
+							],
+							"path": [
+								"api",
+								"Integration",
+								"EticaretStokListesi"
+							],
+							"query": [
+								{
+									"key": "tarih",
+									"value": "2024-01-01"
+								},
+								{
+									"key": "depoid",
+									"value": "1"
+								},
+								{
+									"key": "miktarsifirdanbuyukstoklarlistelensin",
+									"value": "False"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "wg_token",
+			"value": ""
+		}
+	]
+}

@@ -133,7 +133,7 @@ if (isset($_SESSION['user_id'])) {
 					<li class="breadcrumb-item">
 						<i class="ki-outline ki-right fs-7 text-gray-500 mx-n1"></i>
 					</li>
-					<li class="breadcrumb-item text-gray-600 fw-bold lh-1"><?=$link?></li>
+					<li class="breadcrumb-item text-gray-600 fw-bold lh-1"><?= htmlspecialchars($link ?? ($title ?? ''), ENT_QUOTES) ?></li>
 
 				</ul>
 				<!--end::Breadcrumb-->

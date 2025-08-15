@@ -114,13 +114,30 @@ $router->get('/admin/bildirimler/sil/(:num)', 'Admin\BildirimController@delete')
 $router->get('/admin/bildirimler/okundu/(:num)', 'Admin\BildirimController@markAsRead');
 $router->get('/admin/bildirimler/detay/(:num)', 'Admin\BildirimController@detay');
 
-// Tamsoft
-$router->get('/admin/tamsoft/stok', 'Admin\TamsoftController@stokListesi');
-$router->get('/admin/tamsoft/token-test', 'Admin\TamsoftController@tokenTest');
-$router->get('/admin/tamsoft/depolar', 'Admin\TamsoftController@depolar');
-$router->get('/admin/tamsoft/estok-preview', 'Admin\TamsoftController@estokPreview');
-$router->get('/admin/tamsoft/ayarlar', 'Admin\\TamsoftController@ayarlar');
-$router->post('/admin/tamsoft/ayarlar', 'Admin\\TamsoftController@ayarlar');
+// Tamsoft modülü kaldırıldı
+
+// Sadece stok entegrasyonu
+$router->get('/admin/tamsoft-stok', 'Admin\\TamsoftStockController@index');
+$router->get('/admin/tamsoft-stok/summary', 'Admin\\TamsoftStockController@dashboardSummary');
+$router->get('/admin/tamsoft-stok/ayarlar', 'Admin\\TamsoftStockController@ayarlar');
+$router->post('/admin/tamsoft-stok/ayarlar', 'Admin\\TamsoftStockController@ayarlarPost');
+$router->get('/admin/tamsoft-stok/envanter', 'Admin\\TamsoftStockController@inventory');
+$router->get('/admin/tamsoft-stok/envanter/data', 'Admin\\TamsoftStockController@inventoryData');
+$router->post('/admin/tamsoft-stok/envanter/map-save', 'Admin\\TamsoftStockController@mapSave');
+$router->post('/admin/tamsoft-stok/refresh', 'Admin\\TamsoftStockController@refresh');
+$router->post('/admin/tamsoft-stok/token-test', 'Admin\\TamsoftStockController@tokenTest');
+$router->post('/admin/tamsoft-stok/depolar/sync', 'Admin\\TamsoftStockController@depolarSync');
+$router->get('/admin/tamsoft-stok/depolar/preview', 'Admin\\TamsoftStockController@depolarPreview');
+$router->post('/admin/tamsoft-stok/stok/preview', 'Admin\\TamsoftStockController@stokPreview');
+$router->post('/admin/tamsoft-stok/cron/stock-sync', 'Admin\\TamsoftStockController@cronStockSync');
+$router->post('/admin/tamsoft-stok/cron/monthly-master', 'Admin\\TamsoftStockController@cronMonthlyMaster');
+$router->get('/admin/tamsoft-stok/depolar', 'Admin\\TamsoftStockController@depolarPage');
+$router->get('/admin/tamsoft-stok/depolar/data', 'Admin\\TamsoftStockController@depolarData');
+$router->post('/admin/tamsoft-stok/depolar/set-active', 'Admin\\TamsoftStockController@depolarSetActive');
+
+// Import (manuel)
+$router->get('/admin/tamsoft-stok/import', 'Admin\\TamsoftStockController@import');
+$router->post('/admin/tamsoft-stok/import', 'Admin\\TamsoftStockController@importRun');
 
 // Trendyol Go
 $router->get('/admin/trendyolgo', 'Admin\\TrendyolGoController@index');
