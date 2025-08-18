@@ -4,16 +4,23 @@ namespace app\Services;
 
 use app\Models\TamsoftStockConfig;
 use app\Models\TamsoftStockRepo;
+use app\Http\TamsoftHttpClient;
+use app\Utils\RateLimiter;
 
 class TamsoftStockService
 {
 	private TamsoftStockConfig $cfg;
 	private TamsoftStockRepo $repo;
+	private TamsoftHttpClient $httpClient;
+	private RateLimiter $rateLimiter;
 
 	public function __construct()
 	{
 		$this->cfg = new TamsoftStockConfig();
 		$this->repo = new TamsoftStockRepo();
+		$this->httpClient = new TamsoftHttpClient();
+		$intervalMs = (int)($this->cfg->getConfig()['throttle_ms'] ?? 75);
+		$this->rateLimiter = new RateLimiter(max(0, $intervalMs));
 	}
 
 	public function getConfig(): array { return $this->cfg->getConfig(); }
@@ -197,18 +204,20 @@ class TamsoftStockService
 		if ($breakerUntil > $now) { throw new \RuntimeException('Servis yoğun, lütfen daha sonra deneyiniz.'); }
 		$attempt = 0; $lastErr = null;
 		while ($attempt <= $maxRetries) {
-			if ($attempt > 0) { usleep(($throttleMs + rand(25,150)) * 1000); }
+			if ($attempt > 0) { $this->rateLimiter->awaitNext(); usleep(($throttleMs + rand(25,150)) * 1000); }
 			$attempt++;
-			$ch = curl_init($url);
-			$timeoutSec = max(5, (int)($cfg['http_timeout_sec'] ?? 20));
-			$opts = [CURLOPT_RETURNTRANSFER=>true, CURLOPT_TIMEOUT=>$timeoutSec, CURLOPT_CONNECTTIMEOUT=>10];
 			$headers = ['Accept: application/json'];
 			if ($bearer) { $headers[] = 'Authorization: Bearer ' . $bearer; }
-			if ($method === 'POST') { $opts[CURLOPT_POST] = true; $opts[CURLOPT_POSTFIELDS] = http_build_query($fields ?? []); $headers[] = 'Content-Type: application/x-www-form-urlencoded'; }
-			curl_setopt_array($ch, $opts);
-			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-			$body = curl_exec($ch); $err = curl_error($ch); $code = curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
-			if ($err) { $lastErr = 'HTTP error: '.$err; } else if ($code >= 429 || $code >= 500) { $lastErr = 'HTTP '.$code.' body: '.$body; } else if ($code >= 400) { throw new \RuntimeException('HTTP '.$code.' body: '.$body); }
+			$timeoutSec = max(5, (int)($cfg['http_timeout_sec'] ?? 20));
+			$resp = $method === 'POST'
+				? $this->httpClient->postForm($url, $fields ?? [], $headers, $timeoutSec)
+				: $this->httpClient->get($url, $headers, $timeoutSec);
+			$code = (int)($resp['http_code'] ?? 0);
+			$err = $resp['error'] ?? null;
+			$body = $resp['raw_body'] ?? '';
+			if ($err) { $lastErr = 'HTTP error: '.$err; }
+			else if ($code >= 429 || $code >= 500) { $lastErr = 'HTTP '.$code.' body: '.$body; }
+			else if ($code >= 400) { throw new \RuntimeException('HTTP '.$code.' body: '.$body); }
 			else {
 				$trimmed = is_string($body) ? trim($body) : '';
 				if ($trimmed === '' || $trimmed === 'null') { return []; }
@@ -240,20 +249,15 @@ class TamsoftStockService
 
 	private function httpGetMeta(string $url, ?string $bearer = null): array
 	{
-		$ch = curl_init($url);
-		curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true, CURLOPT_TIMEOUT=>60]);
+		$cfg = $this->cfg->getConfig();
 		$headers = ['Accept: application/json'];
 		if ($bearer) { $headers[] = 'Authorization: Bearer ' . $bearer; }
-		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-		$body = curl_exec($ch);
-		$err = curl_error($ch);
-		$code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-		curl_close($ch);
-		$trimmed = is_string($body) ? trim($body) : '';
+		$resp = $this->httpClient->get($url, $headers, (int)($cfg['http_timeout_sec'] ?? 60));
+		$trimmed = is_string($resp['raw_body'] ?? '') ? trim((string)$resp['raw_body']) : '';
 		$decoded = $this->decodeFlexible($trimmed);
 		return [
-			'http_code' => $code,
-			'error' => $err ?: null,
+			'http_code' => $resp['http_code'] ?? null,
+			'error' => $resp['error'] ?? null,
 			'raw_body' => $trimmed,
 			'json' => is_array($decoded) ? $decoded : null,
 		];
