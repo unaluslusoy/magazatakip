@@ -156,6 +156,26 @@ class TamsoftStockController extends Controller
 		echo json_encode($this->svc->syncDepots());
 	}
 
+	// Yeni: Aktif depoları kuyruklayarak paralel stok senkronu (E-ticaretStokListesi)
+	public function depolarRefreshParallel()
+	{
+		header('Content-Type: application/json; charset=utf-8');
+		try {
+			$date = isset($_POST['tarih']) ? (string)$_POST['tarih'] : null;
+			$repo = new \app\Models\TamsoftStockRepo();
+			$depots = $repo->getActiveDepots();
+			$qr = new \app\Models\QueueRepo();
+			$enq = 0;
+			foreach ($depots as $d) {
+				$payload = ['date'=>$date, 'depo_id'=>(int)($d['id'] ?? 0)];
+				if ($payload['depo_id'] > 0) { $qr->enqueue('tamsoft_ecommerce_stock', $payload); $enq++; }
+			}
+			echo json_encode(['success'=>true,'enqueued'=>$enq,'depots'=>array_column($depots,'id')]);
+		} catch (\Throwable $e) {
+			echo json_encode(['success'=>false,'error'=>$e->getMessage()]);
+		}
+	}
+
 	public function depolarPreview()
 	{
 		header('Content-Type: application/json; charset=utf-8');

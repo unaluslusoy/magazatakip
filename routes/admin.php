@@ -141,6 +141,7 @@ $router->post('/admin/tamsoft-stok/envanter/map-save', 'Admin\\TamsoftStockContr
 $router->post('/admin/tamsoft-stok/refresh', 'Admin\\TamsoftStockController@refresh');
 $router->post('/admin/tamsoft-stok/token-test', 'Admin\\TamsoftStockController@tokenTest');
 $router->post('/admin/tamsoft-stok/depolar/sync', 'Admin\\TamsoftStockController@depolarSync');
+$router->post('/admin/tamsoft-stok/depolar/refresh-parallel', 'Admin\\TamsoftStockController@depolarRefreshParallel');
 $router->get('/admin/tamsoft-stok/depolar/preview', 'Admin\\TamsoftStockController@depolarPreview');
 $router->post('/admin/tamsoft-stok/stok/preview', 'Admin\\TamsoftStockController@stokPreview');
 $router->post('/admin/tamsoft-stok/price-refresh', 'Admin\\TamsoftStockController@priceRefresh');

@@ -37,6 +37,13 @@ while (true) {
                 $svc->refreshPricesOnly($date, $depo);
                 $ok = true;
                 break;
+            case 'tamsoft_ecommerce_stock':
+                $svc = new TamsoftStockService();
+                $date = isset($payload['date']) ? (string)$payload['date'] : null;
+                $depo = isset($payload['depo_id']) ? (int)$payload['depo_id'] : null;
+                $svc->refreshDepotQtyFromEcommerce($date, $depo);
+                $ok = true;
+                break;
             default:
                 throw new \RuntimeException('Unknown job type: ' . $type);
         }
