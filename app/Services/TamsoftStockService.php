@@ -341,20 +341,13 @@ class TamsoftStockService
 		$date = $date ?: (string)($cfg['default_date'] ?? '1900-01-01');
 		$token = $this->getToken();
 		$base = rtrim((string)($cfg['api_url'] ?? ''), '/');
-		$onlyPositive = (bool)($cfg['default_only_positive'] ?? 1);
-		$lastBarcodeOnly = (bool)($cfg['default_last_barcode_only'] ?? 0);
-		$onlyEcommerce = (bool)($cfg['default_only_ecommerce'] ?? 0);
 		$updated = 0; $skipped = 0; $pages = 0;
-		// Depo seçimi: param > config > 1
-		$did = $depoId ?? (int)($cfg['default_depo_id'] ?? 1);
-		if ($did <= 0) { $did = 1; }
+		$did = ($depoId ?? (int)($cfg['default_depo_id'] ?? 1)) ?: 1;
 		while ($pages < $maxPages) {
 			$params = [
 				'tarih' => $date,
 				'depoid' => $did,
-				'urununsonbarkodulistelensin' => $lastBarcodeOnly ? 'True' : 'False',
-				'miktarsifirdanbuyukstoklarlistelensin' => $onlyPositive ? 'True' : 'False',
-				'sadeceeticaretstoklarigetir' => $onlyEcommerce ? 'True' : 'False',
+				// İstenilen sütunlar endpoint tarafında destekleniyorsa pasif filtreler kaldırıldı
 				'offset' => $pages * $batch,
 				'limit' => $batch,
 			];
@@ -363,21 +356,18 @@ class TamsoftStockService
 			$data = is_array($meta['json'] ?? null) ? $meta['json'] : [];
 			$cnt = is_array($data) ? count($data) : 0;
 			if ($cnt === 0) break;
-			// Sayfa işlemleri tek transaction
 			$db = $this->repoDb(); $inTx = false; try { $db->beginTransaction(); $inTx = true; } catch (\Throwable $e) {}
 			foreach ($data as $row) {
-				$norm = $this->parseProductRow($row, (int)$did);
-				if ($norm === null) { $skipped++; continue; }
-				$urunId = $this->repo->upsertProduct(
-					$norm['ext_urun_id'],
-					$norm['barkod'] ?? null,
-					$norm['urun_adi'] ?? null,
-					$norm['kdv'] ?? null,
-					$norm['birim'] ?? null,
-					null // fiyatı güncellemiyoruz
-				);
-				$this->repo->upsertDepot($norm['depo_id'], null);
-				$this->repo->upsertStockSummary($urunId, $norm['depo_id'], (float)($norm['miktar'] ?? 0), null);
+				$ext = trim((string)($row['UrunKodu'] ?? ''));
+				$ad  = isset($row['UrunAdi']) ? (string)$row['UrunAdi'] : null;
+				$qty = isset($row['Envanter']) ? (float)$row['Envanter'] : null;
+				$priceFromApi = isset($row['Tutar']) ? $this->normalizeDecimal($row['Tutar']) : null;
+				if ($ext === '') { $skipped++; continue; }
+				$urunId = $this->repo->upsertProduct($ext, null, $ad, null, null, null);
+				$this->repo->upsertDepot($did, null);
+				// Fiyat: ana listeden al (ürün tablosu), yoksa API fiyatını kullan
+				$masterPrice = $this->repo->getProductPriceById($urunId);
+				$this->repo->upsertStockSummary($urunId, $did, (float)($qty ?? 0), $masterPrice !== null ? $masterPrice : $priceFromApi);
 				$updated++;
 			}
 			if ($inTx) { try { $db->commit(); } catch (\Throwable $e) { try { $db->rollBack(); } catch (\Throwable $e2) {} } }

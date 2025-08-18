@@ -724,6 +724,15 @@ class TamsoftStockRepo extends Model
 			->execute([':f'=>$price, ':u'=>$urunId]);
 	}
 
+	public function getProductPriceById(int $urunId): ?float
+	{
+		$val = $this->db->prepare("SELECT fiyat FROM tamsoft_urunler WHERE id=:id LIMIT 1");
+		$val->execute([':id'=>$urunId]);
+		$row = $val->fetch(\PDO::FETCH_ASSOC);
+		if (!$row) { return null; }
+		return isset($row['fiyat']) ? (float)$row['fiyat'] : null;
+	}
+
 	public function updatePriceByExtOrBarcode(?string $extId, ?string $barcode, ?float $price): bool
 	{
 		$urunId = $this->findProductIdByExtOrBarcode($extId, $barcode);
