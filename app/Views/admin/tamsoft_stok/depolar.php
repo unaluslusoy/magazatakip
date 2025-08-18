@@ -2,6 +2,10 @@
 <?php require_once __DIR__ . '/../../layouts/navbar.php'; ?>
 <?php require_once __DIR__ . '/_top_nav.php'; ?>
 <div class="container-fluid py-5">
+	<style>
+	#tbDepo th, #tbDepo td { padding: .6rem .9rem; }
+	.table-responsive { padding-left: .75rem; padding-right: .75rem; }
+	</style>
 	<div class="card">
 		<div class="card-header d-flex justify-content-between align-items-center">
 			<h3 class="card-title mb-0">Depolar</h3>
