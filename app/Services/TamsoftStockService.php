@@ -56,7 +56,7 @@ class TamsoftStockService
 		}
 		if (!$depoId) { throw new \RuntimeException('Depo bulunamadı'); }
 
-		$imported = 0; $offset = 0; $batch = 500;
+		$imported = 0; $offset = 0; $batch = max(50, min(2000, (int)($cfg['master_batch'] ?? 500)));
 		// Geniş tarih ile tüm seti çekmeye çalış
 		$paramsBase = [
 			'tarih' => (string)($cfg['default_date'] ?? '1900-01-01'),
@@ -72,15 +72,33 @@ class TamsoftStockService
 			$data = is_array($meta['json'] ?? null) ? $meta['json'] : [];
 			$cnt = is_array($data) ? count($data) : 0;
 			if ($cnt === 0) { break; }
+			// Sayfa işlemlerini tek transaction'da uygula ve bulk insert kullan (IO'yu ciddi azaltır)
+			$__db = $this->repoDb(); $__inTx = false; try { $__db->beginTransaction(); $__inTx = true; } catch (\Throwable $e) {}
+			$prodRows = [];
+			$bcRows = [];
 			foreach ($data as $row) {
 				$norm = $this->parseProductRow($row, (int)$depoId);
 				if ($norm === null) { continue; }
-				$this->repo->stageInsertProduct($norm['ext_urun_id'], $norm['barkod'] ?? null, $norm['urun_adi'] ?? null, $norm['kdv'] ?? null, $norm['birim'] ?? null, $norm['fiyat'] ?? null);
+				$prodRows[] = [
+					'ext_urun_id' => $norm['ext_urun_id'],
+					'barkod' => $norm['barkod'] ?? null,
+					'urun_adi' => $norm['urun_adi'] ?? null,
+					'kdv' => $norm['kdv'] ?? null,
+					'birim' => $norm['birim'] ?? null,
+					'fiyat' => $norm['fiyat'] ?? null,
+				];
 				foreach (($norm['alt_barkodlar'] ?? []) as $ab) {
-					$this->repo->stageInsertBarcode($norm['ext_urun_id'], (string)$ab['barkod'], $ab['birim'] ?? null, isset($ab['fiyat']) ? (float)$ab['fiyat'] : null);
+					$bcRows[] = [
+						'ext_urun_id' => $norm['ext_urun_id'],
+						'barkod' => (string)$ab['barkod'],
+						'birim' => $ab['birim'] ?? null,
+						'fiyat' => isset($ab['fiyat']) ? (float)$ab['fiyat'] : null
+					];
 				}
-				$imported++;
 			}
+			if (!empty($prodRows)) { $this->repo->stageInsertProductBulk($prodRows); $imported += count($prodRows); }
+			if (!empty($bcRows)) { $this->repo->stageInsertBarcodeBulk($bcRows); }
+			if ($__inTx) { try { $__db->commit(); } catch (\Throwable $e) { try { $__db->rollBack(); } catch (\Throwable $e2) {} } }
 			$offset += $batch;
 		}
 		$this->repo->syncMasterFromStage();
@@ -148,11 +166,11 @@ class TamsoftStockService
 		];
 	}
 
-	public function listProductsServerSide(int $start, int $length, ?string $search, string $orderBy, string $orderDir, ?string $filterPrefix = null, ?int $hasIntegration = null, ?int $onlyPositive = null, ?int $depoId = null): array
+	public function listProductsServerSide(int $start, int $length, ?string $search, string $orderBy, string $orderDir, ?string $filterPrefix = null, ?int $hasIntegration = null, ?int $onlyPositive = null, ?int $depoId = null, ?int $orderDepotId = null): array
 	{
-		$total = $this->repo->countProductsTotal($filterPrefix);
-		$filtered = $this->repo->countProductsFiltered($search, $filterPrefix);
-		$rows = $this->repo->listProductsWithDepotsPage($start, $length, $search, $orderBy, $orderDir, $filterPrefix, $hasIntegration, $onlyPositive, $depoId);
+		$total = $this->repo->countProductsTotal($filterPrefix, $hasIntegration, $onlyPositive, $depoId);
+		$filtered = $this->repo->countProductsFiltered($search, $filterPrefix, $hasIntegration, $onlyPositive, $depoId);
+		$rows = $this->repo->listProductsWithDepotsPage($start, $length, $search, $orderBy, $orderDir, $filterPrefix, $hasIntegration, $onlyPositive, $depoId, $orderDepotId);
 		$depots = $this->repo->getActiveDepots();
 		return [ 'total' => $total, 'filtered' => $filtered, 'rows' => $rows, 'depots' => $depots ];
 	}
@@ -182,7 +200,8 @@ class TamsoftStockService
 			if ($attempt > 0) { usleep(($throttleMs + rand(25,150)) * 1000); }
 			$attempt++;
 			$ch = curl_init($url);
-			$opts = [CURLOPT_RETURNTRANSFER=>true, CURLOPT_TIMEOUT=>60];
+			$timeoutSec = max(5, (int)($cfg['http_timeout_sec'] ?? 20));
+			$opts = [CURLOPT_RETURNTRANSFER=>true, CURLOPT_TIMEOUT=>$timeoutSec, CURLOPT_CONNECTTIMEOUT=>10];
 			$headers = ['Accept: application/json'];
 			if ($bearer) { $headers[] = 'Authorization: Bearer ' . $bearer; }
 			if ($method === 'POST') { $opts[CURLOPT_POST] = true; $opts[CURLOPT_POSTFIELDS] = http_build_query($fields ?? []); $headers[] = 'Content-Type: application/x-www-form-urlencoded'; }
@@ -238,6 +257,170 @@ class TamsoftStockService
 			'raw_body' => $trimmed,
 			'json' => is_array($decoded) ? $decoded : null,
 		];
+	}
+
+	// Yeni: Sadece fiyat çekme servisi (StokListesi)
+	public function refreshPricesOnly(?string $date = null, ?int $depoId = null, int $maxPages = 200, int $batch = 100): array
+	{
+		$cfg = $this->cfg->getConfig();
+		$date = $date ?: (string)($cfg['default_date'] ?? '1900-01-01');
+		// Config tabanlı zaman/sayfa/batch limitleri
+		$maxPagesCfg = (int)($cfg['price_max_pages'] ?? 0);
+		$batchCfg = (int)($cfg['price_batch'] ?? 0);
+		$maxSeconds = (int)($cfg['price_max_seconds'] ?? 0);
+		if ($maxPagesCfg > 0) { $maxPages = $maxPagesCfg; }
+		if ($batchCfg > 0) { $batch = $batchCfg; }
+		$token = $this->getToken();
+		$base = rtrim((string)($cfg['api_url'] ?? ''), '/');
+		$updated = 0; $skipped = 0; $pages = 0;
+		$startedAt = time();
+		$this->repo->logEvent('price_refresh', 'Fiyat güncelleme başladı (date='.$date.', depo='.(string)($depoId ?? 'hepsi').', batch='.$batch.', maxPages='.$maxPages.')');
+		// Tek depo üzerinden fiyat: varsayılan depo veya 1
+		$did = $depoId ?? (int)($cfg['default_depo_id'] ?? 1);
+		if ($did <= 0) { $did = 1; }
+		$depots = [ ['id'=>$did] ];
+		foreach ($depots as $d) {
+			$did = (int)($d['id'] ?? $d['DepoID'] ?? $d['Depoid'] ?? 0);
+			if ($did <= 0) continue;
+			$offset = 0; $pages = 0; $prevHash = null;
+			$this->repo->logEvent('price_refresh', 'Depo '.$did.' fiyat güncelleme başlatıldı');
+			while ($pages < $maxPages) {
+				// global timebox
+				if ($maxSeconds > 0 && (time() - $startedAt) > $maxSeconds) {
+					$this->repo->logEvent('price_refresh', 'Zaman limiti aşıldı, işlem sonlandırılıyor');
+					break 2;
+				}
+				$params = [
+					'tarih' => $date,
+					'depoid' => $did,
+					'urununsonbarkodulistelensin' => !empty($cfg['default_last_barcode_only']) ? 'True' : 'False',
+					'miktarsifirdanbuyukstoklarlistelensin' => !empty($cfg['default_only_positive']) ? 'True' : 'False',
+					'sadeceeticaretstoklarigetir' => !empty($cfg['default_only_ecommerce']) ? 'True' : 'False',
+					'offset' => $offset,
+					'limit' => $batch,
+				];
+				$url = $base . '/api/Integration/StokListesi?' . http_build_query($params);
+				$meta = $this->httpGetMeta($url, $token);
+				$data = is_array($meta['json'] ?? null) ? $meta['json'] : [];
+				$cnt = is_array($data) ? count($data) : 0;
+				if ($cnt === 0) break;
+				$hash = md5(json_encode($data)); if ($prevHash !== null && $hash === $prevHash) break; $prevHash = $hash;
+				foreach ($data as $row) {
+					$ext = trim((string)($row['UrunKodu'] ?? ($row['Kod'] ?? '')));
+					$barcode = trim((string)($row['Barkod'] ?? ($row['barkod'] ?? '')));
+					$ind = $this->normalizeDecimal($row['IndirimliTutar'] ?? null);
+					$basePrice = $this->extractPriceFromRow($row);
+					$price = ($ind !== null && $ind > 0) ? $ind : $basePrice;
+					if ($ext === '' && $barcode === '') { $skipped++; continue; }
+					$ok = $this->repo->updatePriceByExtOrBarcode($ext !== '' ? $ext : null, $barcode !== '' ? $barcode : null, $price);
+					if ($ok) { $updated++; }
+					// Debug: fiyat yakalanamadıysa örnek bir log satırı bırak
+					if ($price === null) {
+						try{ $rootLog = dirname(__DIR__, 2) . '/logs/tamsoft.log'; @file_put_contents($rootLog, json_encode(['price_missing'=>['ext'=>$ext,'barcode'=>$barcode,'keys'=>array_keys($row)]], JSON_UNESCAPED_UNICODE) . "\n", FILE_APPEND); }catch(\Throwable $e){}
+					}
+				}
+				$offset += $batch; $pages++;
+				if ($cnt < $batch) break;
+			}
+			$this->repo->logEvent('price_refresh', 'Depo '.$did.' tamamlandı (pages='.$pages.')');
+		}
+		$this->repo->logEvent('price_refresh', 'Fiyat güncelleme bitti (updated='.$updated.', skipped='.$skipped.')');
+		return ['success'=>true,'updated'=>$updated,'skipped'=>$skipped];
+	}
+
+	/**
+	 * EticaretStokListesi üzerinden depo bazlı sadece miktar güncellemesi yapar (fiyatı değiştirmez)
+	 */
+	public function refreshDepotQtyFromEcommerce(?string $date = null, ?int $depoId = null, int $maxPages = 200, int $batch = 100): array
+	{
+		$cfg = $this->cfg->getConfig();
+		$date = $date ?: (string)($cfg['default_date'] ?? '1900-01-01');
+		$token = $this->getToken();
+		$base = rtrim((string)($cfg['api_url'] ?? ''), '/');
+		$onlyPositive = (bool)($cfg['default_only_positive'] ?? 1);
+		$lastBarcodeOnly = (bool)($cfg['default_last_barcode_only'] ?? 0);
+		$onlyEcommerce = (bool)($cfg['default_only_ecommerce'] ?? 0);
+		$updated = 0; $skipped = 0; $pages = 0;
+		// Depo seçimi: param > config > 1
+		$did = $depoId ?? (int)($cfg['default_depo_id'] ?? 1);
+		if ($did <= 0) { $did = 1; }
+		while ($pages < $maxPages) {
+			$params = [
+				'tarih' => $date,
+				'depoid' => $did,
+				'urununsonbarkodulistelensin' => $lastBarcodeOnly ? 'True' : 'False',
+				'miktarsifirdanbuyukstoklarlistelensin' => $onlyPositive ? 'True' : 'False',
+				'sadeceeticaretstoklarigetir' => $onlyEcommerce ? 'True' : 'False',
+				'offset' => $pages * $batch,
+				'limit' => $batch,
+			];
+			$url = $base . '/api/Integration/EticaretStokListesi?' . http_build_query($params);
+			$meta = $this->httpGetMeta($url, $token);
+			$data = is_array($meta['json'] ?? null) ? $meta['json'] : [];
+			$cnt = is_array($data) ? count($data) : 0;
+			if ($cnt === 0) break;
+			// Sayfa işlemleri tek transaction
+			$db = $this->repoDb(); $inTx = false; try { $db->beginTransaction(); $inTx = true; } catch (\Throwable $e) {}
+			foreach ($data as $row) {
+				$norm = $this->parseProductRow($row, (int)$did);
+				if ($norm === null) { $skipped++; continue; }
+				$urunId = $this->repo->upsertProduct(
+					$norm['ext_urun_id'],
+					$norm['barkod'] ?? null,
+					$norm['urun_adi'] ?? null,
+					$norm['kdv'] ?? null,
+					$norm['birim'] ?? null,
+					null // fiyatı güncellemiyoruz
+				);
+				$this->repo->upsertDepot($norm['depo_id'], null);
+				$this->repo->upsertStockSummary($urunId, $norm['depo_id'], (float)($norm['miktar'] ?? 0), null);
+				$updated++;
+			}
+			if ($inTx) { try { $db->commit(); } catch (\Throwable $e) { try { $db->rollBack(); } catch (\Throwable $e2) {} } }
+			$pages++;
+			if ($cnt < $batch) break;
+		}
+		$this->repo->updateProductQuantityFromSummary();
+		return ['success'=>true, 'updated'=>$updated, 'skipped'=>$skipped];
+	}
+
+	private function normalizeDecimal($value): ?float
+	{
+		if ($value === null) { return null; }
+		if (is_float($value) || is_int($value)) { return (float)$value; }
+		if (!is_string($value)) { return null; }
+		$raw = trim($value);
+		// Para birimi ve yazı karakterlerini temizle
+		$raw = preg_replace('/[^0-9,\.-]/u', '', $raw ?? '');
+		if ($raw === '') { return null; }
+		// Türkçe biçimler: 1.234,56 → 1234.56, 12,34 → 12.34
+		// Strateji: eğer virgül varsa ve sondan 3. karakter değilse onu ondalık ayırıcı kabul edip virgülü noktaya çevir, noktaları kaldır
+		$hasComma = strpos($raw, ',') !== false; $hasDot = strpos($raw, '.') !== false;
+		if ($hasComma && !$hasDot) {
+			$raw = str_replace(['.',' '], '', $raw); // olası binlik ayırıcıyı temizle
+			$raw = str_replace(',', '.', $raw);
+		}
+		else if ($hasComma && $hasDot) {
+			// Her ikisi de varsa ve son virgül noktadan sonra ise, virgül ondalık olabilir: 1.234,56
+			$lastComma = strrpos($raw, ','); $lastDot = strrpos($raw, '.');
+			if ($lastComma !== false && $lastDot !== false && $lastComma > $lastDot) {
+				$raw = str_replace('.', '', $raw);
+				$raw = str_replace(',', '.', $raw);
+			}
+		}
+		return is_numeric($raw) ? (float)$raw : null;
+	}
+
+	private function extractPriceFromRow(array $row): ?float
+	{
+		$priceCandidates = ['Tutar','Fiyat','SatisFiyati','SatisFiyati1','SatisFiyatiKDVli','SatisFiyatiKDVHaric'];
+		foreach ($priceCandidates as $pc) {
+			if (array_key_exists($pc, $row)) {
+				$val = $this->normalizeDecimal($row[$pc]);
+				if ($val !== null) { return $val; }
+			}
+		}
+		return null;
 	}
 
 	/**
@@ -420,7 +603,7 @@ class TamsoftStockService
 		$params['miktarsifirdanbuyukstoklarlistelensin'] = $onlyPositive ? 'True' : 'False';
 		$params['urununsonbarkodulistelensin'] = $lastBarcodeOnly ? 'True' : 'False';
 		$params['sadeceeticaretstoklarigetir'] = $onlyEcommerce ? 'True' : 'False';
-		$url = $base . '/api/Integration/EticaretStokListesi?' . http_build_query($params);
+		$url = $base . '/api/Integration/StokListesi?' . http_build_query($params);
 		$meta = $this->httpGetMeta($url, $token);
 		$data = is_array($meta['json'] ?? null) ? $meta['json'] : [];
 		$total = is_array($data) ? count($data) : 0;
@@ -468,19 +651,10 @@ class TamsoftStockService
 		if ($depoId !== null) {
 			$depolar = [ ['id' => $depoId, 'adi' => null] ];
 		} else {
-			// Önce DB'den aktif depolar
-			$dbDepots = $this->repo->getActiveDepotsFromDb();
-			if (!empty($dbDepots)) {
-				foreach ($dbDepots as $d) { $depolar[] = ['id'=>(int)$d['id'], 'adi'=>$d['depo_adi'] ?? null]; }
-			} else {
-				// DB boşsa API'ye düş
-				$dl = $this->getDepotList($base, $token);
-				foreach ($dl as $d) {
-					$did = (int)($d['Depoid'] ?? ($d['DepoID'] ?? 0));
-					$adi = $d['Adi'] ?? ($d['Ad'] ?? null);
-					if ($did > 0) { $depolar[] = ['id'=>$did, 'adi'=>$adi]; }
-				}
-			}
+			// Tek depo: varsayılan depo ya da 1
+			$did = isset($cfg['default_depo_id']) ? (int)$cfg['default_depo_id'] : 0;
+			if ($did <= 0) { $did = 1; }
+			$depolar = [ ['id' => $did, 'adi' => null] ];
 		}
 
 		foreach ($depolar as $dep) {
@@ -490,8 +664,8 @@ class TamsoftStockService
 			$params['miktarsifirdanbuyukstoklarlistelensin'] = $onlyPositive ? 'True' : 'False';
 			$params['urununsonbarkodulistelensin'] = $lastBarcodeOnly ? 'True' : 'False';
 			$params['sadeceeticaretstoklarigetir'] = $onlyEcommerce ? 'True' : 'False';
-			// Sayfalı çekim: 500'er
-			$offset = 0; $batch = 500;
+			// Sayfalı çekim: 100'er
+			$offset = 0; $batch = 100;
 			$depotStartTs = time();
 			$maxDepotSeconds = (int)($cfg['max_seconds_per_depot'] ?? 180);
 			$maxPagesPerDepot = (int)($cfg['max_pages_per_depot'] ?? 200);
@@ -513,7 +687,7 @@ class TamsoftStockService
 					@file_put_contents($rootLog, json_encode(['page_start'=>['depo'=>$dep['id'],'offset'=>$offset,'ts'=>date('c')]], JSON_UNESCAPED_UNICODE) . "\n", FILE_APPEND);
 				} catch (\Throwable $e) {}
 				$q = $params + ['offset' => $offset, 'limit' => $batch];
-				$url = $base . '/api/Integration/EticaretStokListesi?' . http_build_query($q);
+				$url = $base . '/api/Integration/StokListesi?' . http_build_query($q);
 				$meta = $this->httpGetMeta($url, $token);
 				$data = is_array($meta['json'] ?? null) ? $meta['json'] : [];
 				$cnt = is_array($data) ? count($data) : 0;
@@ -530,32 +704,79 @@ class TamsoftStockService
 				} catch (\Throwable $e) {}
 				if ($cnt === 0) { break; }
 				$total += $cnt;
+				$bulkMode = !empty($cfg['bulk_stock_summary']);
+				$prodRows = [];
+				$bcRows = [];
+				$sumRows = [];
 				foreach ($data as $row) {
 					$norm = $this->parseProductRow($row, (int)$dep['id']);
 					if ($norm === null) { $skipped++; continue; }
-					// İPT, BK önek filtreleme: ayrı kart’a taşıma (aktif=0)
-					$prefix = strtoupper(substr($norm['ext_urun_id'], 0, 3));
-					$urunId = $this->repo->upsertProduct(
-						$norm['ext_urun_id'],
-						$norm['barkod'] ?? null,
-						$norm['urun_adi'] ?? null,
-						$norm['kdv'] ?? null,
-						$norm['birim'] ?? null,
-						$norm['fiyat'] ?? null
-					);
-					if (in_array($prefix, ['IPT','\u0130PT','BK ']) || str_starts_with(strtoupper($norm['ext_urun_id']), 'BK')) {
-						$this->repo->setProductActive($urunId, 0);
+					if ($bulkMode) {
+						$prodRows[] = [
+							'ext_urun_id' => $norm['ext_urun_id'],
+							'barkod' => $norm['barkod'] ?? null,
+							'urun_adi' => $norm['urun_adi'] ?? null,
+							'kdv' => $norm['kdv'] ?? null,
+							'birim' => $norm['birim'] ?? null,
+							'fiyat' => $norm['fiyat'] ?? null,
+						];
+						foreach (($norm['alt_barkodlar'] ?? []) as $ab) {
+							$bcRows[] = [
+								'ext_urun_id' => $norm['ext_urun_id'],
+								'barkod' => (string)$ab['barkod'],
+								'birim' => $ab['birim'] ?? null,
+								'fiyat' => isset($ab['fiyat']) ? (float)$ab['fiyat'] : null,
+							];
+						}
+						$sumRows[] = [
+							'ext_urun_id' => $norm['ext_urun_id'],
+							'barcode' => $norm['barkod'] ?? null,
+							'urun_adi' => $norm['urun_adi'] ?? null,
+							'kdv' => $norm['kdv'] ?? null,
+							'birim' => $norm['birim'] ?? null,
+							'fiyat' => $norm['fiyat'] ?? null,
+							'depo_id' => (int)$norm['depo_id'],
+							'miktar' => (float)($norm['miktar'] ?? 0),
+						];
+						$imported++;
+					} else {
+						// Tek tek (mevcut davranış)
+						$prefix = strtoupper(substr($norm['ext_urun_id'], 0, 3));
+						$urunId = $this->repo->upsertProduct(
+							$norm['ext_urun_id'], $norm['barkod'] ?? null, $norm['urun_adi'] ?? null, $norm['kdv'] ?? null, $norm['birim'] ?? null, $norm['fiyat'] ?? null
+						);
+						if (in_array($prefix, ['IPT','\u0130PT','BK ']) || str_starts_with(strtoupper($norm['ext_urun_id']), 'BK')) {
+							$this->repo->setProductActive($urunId, 0);
+						}
+						foreach (($norm['alt_barkodlar'] ?? []) as $ab) {
+							$this->repo->upsertBarcode($urunId, (string)$ab['barkod'], $ab['birim'] ?? null, isset($ab['fiyat']) ? (float)$ab['fiyat'] : null);
+						}
+						$this->repo->upsertDepot($norm['depo_id'], $dep['adi'] ?? null);
+						$this->repo->upsertStockSummary($urunId, $norm['depo_id'], (float)($norm['miktar'] ?? 0), $norm['fiyat'] ?? null);
+						if (!empty($cfg['verbose_stock_log'])) {
+							$this->repo->logEvent('stok_update', 'Ürün '.$norm['ext_urun_id'].' depo '.$norm['depo_id'].' stok='.$norm['miktar'].' fiyat='.((string)($norm['fiyat'] ?? '')));
+						}
+						$imported++;
 					}
-					foreach (($norm['alt_barkodlar'] ?? []) as $ab) {
-						$this->repo->upsertBarcode($urunId, (string)$ab['barkod'], $ab['birim'] ?? null, isset($ab['fiyat']) ? (float)$ab['fiyat'] : null);
+				}
+				// Bulk modunda: stage + pivot üzerinden upsert
+				if ($bulkMode && !empty($prodRows)) {
+					try { $this->repo->stageInsertProductBulk($prodRows); } catch (\Throwable $e) {}
+					try { if (!empty($bcRows)) { $this->repo->stageInsertBarcodeBulk($bcRows); } } catch (\Throwable $e) {}
+					// Stage'den master'a aktar
+					try { $this->repo->syncMasterFromStage(); } catch (\Throwable $e) {}
+					// Depo özetini toplu güncelle: önce ext->id map, sonra bulk upsert
+					$exts = array_column($sumRows, 'ext_urun_id');
+					$map = $this->repo->getProductIdsByExt($exts);
+					$sumPayload = [];
+					foreach ($sumRows as $s) {
+						$uid = isset($map[$s['ext_urun_id']]) ? (int)$map[$s['ext_urun_id']] : 0;
+						if ($uid > 0) {
+							$this->repo->upsertDepot((int)$s['depo_id'], $dep['adi'] ?? null);
+							$sumPayload[] = [ 'urun_id'=>$uid, 'depo_id'=>(int)$s['depo_id'], 'miktar'=>(float)$s['miktar'], 'fiyat'=>$s['fiyat'] ];
+						}
 					}
-					$this->repo->upsertDepot($norm['depo_id'], $dep['adi'] ?? null);
-					$this->repo->upsertStockSummary($urunId, $norm['depo_id'], (float)($norm['miktar'] ?? 0), $norm['fiyat'] ?? null);
-					// Ayrıntılı ürün-başı logu isteğe bağlı (performans için kapatılabilir)
-					if (!empty($cfg['verbose_stock_log'])) {
-						$this->repo->logEvent('stok_update', 'Ürün '.$norm['ext_urun_id'].' depo '.$norm['depo_id'].' stok='.$norm['miktar'].' fiyat='.((string)($norm['fiyat'] ?? '')));
-					}
-					$imported++;
+					if (!empty($sumPayload)) { $this->repo->upsertStockSummaryBulk($sumPayload); }
 				}
 				$offset += $batch;
 				$pagesDone++;

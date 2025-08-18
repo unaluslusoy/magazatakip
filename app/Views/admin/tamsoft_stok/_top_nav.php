@@ -4,6 +4,7 @@
 	<a href="/admin/tamsoft-stok/depolar" class="btn btn-sm btn-light">Depolar</a>
 	<a href="/admin/tamsoft-stok/import" class="btn btn-sm btn-light">Import</a>
 	<a href="/admin/tamsoft-stok/ayarlar" class="btn btn-sm btn-light">Ayarlar</a>
+	<a href="/admin/tamsoft-stok/jobs" class="btn btn-sm btn-light">Jobs</a>
 
 </div>
 

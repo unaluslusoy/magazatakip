@@ -1,5 +1,5 @@
 <?php
-$title="<h2>İş Emri Güncelle</h2>";
+$title = "İş Emri Güncelle";
 $link = "Güncelleme" ;
 
 require_once 'app/Views/layouts/header.php';

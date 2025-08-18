@@ -94,6 +94,19 @@ $router->post('/admin/site-ayarlar/sosyal-kaydet', 'Admin\SiteAyarlarController@
 $router->post('/admin/site-ayarlar/onesignal-kaydet', 'Admin\SiteAyarlarController@oneSignalKaydet');
 $router->post('/admin/site-ayarlar/mail-kaydet', 'Admin\SiteAyarlarController@mailKaydet');
 $router->post('/admin/site-ayarlar/mail-test', 'Admin\SiteAyarlarController@mailTestGonder');
+// Log ayarları
+$router->post('/admin/site-ayarlar/log-kaydet', 'Admin\SiteAyarlarController@logAyarKaydet');
+// Rate limit ayarları
+$router->post('/admin/site-ayarlar/rate-limit-kaydet', 'Admin\SiteAyarlarController@rateLimitKaydet');
+
+// Cloudflare paneli
+$router->get('/admin/cloudflare', 'Admin\\CloudflareController@index');
+$router->post('/admin/cloudflare/save', 'Admin\\CloudflareController@save');
+$router->post('/admin/cloudflare/devmode', 'Admin\\CloudflareController@devModeToggle');
+$router->post('/admin/cloudflare/purge', 'Admin\\CloudflareController@purge');
+$router->post('/admin/cloudflare/dns-create', 'Admin\\CloudflareController@dnsCreate');
+$router->post('/admin/cloudflare/dns-delete', 'Admin\\CloudflareController@dnsDelete');
+$router->post('/admin/cloudflare/ssl-set', 'Admin\\CloudflareController@sslSet');
 
 // Bildirim rotaları
 $router->get('/admin/bildirimler', 'Admin\BildirimController@index');
@@ -123,14 +136,17 @@ $router->get('/admin/tamsoft-stok/ayarlar', 'Admin\\TamsoftStockController@ayarl
 $router->post('/admin/tamsoft-stok/ayarlar', 'Admin\\TamsoftStockController@ayarlarPost');
 $router->get('/admin/tamsoft-stok/envanter', 'Admin\\TamsoftStockController@inventory');
 $router->get('/admin/tamsoft-stok/envanter/data', 'Admin\\TamsoftStockController@inventoryData');
+$router->get('/admin/tamsoft-stok/envanter/export', 'Admin\\TamsoftStockController@inventoryExport');
 $router->post('/admin/tamsoft-stok/envanter/map-save', 'Admin\\TamsoftStockController@mapSave');
 $router->post('/admin/tamsoft-stok/refresh', 'Admin\\TamsoftStockController@refresh');
 $router->post('/admin/tamsoft-stok/token-test', 'Admin\\TamsoftStockController@tokenTest');
 $router->post('/admin/tamsoft-stok/depolar/sync', 'Admin\\TamsoftStockController@depolarSync');
 $router->get('/admin/tamsoft-stok/depolar/preview', 'Admin\\TamsoftStockController@depolarPreview');
 $router->post('/admin/tamsoft-stok/stok/preview', 'Admin\\TamsoftStockController@stokPreview');
+$router->post('/admin/tamsoft-stok/price-refresh', 'Admin\\TamsoftStockController@priceRefresh');
 $router->post('/admin/tamsoft-stok/cron/stock-sync', 'Admin\\TamsoftStockController@cronStockSync');
 $router->post('/admin/tamsoft-stok/cron/monthly-master', 'Admin\\TamsoftStockController@cronMonthlyMaster');
+$router->post('/admin/tamsoft-stok/cron/ecommerce-stock', 'Admin\\TamsoftStockController@cronEcommerceStock');
 $router->get('/admin/tamsoft-stok/depolar', 'Admin\\TamsoftStockController@depolarPage');
 $router->get('/admin/tamsoft-stok/depolar/data', 'Admin\\TamsoftStockController@depolarData');
 $router->post('/admin/tamsoft-stok/depolar/set-active', 'Admin\\TamsoftStockController@depolarSetActive');
@@ -140,11 +156,43 @@ $router->get('/admin/tamsoft-stok/import', 'Admin\\TamsoftStockController@import
 $router->post('/admin/tamsoft-stok/import', 'Admin\\TamsoftStockController@importRun');
 
 // Trendyol Go
+
+// Job Manager (Tamsoft)
+$router->get('/admin/tamsoft-stok/jobs', 'Admin\\TamsoftStockController@jobsPage');
+$router->get('/admin/tamsoft-stok/jobs/list', 'Admin\\TamsoftStockController@jobsList');
+$router->get('/admin/tamsoft-stok/jobs/runs', 'Admin\\TamsoftStockController@jobsRuns');
+$router->post('/admin/tamsoft-stok/jobs/run', 'Admin\\TamsoftStockController@jobsRun');
+$router->post('/admin/tamsoft-stok/jobs/toggle', 'Admin\\TamsoftStockController@jobsToggle');
+$router->post('/admin/tamsoft-stok/jobs/lock/release', 'Admin\\TamsoftStockController@jobsLockRelease');
+$router->post('/admin/tamsoft-stok/jobs/create', 'Admin\\TamsoftStockController@jobsCreate');
+$router->post('/admin/tamsoft-stok/jobs/delete', 'Admin\\TamsoftStockController@jobsDelete');
+$router->get('/admin/tamsoft-stok/queue/summary', 'Admin\\TamsoftStockController@queueSummary');
+$router->post('/admin/tamsoft-stok/jobs/schedule-now', 'Admin\\TamsoftStockController@jobsScheduleNow');
+
+// Ürün Eşleştirme (Faz 1 - kural+bulanık)
+$router->get('/admin/match', 'Admin\\ProductMatchController@page');
+$router->get('/admin/match/stores', 'Admin\\ProductMatchController@storesPage');
+$router->get('/admin/match/stores/list', 'Admin\\ProductMatchController@storesList');
+$router->post('/admin/match/stores/save', 'Admin\\ProductMatchController@storesSave');
+$router->post('/admin/match/trendyolgo/run', 'Admin\\ProductMatchController@runTrendyolGo');
+$router->get('/admin/match/trendyolgo/suggestions', 'Admin\\ProductMatchController@suggestionsTrendyolGo');
+$router->post('/admin/match/approve', 'Admin\\ProductMatchController@approve');
+$router->post('/admin/match/push-single', 'Admin\\ProductMatchController@pushSingle');
+$router->get('/admin/match/tamsoft/list', 'Admin\\ProductMatchController@tamsoftList');
+$router->get('/admin/match/trendyol/list', 'Admin\\ProductMatchController@trendyolList');
+// Analiz ve toplu onay
+$router->get('/admin/match/trendyol/analyze', 'Admin\\ProductMatchController@analyzeTrendyolGo');
+$router->get('/admin/match/trendyol/preview-single', 'Admin\\ProductMatchController@previewSingle');
+$router->post('/admin/match/approve-batch', 'Admin\\ProductMatchController@approveBatch');
 $router->get('/admin/trendyolgo', 'Admin\\TrendyolGoController@index');
 $router->get('/admin/trendyolgo/ayarlar', 'Admin\\TrendyolGoController@ayarlar');
 $router->post('/admin/trendyolgo/ayarlar', 'Admin\\TrendyolGoController@ayarlar');
 $router->get('/admin/trendyolgo/urunler', 'Admin\\TrendyolGoController@urunler');
 $router->get('/admin/trendyolgo/urunler/data', 'Admin\\TrendyolGoController@urunlerData');
+$router->get('/admin/trendyolgo/eslesmeler', 'Admin\\TrendyolGoController@eslesmeler');
+$router->get('/admin/trendyolgo/eslesmeler/data', 'Admin\\TrendyolGoController@eslesmelerData');
+$router->post('/admin/trendyolgo/eslesmeler/update', 'Admin\\TrendyolGoController@eslesmelerUpdate');
+$router->post('/admin/trendyolgo/eslesmeler/delete', 'Admin\\TrendyolGoController@eslesmelerDelete');
 $router->get('/admin/trendyolgo/magazalar', 'Admin\\TrendyolGoController@magazalar');
 $router->post('/admin/trendyolgo/magazalar', 'Admin\\TrendyolGoController@magazalar');
 $router->get('/admin/trendyolgo/magaza/sil/{id}', 'Admin\\TrendyolGoController@magazaSil');

@@ -43,7 +43,9 @@ class TrendyolGoAyarlar extends Model
             'entegrasyon_ref_kodu VARCHAR(100) NULL',
             'api_secret VARCHAR(255) NULL',
             'token VARCHAR(512) NULL',
-            'default_store_id VARCHAR(100) NULL'
+            'default_store_id VARCHAR(100) NULL',
+            'price_markup_percent DECIMAL(10,2) NULL',
+            'price_add_abs DECIMAL(10,2) NULL'
         ];
         foreach ($columns as $col) {
             try {
@@ -81,6 +83,8 @@ class TrendyolGoAyarlar extends Model
                 'api_secret' => $data['api_secret'] ?? null,
                 'token' => $data['token'] ?? null,
                 'default_store_id' => $data['default_store_id'] ?? ($data['store_id'] ?? null),
+                'price_markup_percent' => isset($data['price_markup_percent']) && $data['price_markup_percent'] !== '' ? (float)$data['price_markup_percent'] : null,
+                'price_add_abs' => isset($data['price_add_abs']) && $data['price_add_abs'] !== '' ? (float)$data['price_add_abs'] : null,
                 'enabled' => !empty($data['enabled']) ? 1 : 0,
                 'schedule_minutes' => !empty($data['schedule_minutes']) ? (int)$data['schedule_minutes'] : null,
                 'updated_at' => $now

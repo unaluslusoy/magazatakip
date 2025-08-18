@@ -5,6 +5,11 @@ AddType application/javascript .js
         Options -MultiViews -Indexes
     </IfModule>
     RewriteEngine On
+    # Cloudflare/Proxy HTTPS algılama
+    RewriteCond %{HTTP:CF-Visitor} "'scheme':'http'" [NC]
+    RewriteRule .* - [E=CFPROTO:http]
+    RewriteCond %{HTTP:CF-Visitor} "'scheme':'https'" [NC]
+    RewriteRule .* - [E=CFPROTO:https]
     
     # API Routes
     RewriteRule ^api/version/?$ api/version.php [L]
@@ -23,3 +28,22 @@ AddType application/javascript .js
     Header set Pragma "no-cache"
     Header set Expires 0
 </Files>
+
+# Statik varlıklar için uzun cache
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 30 days"
+    ExpiresByType application/javascript "access plus 30 days"
+    ExpiresByType application/json "access plus 7 days"
+    ExpiresByType image/svg+xml "access plus 30 days"
+    ExpiresByType image/png "access plus 30 days"
+    ExpiresByType image/jpeg "access plus 30 days"
+    ExpiresByType image/webp "access plus 30 days"
+    ExpiresByType font/woff2 "access plus 30 days"
+</IfModule>
+
+<IfModule mod_headers.c>
+    <FilesMatch "\.(css|js|png|jpg|jpeg|webp|svg|woff2)$">
+        Header set Cache-Control "public, max-age=2592000, immutable"
+    </FilesMatch>
+</IfModule>

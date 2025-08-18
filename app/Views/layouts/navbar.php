@@ -284,8 +284,6 @@ if (isset($_SESSION['user_id'])) {
 					<!--end::Menu wrapper-->
 				</div>
 				<!--end::User menu-->
-
-            <?php require_once 'app/Views/layouts/sidebar.php'; ?>
 			</div>
 			<!--end::Navbar-->
 		</div>
@@ -298,184 +296,14 @@ if (isset($_SESSION['user_id'])) {
 <!--begin::Wrapper-->
 <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
 	<!--begin::Sidebar-->
-<!--end::Sidebar-->
-<!--begin::Main-->
-<div class="app-main flex-column flex-row-fluid" id="kt_app_main">
-	<!--begin::Content wrapper-->
-	<div class="d-flex flex-column flex-column-fluid">
-		<!--begin::Content-->
-		<div id="kt_app_content" class="app-content flex-column-fluid">
-			<!--begin::Content container-->
-			<div id="kt_app_content_container" class="app-container container-fluid">
-
-<script>
-// Admin layout için logout ve temizlik fonksiyonları
-function clearRememberMe() {
-    localStorage.removeItem('email');
-    localStorage.removeItem('rememberEmail');
-}
-
-function performLogout() {
-    console.log('🚪 Admin logout başlatıldı');
-    
-    // Loader göster
-    if (window.businessLoader) {
-        window.businessLoader.showWithMessage('Çıkış yapılıyor...');
-    }
-    
-    // Kapsamlı client-side temizlik
-    performCompleteLogout();
-}
-
-function performCompleteLogout() {
-    console.log('🧹 Kapsamlı logout temizliği');
-    
-    // 1. LocalStorage temizle
-    if (window.localStorage) {
-        const keysToRemove = ['email', 'rememberEmail', 'auth_token', 'user_data', 'session_info'];
-        keysToRemove.forEach(key => {
-            localStorage.removeItem(key);
-            console.log('Temizlendi:', key);
-        });
-    }
-    
-    // 2. SessionStorage temizle
-    if (window.sessionStorage) {
-        sessionStorage.clear();
-        console.log('SessionStorage temizlendi');
-    }
-    
-    // 3. Tüm auth cookie'lerini temizle
-    const authCookies = ['remember_me', 'auth_token', 'user_session', 'PHPSESSID'];
-    authCookies.forEach(cookieName => {
-        document.cookie = cookieName + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
-        document.cookie = cookieName + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=" + window.location.hostname;
-        console.log('Cookie temizlendi:', cookieName);
-    });
-    
-    // 4. AuthGuard'ı durdurun
-    if (window.authGuard) {
-        window.authGuard.clearSession();
-        console.log('AuthGuard session temizlendi');
-    }
-    
-    // 5. Basit logout endpoint'ini kullan (daha güvenilir)
-    console.log('📡 Server logout çağrısı');
-    window.location.replace('/logout.php');
-}
-
-// Bildirim sistemi
-document.addEventListener('DOMContentLoaded', function() {
-    // Kullanıcı rolünü kontrol et
-    const userRole = '<?= $_SESSION['user_role'] ?? false ?>';
-    const bildirimIcon = document.getElementById('kt_header_bildirim_menu_toggle');
-    const bildirimSayaci = document.getElementById('bildirim-sayaci');
-    const bildirimSayi = document.getElementById('bildirim-sayi');
-    let yanipSonmeInterval;
-    let lastCount = 0;
-    
-    // Sadece kullanıcılar için bildirim ikonunu göster
-    if (userRole === false || userRole === '0') {
-        bildirimIcon.style.display = 'block';
-        
-        // Okunmamış bildirim sayısını al
-        function getUnreadCount() {
-            fetch('/kullanici/bildirimler/unread-count')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const count = data.count;
-                        bildirimSayi.textContent = count;
-                        
-                        if (count > 0) {
-                            bildirimSayaci.style.display = 'block';
-                            
-                            // Yeni bildirim geldiğinde pulse efekti
-                            if (count > lastCount && lastCount > 0) {
-                                startPulse();
-                            }
-                            
-                            startBlinking();
-                        } else {
-                            bildirimSayaci.style.display = 'none';
-                            stopBlinking();
-                            stopPulse();
-                        }
-                        
-                        lastCount = count;
-                    }
-                })
-                .catch(error => {
-                    console.error('Bildirim sayısı alınırken hata:', error);
-                });
-        }
-        
-        // Yanıp sönme efekti
-        function startBlinking() {
-            if (yanipSonmeInterval) return;
-            
-            yanipSonmeInterval = setInterval(() => {
-                bildirimSayaci.style.opacity = bildirimSayaci.style.opacity === '0.5' ? '1' : '0.5';
-            }, 800);
-        }
-        
-        function stopBlinking() {
-            if (yanipSonmeInterval) {
-                clearInterval(yanipSonmeInterval);
-                yanipSonmeInterval = null;
-                bildirimSayaci.style.opacity = '1';
-            }
-        }
-        
-        // Pulse efekti (yeni bildirim geldiğinde)
-        function startPulse() {
-            bildirimSayaci.style.animation = 'pulse 1.5s infinite';
-            
-            setTimeout(() => {
-                stopPulse();
-            }, 3000);
-        }
-        
-        function stopPulse() {
-            bildirimSayaci.style.animation = '';
-        }
-        
-        // Sayfa yüklendiğinde bildirim sayısını al
-        getUnreadCount();
-        
-        // Her 30 saniyede bir güncelle
-        setInterval(getUnreadCount, 30000);
-        
-        // Bildirim ikonuna tıklandığında sayacı gizle
-        bildirimIcon.querySelector('a').addEventListener('click', function() {
-            bildirimSayaci.style.display = 'none';
-            stopBlinking();
-            stopPulse();
-        });
-        
-        // Sayfa görünür olduğunda bildirim sayısını güncelle
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden) {
-                getUnreadCount();
-            }
-        });
-    }
-});
-</script>
-
-<style>
-@keyframes pulse {
-    0% {
-        transform: translate(-50%, -50%) scale(1);
-        opacity: 1;
-    }
-    50% {
-        transform: translate(-50%, -50%) scale(1.1);
-        opacity: 0.8;
-    }
-    100% {
-        transform: translate(-50%, -50%) scale(1);
-        opacity: 1;
-    }
-}
-</style>
+	<?php require_once 'app/Views/layouts/sidebar.php'; ?>
+	<!--end::Sidebar-->
+</div>
+    <!--begin::Main-->
+	<div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+		<!--begin::Content wrapper-->
+		<div class="d-flex flex-column flex-column-fluid">
+			<!--begin::Content-->
+			<div id="kt_app_content" class="app-content flex-column-fluid">
+				<!--begin::Content container-->
+				<div id="kt_app_content_container" class="app-container container-fluid">

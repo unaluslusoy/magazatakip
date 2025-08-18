@@ -14,10 +14,7 @@ class TestBildirimController extends Controller {
         $this->kullaniciModel = new Kullanici();
         $this->oneSignalAyarlarModel = new OneSignalAyarlar();
         
-        // API için CORS headers
-        header('Access-Control-Allow-Origin: *');
-        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+        // Response tipi
         header('Content-Type: application/json; charset=utf-8');
         
         // Cache prevention headers
@@ -25,11 +22,7 @@ class TestBildirimController extends Controller {
         header('Pragma: no-cache');
         header('Expires: -1');
         
-        // OPTIONS request için
-        if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-            http_response_code(200);
-            exit();
-        }
+        // OPTIONS ApiAuthMiddleware tarafından handle edilir
     }
     
     /**

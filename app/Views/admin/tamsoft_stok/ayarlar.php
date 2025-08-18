@@ -65,6 +65,31 @@
 					<label class="form-label">İstek Aralığı (saniye)</label>
 					<input type="number" name="request_interval_sec" class="form-control" value="<?= htmlspecialchars($config['request_interval_sec'] ?? '900', ENT_QUOTES) ?>" />
 				</div>
+				<div class="col-12 mt-2"><h6>İleri Seviye (Performans)</h6><hr class="my-2"/></div>
+				<div class="col-md-2">
+					<label class="form-label">Master Batch</label>
+					<input type="number" name="master_batch" class="form-control" value="<?= htmlspecialchars($config['master_batch'] ?? '', ENT_QUOTES) ?>" placeholder="500" />
+				</div>
+				<div class="col-md-2">
+					<label class="form-label">Price Batch</label>
+					<input type="number" name="price_batch" class="form-control" value="<?= htmlspecialchars($config['price_batch'] ?? '', ENT_QUOTES) ?>" placeholder="100" />
+				</div>
+				<div class="col-md-2">
+					<label class="form-label">Price Max Pages</label>
+					<input type="number" name="price_max_pages" class="form-control" value="<?= htmlspecialchars($config['price_max_pages'] ?? '', ENT_QUOTES) ?>" placeholder="200" />
+				</div>
+				<div class="col-md-2">
+					<label class="form-label">Price Max Seconds</label>
+					<input type="number" name="price_max_seconds" class="form-control" value="<?= htmlspecialchars($config['price_max_seconds'] ?? '', ENT_QUOTES) ?>" placeholder="0=limitsiz" />
+				</div>
+				<div class="col-md-2">
+					<label class="form-label">Depot Max Seconds</label>
+					<input type="number" name="max_seconds_per_depot" class="form-control" value="<?= htmlspecialchars($config['max_seconds_per_depot'] ?? '', ENT_QUOTES) ?>" placeholder="180" />
+				</div>
+				<div class="col-md-2">
+					<label class="form-label">Depot Max Pages</label>
+					<input type="number" name="max_pages_per_depot" class="form-control" value="<?= htmlspecialchars($config['max_pages_per_depot'] ?? '', ENT_QUOTES) ?>" placeholder="200" />
+				</div>
 				<div class="form-check form-switch ms-4">
 						<input class="form-check-input" type="checkbox" id="autoSync2" <?= !empty($config['sync_active']) ? 'checked' : '' ?> />
 						<label class="form-check-label" for="autoSync2">Otomatik Senkron</label>
@@ -73,18 +98,22 @@
 					<div class="col-md-4">
 					<input type="number" id="intervalSec2" class="form-control"  value="<?= htmlspecialchars($config['request_interval_sec'] ?? '900', ENT_QUOTES) ?>" />
 					</div>
+					<div class="col-12 mt-2">
+						<div class="form-check">
+							<input class="form-check-input" type="checkbox" name="bulk_stock_summary" id="bulk_stock_summary" <?= !empty($config['bulk_stock_summary']) ? 'checked' : '' ?> />
+							<label class="form-check-label" for="bulk_stock_summary">Stok özeti güncellemesini toplu (bulk) modda yap</label>
+						</div>
+					</div>
 					
 					
 				<div class="card-footer">
 					<div class="col-12 d-flex gap-2 flex-wrap">
 						<button type="button" id="btnSave" class="btn btn-primary">Kaydet</button>
 						<button type="button" id="btnRefresh" class="btn btn-outline-primary">Stokları Çek</button>
-						<button type="button" id="btnTokenTest" class="btn btn-light">Token Test</button>
+						<button type="button" id="btnPriceRefresh" class="btn btn-outline-success">Fiyatları Güncelle (manuel)</button>
 						<button type="button" id="btnDepoSync" class="btn btn-outline">Depoları Senkronize Et</button>
 						<button type="button" id="btnDepoPreview" class="btn btn-light">Depo Önizleme</button>
 						<button type="button" id="btnStokPreview" class="btn btn-light">Stok Önizleme</button>
-						
-						
 					</div>
 				</div>
 			</form>
@@ -95,24 +124,35 @@
 <?php require_once __DIR__ . '/../../layouts/footer.php'; ?>
 <script>
 const box = document.getElementById('respBox');
+const CSRF = (document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'))||'';
 document.getElementById('btnSave').addEventListener('click', async ()=>{
 	const form = document.getElementById('frmStockCfg');
 	const fd = new FormData(form);
-	const r = await fetch('/admin/tamsoft-stok/ayarlar', { method:'POST', body: fd });
+	fd.append('_csrf', CSRF);
+	const r = await fetch('/admin/tamsoft-stok/ayarlar', { method:'POST', body: fd, headers: { 'X-CSRF-Token': CSRF } });
 	const d = await r.json(); box.textContent = JSON.stringify(d,null,2);
+	try { showToast(d.success ? 'Kaydedildi' : ('Hata: '+(d.error||' bilinmeyen hata')), d.success?'success':'danger'); } catch(e){}
 });
 document.getElementById('btnRefresh').addEventListener('click', async ()=>{
 	const cfg = new FormData(document.getElementById('frmStockCfg'));
-	const r = await fetch('/admin/tamsoft-stok/refresh', { method:'POST', body: cfg });
+	cfg.append('_csrf', CSRF);
+	document.getElementById('btnRefresh').disabled = true;
+	document.getElementById('btnRefresh').innerText = 'Çekiliyor...';
+	const r = await fetch('/admin/tamsoft-stok/refresh', { method:'POST', body: cfg, headers: { 'X-CSRF-Token': CSRF } });
 	const d = await r.json(); box.textContent = JSON.stringify(d,null,2);
+	document.getElementById('btnRefresh').disabled = false;
+	document.getElementById('btnRefresh').innerText = 'Stokları Çek';
+	try { showToast(d.success ? 'Stok senkron tamamlandı' : ('Hata: '+(d.error||'')), d.success?'success':'danger', 6000); } catch(e){}
 });
 document.getElementById('btnTokenTest').addEventListener('click', async ()=>{
-	const r = await fetch('/admin/tamsoft-stok/token-test', { method:'POST' });
+	const r = await fetch('/admin/tamsoft-stok/token-test', { method:'POST', headers: { 'X-CSRF-Token': CSRF } });
 	const d = await r.json(); box.textContent = JSON.stringify(d,null,2);
+	try { showToast(d.success ? 'Token OK' : 'Token alınamadı', d.success?'success':'danger'); } catch(e){}
 });
 document.getElementById('btnDepoSync').addEventListener('click', async ()=>{
-	const r = await fetch('/admin/tamsoft-stok/depolar/sync', { method:'POST' });
+	const r = await fetch('/admin/tamsoft-stok/depolar/sync', { method:'POST', headers: { 'X-CSRF-Token': CSRF } });
 	const d = await r.json(); box.textContent = JSON.stringify(d,null,2);
+	try { showToast(d.success ? 'Depolar senkronize edildi' : ('Hata: '+(d.error||'')), d.success?'success':'danger'); } catch(e){}
 });
 document.getElementById('btnDepoPreview').addEventListener('click', async ()=>{
 	const r = await fetch('/admin/tamsoft-stok/depolar/preview');
@@ -123,8 +163,28 @@ document.getElementById('btnStokPreview').addEventListener('click', async ()=>{
 	cfg.append('only_positive', document.getElementById('onlypos').checked ? '1' : '0');
 	cfg.append('last_barcode_only', document.getElementById('lastbarcode')?.checked ? '1' : '0');
 	cfg.append('only_ecommerce', document.getElementById('onlyecom')?.checked ? '1' : '0');
-	const r = await fetch('/admin/tamsoft-stok/stok/preview', { method:'POST', body: cfg });
+	cfg.append('_csrf', CSRF);
+	const r = await fetch('/admin/tamsoft-stok/stok/preview', { method:'POST', body: cfg, headers: { 'X-CSRF-Token': CSRF } });
 	const d = await r.json(); box.textContent = JSON.stringify(d,null,2);
+	try { showToast(d.success ? ('Önizleme: '+(d.preview_count||0)+' satır') : ('Hata: '+(d.error||'')), d.success?'info':'danger'); } catch(e){}
+});
+document.getElementById('btnPriceRefresh').addEventListener('click', async ()=>{
+    const btn = document.getElementById('btnPriceRefresh');
+    btn.disabled = true; const old = btn.innerText; btn.innerText = 'Çalışıyor...';
+    try{
+        const fd = new FormData();
+        const form = document.getElementById('frmStockCfg');
+        const tarih = form.querySelector('input[name="default_date"]').value;
+        const depo = form.querySelector('input[name="default_depo_id"]').value;
+        if (tarih) fd.append('tarih', tarih);
+        if (depo) fd.append('depoid', depo);
+        fd.append('_csrf', CSRF);
+        const r = await fetch('/admin/tamsoft-stok/price-refresh', { method:'POST', body: fd, headers: { 'X-CSRF-Token': CSRF } });
+        const d = await r.json();
+        box.textContent = JSON.stringify(d, null, 2);
+        showToast(d.success ? (`Fiyat güncellendi. updated=${d.updated||0}`) : ('Hata: '+(d.error||'')), d.success?'success':'danger');
+    }catch(e){ showToast('Hata', 'danger'); }
+    finally{ btn.disabled=false; btn.innerText = old; }
 });
 </script>
 

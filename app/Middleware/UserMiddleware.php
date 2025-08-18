@@ -23,6 +23,10 @@ class UserMiddleware
         }
 
         $auth->updateActivity();
+        // Kullanıcı sayfalarında da yoğun read işlemlerinde session kilidini bırak
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            @session_write_close();
+        }
     }
 }
 

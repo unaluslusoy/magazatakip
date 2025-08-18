@@ -14,21 +14,28 @@ class CsrfMiddleware
             session_start();
         }
 
+        // Sadece state-changing isteklerde zorunlu
+        $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+        if (!in_array($method, ['POST','PUT','PATCH','DELETE'], true)) {
+            // GET/HEAD/OPTIONS vs. serbest; token üretimini yine de yapalım
+            if (!isset($_SESSION['_csrf'])) { $_SESSION['_csrf'] = bin2hex(random_bytes(16)); }
+            return;
+        }
+
         // AJAX veya form token kontrolü (header veya form field)
         $tokenFromHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
         $tokenFromPost = $_POST['_csrf'] ?? null;
         $sessionToken = $_SESSION['_csrf'] ?? null;
 
-        // Session token yoksa üret (breakage önleme: strict enforcement değil)
+        // Session token yoksa üret
         if (!$sessionToken) {
             $_SESSION['_csrf'] = bin2hex(random_bytes(16));
             $sessionToken = $_SESSION['_csrf'];
         }
 
-        // Eğer gelen istekte token yoksa (mevcut formlar henüz eklenmemiş olabilir) şimdilik izin ver ve logla
+        // Token zorunlu
         if (!$tokenFromHeader && !$tokenFromPost) {
-            error_log('CSRF notice: Token gönderilmedi, geçici olarak izin verildi: ' . ($_SERVER['REQUEST_URI'] ?? ''));
-            return;
+            self::deny('CSRF token gönderilmedi');
         }
 
         if ($tokenFromHeader && hash_equals($sessionToken, $tokenFromHeader)) {

@@ -1,5 +1,5 @@
 <?php
-$title = "<h2>İş Emri Listesi</h2>";
+$title = "İş Emri Listesi";
 $link = "İş Emirleri";
 require_once 'app/Views/layouts/header.php';
 require_once 'app/Views/layouts/navbar.php';

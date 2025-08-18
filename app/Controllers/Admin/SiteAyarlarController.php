@@ -14,6 +14,8 @@ class SiteAyarlarController extends Controller
     private $oneSignalAyarlarModel;
     private $siteAyarlarModel;
     private $mailAyarlarModel;
+    private $appLogConfigPath;
+    private $rateLimitConfigPath;
 
     public function __construct()
     {
@@ -22,6 +24,8 @@ class SiteAyarlarController extends Controller
         $this->oneSignalAyarlarModel = new OneSignalAyarlar();
         $this->siteAyarlarModel = new SiteAyarlar();
         $this->mailAyarlarModel = new MailAyarlar();
+        $this->appLogConfigPath = __DIR__ . '/../../../config/app_logging.php';
+        $this->rateLimitConfigPath = __DIR__ . '/../../../config/rate_limit.php';
     }
 
     public function index()
@@ -29,6 +33,13 @@ class SiteAyarlarController extends Controller
         $oneSignalAyarlar = $this->oneSignalAyarlarModel->getAyarlar();
         $mailAyarlar = $this->mailAyarlarModel->getAyarlar();
         $siteAyarlar = $this->siteAyarlarModel->getAyarlar();
+        $logConfig = file_exists($this->appLogConfigPath) ? (require $this->appLogConfigPath) : ['enabled'=>true,'router'=>false,'slow'=>true];
+        $rateLimit = file_exists($this->rateLimitConfigPath) ? (require $this->rateLimitConfigPath) : [
+            'enabled'=>true,
+            'window_seconds'=>60,
+            'default'=>['max_requests'=>60],
+            'overrides'=>['api/auth/login'=>['max_requests'=>10]]
+        ];
         
         $message = $_SESSION['message'] ?? null;
         $messageType = $_SESSION['message_type'] ?? null;
@@ -40,6 +51,8 @@ class SiteAyarlarController extends Controller
             'oneSignalAyarlar' => $oneSignalAyarlar,
             'siteAyarlar' => $siteAyarlar,
             'mailAyarlar' => $mailAyarlar,
+            'logAyarlar' => $logConfig,
+            'rateLimit' => $rateLimit,
             'message' => $message,
             'messageType' => $messageType
         ]);
@@ -100,6 +113,53 @@ class SiteAyarlarController extends Controller
                 $_SESSION['message_type'] = 'success';
             } else {
                 $_SESSION['message'] = 'Site ayarları güncellenirken bir hata oluştu.';
+                $_SESSION['message_type'] = 'danger';
+            }
+
+            header('Location: /admin/site-ayarlar#genel');
+            exit();
+        }
+    }
+
+    public function logAyarKaydet()
+    {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $enabled = isset($_POST['log_enabled']);
+            $router = isset($_POST['log_router']);
+            $slow = isset($_POST['log_slow']);
+
+            $content = "<?php\n\nreturn [\n    'enabled' => " . ($enabled ? 'true' : 'false') . ",\n    'router' => " . ($router ? 'true' : 'false') . ",\n    'slow' => " . ($slow ? 'true' : 'false') . ",\n];\n";
+
+            try {
+                file_put_contents($this->appLogConfigPath, $content);
+                $_SESSION['message'] = 'Log ayarları güncellendi.';
+                $_SESSION['message_type'] = 'success';
+            } catch (\Throwable $e) {
+                $_SESSION['message'] = 'Log ayarları kaydedilemedi: ' . $e->getMessage();
+                $_SESSION['message_type'] = 'danger';
+            }
+
+            header('Location: /admin/site-ayarlar#genel');
+            exit();
+        }
+    }
+
+    public function rateLimitKaydet()
+    {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $enabled = isset($_POST['rl_enabled']);
+            $window = isset($_POST['rl_window']) ? max(1, (int)$_POST['rl_window']) : 60;
+            $defaultMax = isset($_POST['rl_default_max']) ? max(1, (int)$_POST['rl_default_max']) : 60;
+            $loginMax = isset($_POST['rl_login_max']) ? max(1, (int)$_POST['rl_login_max']) : 10;
+
+            $content = "<?php\n\nreturn [\n    'enabled' => " . ($enabled ? 'true' : 'false') . ",\n    'window_seconds' => " . $window . ",\n    'default' => [ 'max_requests' => " . $defaultMax . " ],\n    'overrides' => [ 'api/auth/login' => [ 'max_requests' => " . $loginMax . " ] ],\n];\n";
+
+            try {
+                file_put_contents($this->rateLimitConfigPath, $content);
+                $_SESSION['message'] = 'Rate limit ayarları güncellendi.';
+                $_SESSION['message_type'] = 'success';
+            } catch (\Throwable $e) {
+                $_SESSION['message'] = 'Rate limit ayarları kaydedilemedi: ' . $e->getMessage();
                 $_SESSION['message_type'] = 'danger';
             }
 

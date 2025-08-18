@@ -1,5 +1,5 @@
 <?php
-$title="<h2>Yeni Mağaza Ekle</h2>";
+$title = "Yeni Mağaza Ekle";
 $link = "Mağaza Tanımlama" ;
 require_once 'app/Views/layouts/header.php';
 require_once 'app/Views/layouts/navbar.php';

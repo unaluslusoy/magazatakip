@@ -8,6 +8,8 @@ class ApiAuthMiddleware
 {
     public static function handle()
     {
+        // Rate limit
+        self::rateLimitGuard();
         // CORS headers for API
         // PWA (standalone) için çerezli isteklerde origin'i kısıtlayın
         $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
@@ -76,8 +78,50 @@ class ApiAuthMiddleware
 
         // Activity güncelle
         $authManager->updateActivity();
+        // Session kilidini serbest bırak (API işlemleri uzun sürebilir)
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            @session_write_close();
+        }
         
         error_log("API Access: " . $currentUser['email'] . " - " . $_SERVER['REQUEST_URI']);
+    }
+
+    private static function rateLimitGuard(): void
+    {
+        try {
+            if (!class_exists('core\\Request')) { require_once __DIR__ . '/../../core/Request.php'; }
+            $path = trim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH), '/');
+            $ip = \core\Request::getClientIp();
+            $cfgPath = __DIR__ . '/../../config/rate_limit.php';
+            $cfg = file_exists($cfgPath) ? (require $cfgPath) : ['enabled'=>false];
+            if (empty($cfg['enabled'])) { return; }
+
+            $window = (int)($cfg['window_seconds'] ?? 60);
+            $max = (int)($cfg['default']['max_requests'] ?? 60);
+            if (!empty($cfg['overrides'][$path]['max_requests'])) {
+                $max = (int)$cfg['overrides'][$path]['max_requests'];
+            }
+
+            $key = 'rl:' . sha1($ip . '|' . $path);
+            $cache = \core\CacheManager::getInstance();
+            $info = $cache->get($key) ?: ['count'=>0,'start'=>time()];
+            $now = time();
+            if ($now - ($info['start'] ?? 0) >= $window) { $info = ['count'=>0,'start'=>$now]; }
+            $info['count'] = ($info['count'] ?? 0) + 1;
+            $cache->set($key, $info, $window);
+            if ($info['count'] > $max) {
+                http_response_code(429);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Çok fazla istek. Lütfen daha sonra tekrar deneyin.',
+                    'retry_after' => max(0, $window - ($now - ($info['start'] ?? $now)))
+                ], JSON_UNESCAPED_UNICODE);
+                exit();
+            }
+        } catch (\Throwable $e) {
+            // sessiz geç
+        }
     }
 
     private static function unauthorizedResponse($message)

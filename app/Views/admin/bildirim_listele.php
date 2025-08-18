@@ -1,5 +1,5 @@
 <?php
-$title = "<h2>Gönderilen Bildirimler</h2>";
+$title = "Gönderilen Bildirimler";
 require_once 'app/Views/layouts/header.php';
 require_once 'app/Views/layouts/navbar.php';
 ?>

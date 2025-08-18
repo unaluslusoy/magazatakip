@@ -20,11 +20,13 @@ class Database {
         $charset = getenv('DB_CHARSET') ?: 'utf8mb4';
 
         $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset={$charset}";
+        $persistent = getenv('DB_PERSISTENT');
+        $usePersistent = ($persistent === '1' || strtolower((string)$persistent) === 'true');
         $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES => false,
-            PDO::ATTR_PERSISTENT => true, // Kalıcı bağlantı
+            PDO::ATTR_PERSISTENT => $usePersistent, // Kalıcı bağlantı env ile yönetilir
         ];
 
         try {

@@ -12,6 +12,7 @@ class TamsoftStockRepo extends Model
 	{
 		parent::__construct();
 		$this->createTables();
+		$this->ensurePricePropagationTriggers();
 	}
 
 	private function createTables(): void
@@ -31,6 +32,7 @@ class TamsoftStockRepo extends Model
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 			// Performans için ek indeksler (varsa hata vermeden geç)
 			try { $this->db->exec("ALTER TABLE tamsoft_urunler ADD INDEX idx_urun_adi (urun_adi)"); } catch (\Throwable $e) {}
+			try { $this->db->exec("ALTER TABLE tamsoft_urunler ADD INDEX idx_barkod (barkod)"); } catch (\Throwable $e) {}
 			try { $this->db->exec("ALTER TABLE tamsoft_urunler ADD INDEX idx_aktif (aktif)"); } catch (\Throwable $e) {}
 			$this->db->exec("CREATE TABLE IF NOT EXISTS tamsoft_urun_barkodlar (
 				id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -98,17 +100,59 @@ class TamsoftStockRepo extends Model
 		} catch (\Throwable $e) { error_log('tamsoft tables create error: '.$e->getMessage()); }
 	}
 
+	private function ensurePricePropagationTriggers(): void
+	{
+		// Ürün fiyatı INSERT/UPDATE olduğunda barkod ve depo özet fiyatlarını da güncelle
+		try { $this->db->exec("DROP TRIGGER IF EXISTS trg_tamsoft_urunler_ai_price"); } catch (\Throwable $e) {}
+		try {
+			$this->db->exec(
+				"CREATE TRIGGER trg_tamsoft_urunler_ai_price AFTER INSERT ON tamsoft_urunler FOR EACH ROW\n"
+				."BEGIN\n"
+				."\tIF NEW.fiyat IS NOT NULL THEN\n"
+				."\t\tUPDATE tamsoft_urun_barkodlar SET fiyat = NEW.fiyat WHERE urun_id = NEW.id;\n"
+				."\t\tINSERT INTO tamsoft_depo_stok_degisim_log(urun_id,depo_id,old_miktar,new_miktar,old_fiyat,new_fiyat,changed_at)\n"
+				."\t\tSELECT s.urun_id, s.depo_id, s.miktar, s.miktar, s.fiyat, NEW.fiyat, NOW() FROM tamsoft_depo_stok_ozet s WHERE s.urun_id = NEW.id AND NOT (s.fiyat <=> NEW.fiyat);\n"
+				."\t\tUPDATE tamsoft_depo_stok_ozet SET fiyat = NEW.fiyat WHERE urun_id = NEW.id;\n"
+				."\tEND IF;\n"
+				."END"
+			);
+		} catch (\Throwable $e) { /* olabilir */ }
+
+		try { $this->db->exec("DROP TRIGGER IF EXISTS trg_tamsoft_urunler_au_price"); } catch (\Throwable $e) {}
+		try {
+			$this->db->exec(
+				"CREATE TRIGGER trg_tamsoft_urunler_au_price AFTER UPDATE ON tamsoft_urunler FOR EACH ROW\n"
+				."BEGIN\n"
+				."\tIF NOT (NEW.fiyat <=> OLD.fiyat) THEN\n"
+				."\t\tUPDATE tamsoft_urun_barkodlar SET fiyat = NEW.fiyat WHERE urun_id = NEW.id;\n"
+				."\t\tINSERT INTO tamsoft_depo_stok_degisim_log(urun_id,depo_id,old_miktar,new_miktar,old_fiyat,new_fiyat,changed_at)\n"
+				."\t\tSELECT s.urun_id, s.depo_id, s.miktar, s.miktar, s.fiyat, NEW.fiyat, NOW() FROM tamsoft_depo_stok_ozet s WHERE s.urun_id = NEW.id AND NOT (s.fiyat <=> NEW.fiyat);\n"
+				."\t\tUPDATE tamsoft_depo_stok_ozet SET fiyat = NEW.fiyat WHERE urun_id = NEW.id;\n"
+				."\tEND IF;\n"
+				."END"
+			);
+		} catch (\Throwable $e) { /* olabilir */ }
+	}
+
 	public function upsertProduct(string $extId, ?string $barkod, ?string $ad, ?int $kdv, ?string $birim, ?float $fiyat): int
 	{
 		$sql = "INSERT INTO tamsoft_urunler(ext_urun_id, barkod, urun_adi, kdv, birim, fiyat)
 			VALUES(:e,:b,:a,:k,:bi,:f)
-			ON DUPLICATE KEY UPDATE barkod=VALUES(barkod), urun_adi=VALUES(urun_adi), kdv=VALUES(kdv), birim=VALUES(birim), fiyat=GREATEST(COALESCE(fiyat,0), VALUES(fiyat))";
+			ON DUPLICATE KEY UPDATE barkod=VALUES(barkod), urun_adi=VALUES(urun_adi), kdv=VALUES(kdv), birim=VALUES(birim), fiyat=VALUES(fiyat)";
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute([':e'=>$extId, ':b'=>$barkod, ':a'=>$ad, ':k'=>$kdv, ':bi'=>$birim, ':f'=>$fiyat]);
 		// return id
 		$sel = $this->db->prepare("SELECT id FROM tamsoft_urunler WHERE ext_urun_id=:e");
 		$sel->execute([':e'=>$extId]);
-		return (int)($sel->fetchColumn() ?: 0);
+		$urunId = (int)($sel->fetchColumn() ?: 0);
+		// Fiyat verildiyse alt tablolara yay
+		if ($urunId > 0 && $fiyat !== null) {
+			try {
+				$this->updateAllBarcodesPriceByProductId($urunId, $fiyat);
+				$this->updateDepotSummaryPriceByProduct($urunId, $fiyat);
+			} catch (\Throwable $e) { /* sessizce yut */ }
+		}
+		return $urunId;
 	}
 
 	public function setProductActive(int $urunId, int $aktif): void
@@ -121,7 +165,7 @@ class TamsoftStockRepo extends Model
 	{
 		if ($barkod === '') { return; }
 		$sql = "INSERT INTO tamsoft_urun_barkodlar(urun_id, barkod, birim, fiyat) VALUES(:u,:b,:bi,:f)
-			ON DUPLICATE KEY UPDATE urun_id=VALUES(urun_id), birim=VALUES(birim), fiyat=GREATEST(COALESCE(fiyat,0), VALUES(fiyat))";
+			ON DUPLICATE KEY UPDATE urun_id=VALUES(urun_id), birim=VALUES(birim), fiyat=VALUES(fiyat)";
 		$this->db->prepare($sql)->execute([':u'=>$urunId, ':b'=>$barkod, ':bi'=>$birim, ':f'=>$fiyat]);
 	}
 
@@ -190,7 +234,7 @@ class TamsoftStockRepo extends Model
 	{
 		$sql = "INSERT INTO tamsoft_urunler_stage(ext_urun_id, barkod, urun_adi, kdv, birim, fiyat)
 			VALUES(:e,:b,:a,:k,:bi,:f)
-			ON DUPLICATE KEY UPDATE urun_adi=VALUES(urun_adi), kdv=VALUES(kdv), birim=VALUES(birim), fiyat=GREATEST(COALESCE(fiyat,0), VALUES(fiyat))";
+			ON DUPLICATE KEY UPDATE urun_adi=VALUES(urun_adi), kdv=VALUES(kdv), birim=VALUES(birim), fiyat=VALUES(fiyat)";
 		$this->db->prepare($sql)->execute([':e'=>$extId, ':b'=>$barkod, ':a'=>$ad, ':k'=>$kdv, ':bi'=>$birim, ':f'=>$fiyat]);
 	}
 
@@ -199,8 +243,149 @@ class TamsoftStockRepo extends Model
 		if ($barkod === '') { return; }
 		$sql = "INSERT INTO tamsoft_urun_barkodlar_stage(ext_urun_id, barkod, birim, fiyat)
 			VALUES(:e,:b,:bi,:f)
-			ON DUPLICATE KEY UPDATE birim=VALUES(birim), fiyat=GREATEST(COALESCE(fiyat,0), VALUES(fiyat))";
+			ON DUPLICATE KEY UPDATE birim=VALUES(birim), fiyat=VALUES(fiyat)";
 		$this->db->prepare($sql)->execute([':e'=>$extId, ':b'=>$barkod, ':bi'=>$birim, ':f'=>$fiyat]);
+	}
+
+	/**
+	 * Çoklu ürün satırını stage tablosuna ekler (bulk insert)
+	 * rows: [ [ext_urun_id, barkod, urun_adi, kdv, birim, fiyat], ... ]
+	 */
+	public function stageInsertProductBulk(array $rows, int $chunkSize = 500): void
+	{
+		$chunk = [];
+		foreach ($rows as $r) {
+			$ext = (string)($r['ext_urun_id'] ?? ''); if ($ext === '') { continue; }
+			$chunk[] = [
+				$ext,
+				$r['barkod'] ?? null,
+				$r['urun_adi'] ?? null,
+				isset($r['kdv']) ? (int)$r['kdv'] : null,
+				$r['birim'] ?? null,
+				isset($r['fiyat']) ? (float)$r['fiyat'] : null,
+			];
+			if (count($chunk) >= $chunkSize) { $this->flushStageProductChunk($chunk); $chunk = []; }
+		}
+		if (!empty($chunk)) { $this->flushStageProductChunk($chunk); }
+	}
+
+	private function flushStageProductChunk(array $chunk): void
+	{
+		if (empty($chunk)) return;
+		$values = [];
+		$params = [];
+		$idx = 0;
+		foreach ($chunk as $row) {
+			$values[] = "(:e$idx,:b$idx,:a$idx,:k$idx,:bi$idx,:f$idx)";
+			$params[":e$idx"] = $row[0];
+			$params[":b$idx"] = $row[1];
+			$params[":a$idx"] = $row[2];
+			$params[":k$idx"] = $row[3];
+			$params[":bi$idx"] = $row[4];
+			$params[":f$idx"] = $row[5];
+			$idx++;
+		}
+		$sql = "INSERT INTO tamsoft_urunler_stage(ext_urun_id, barkod, urun_adi, kdv, birim, fiyat) VALUES ".implode(',', $values)
+			." ON DUPLICATE KEY UPDATE urun_adi=VALUES(urun_adi), kdv=VALUES(kdv), birim=VALUES(birim), fiyat=VALUES(fiyat)";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute($params);
+	}
+
+	/**
+	 * Çoklu barkod satırını stage tablosuna ekler (bulk insert)
+	 * rows: [ [ext_urun_id, barkod, birim, fiyat], ... ]
+	 */
+	public function stageInsertBarcodeBulk(array $rows, int $chunkSize = 1000): void
+	{
+		$chunk = [];
+		foreach ($rows as $r) {
+			$ext = (string)($r['ext_urun_id'] ?? '');
+			$bc = (string)($r['barkod'] ?? '');
+			if ($ext === '' || $bc === '') { continue; }
+			$chunk[] = [ $ext, $bc, $r['birim'] ?? null, isset($r['fiyat']) ? (float)$r['fiyat'] : null ];
+			if (count($chunk) >= $chunkSize) { $this->flushStageBarcodeChunk($chunk); $chunk = []; }
+		}
+		if (!empty($chunk)) { $this->flushStageBarcodeChunk($chunk); }
+	}
+
+	private function flushStageBarcodeChunk(array $chunk): void
+	{
+		if (empty($chunk)) return;
+		$values = [];
+		$params = [];
+		$idx = 0;
+		foreach ($chunk as $row) {
+			$values[] = "(:e$idx,:b$idx,:bi$idx,:f$idx)";
+			$params[":e$idx"] = $row[0];
+			$params[":b$idx"] = $row[1];
+			$params[":bi$idx"] = $row[2];
+			$params[":f$idx"] = $row[3];
+			$idx++;
+		}
+		$sql = "INSERT INTO tamsoft_urun_barkodlar_stage(ext_urun_id, barkod, birim, fiyat) VALUES ".implode(',', $values)
+			." ON DUPLICATE KEY UPDATE birim=VALUES(birim), fiyat=VALUES(fiyat)";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute($params);
+	}
+
+	/**
+	 * Verilen ext_urun_id listesi için id eşlemesi döndürür
+	 * return: [ ext_urun_id => id ]
+	 */
+	public function getProductIdsByExt(array $extList): array
+	{
+		$extList = array_values(array_unique(array_filter(array_map('strval', $extList))));
+		if (empty($extList)) { return []; }
+		$map = [];
+		$chunkSize = 1000; $total = count($extList);
+		for ($i = 0; $i < $total; $i += $chunkSize) {
+			$chunk = array_slice($extList, $i, $chunkSize);
+			$placeholders = [];
+			$params = [];
+			foreach ($chunk as $idx => $ext) { $ph = ":e$idx"; $placeholders[] = $ph; $params[$ph] = $ext; }
+			$sql = "SELECT id, ext_urun_id FROM tamsoft_urunler WHERE ext_urun_id IN (".implode(',', $placeholders).")";
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute($params);
+			foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $row) { $map[(string)$row['ext_urun_id']] = (int)$row['id']; }
+		}
+		return $map;
+	}
+
+	/**
+	 * Depo stok özetlerini toplu upsert eder (log yazmaz)
+	 * rows: [ [urun_id, depo_id, miktar, fiyat], ... ]
+	 */
+	public function upsertStockSummaryBulk(array $rows, int $chunkSize = 1000): void
+	{
+		$chunk = [];
+		foreach ($rows as $r) {
+			$uid = isset($r['urun_id']) ? (int)$r['urun_id'] : 0;
+			$did = isset($r['depo_id']) ? (int)$r['depo_id'] : 0;
+			if ($uid <= 0 || $did <= 0) { continue; }
+			$chunk[] = [ $uid, $did, (float)($r['miktar'] ?? 0), isset($r['fiyat']) ? (float)$r['fiyat'] : null ];
+			if (count($chunk) >= $chunkSize) { $this->flushStockSummaryChunk($chunk); $chunk = []; }
+		}
+		if (!empty($chunk)) { $this->flushStockSummaryChunk($chunk); }
+	}
+
+	private function flushStockSummaryChunk(array $chunk): void
+	{
+		if (empty($chunk)) return;
+		$values = [];
+		$params = [];
+		$idx = 0;
+		foreach ($chunk as $row) {
+			$values[] = "(:u$idx,:d$idx,:m$idx,:f$idx)";
+			$params[":u$idx"] = $row[0];
+			$params[":d$idx"] = $row[1];
+			$params[":m$idx"] = $row[2];
+			$params[":f$idx"] = $row[3];
+			$idx++;
+		}
+		$sql = "INSERT INTO tamsoft_depo_stok_ozet(urun_id, depo_id, miktar, fiyat) VALUES ".implode(',', $values)
+			." ON DUPLICATE KEY UPDATE miktar=VALUES(miktar), fiyat=VALUES(fiyat)";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute($params);
 	}
 
 	public function syncMasterFromStage(): void
@@ -218,13 +403,13 @@ class TamsoftStockRepo extends Model
 				1 as aktif
 			FROM tamsoft_urunler_stage s
 			GROUP BY s.ext_urun_id
-			ON DUPLICATE KEY UPDATE urun_adi=VALUES(urun_adi), birim=VALUES(birim), kdv=VALUES(kdv), fiyat=GREATEST(COALESCE(tamsoft_urunler.fiyat,0), VALUES(fiyat)), aktif=1");
+			ON DUPLICATE KEY UPDATE urun_adi=VALUES(urun_adi), birim=VALUES(birim), kdv=VALUES(kdv), fiyat=VALUES(fiyat), aktif=1");
 		// 3) Barkodları upsert
 		$this->db->exec("INSERT INTO tamsoft_urun_barkodlar(urun_id, barkod, birim, fiyat)
 			SELECT u.id, bs.barkod, bs.birim, bs.fiyat
 			FROM tamsoft_urun_barkodlar_stage bs
 			JOIN tamsoft_urunler u ON u.ext_urun_id = bs.ext_urun_id
-			ON DUPLICATE KEY UPDATE birim=VALUES(birim), fiyat=GREATEST(COALESCE(tamsoft_urun_barkodlar.fiyat,0), VALUES(fiyat))");
+			ON DUPLICATE KEY UPDATE birim=VALUES(birim), fiyat=VALUES(fiyat)");
 	}
 
 	public function updateProductQuantityFromSummary(): void
@@ -258,29 +443,48 @@ class TamsoftStockRepo extends Model
 		return $stmt->fetchAll(\PDO::FETCH_ASSOC);
 	}
 
-	public function countProductsTotal(?string $filterPrefix = null): int
+	public function countProductsTotal(?string $filterPrefix = null, ?int $hasIntegration = null, ?int $onlyPositive = null, ?int $depoId = null): int
 	{
-		if ($filterPrefix === 'IPT') {
-			return (int)$this->db->query("SELECT COUNT(*) FROM tamsoft_urunler WHERE UPPER(ext_urun_id) LIKE 'IPT%' OR ext_urun_id LIKE 'İPT%'")->fetchColumn();
+		$where = [];
+		if ($filterPrefix === 'IPT') { $where[] = "(UPPER(u.ext_urun_id) LIKE 'IPT%' OR u.ext_urun_id LIKE 'İPT%')"; }
+		if ($filterPrefix === 'BK') { $where[] = "(UPPER(u.ext_urun_id) LIKE 'BK%')"; }
+		if ($hasIntegration !== null) {
+			$where[] = $hasIntegration ? '(m1.trendyolgo_sku IS NOT NULL OR m1.getir_code IS NOT NULL OR m1.yemeksepeti_code IS NOT NULL OR m2.trendyolgo_sku IS NOT NULL OR m2.getir_code IS NOT NULL OR m2.yemeksepeti_code IS NOT NULL)'
+				: '(m1.trendyolgo_sku IS NULL AND m1.getir_code IS NULL AND m1.yemeksepeti_code IS NULL AND m2.trendyolgo_sku IS NULL AND m2.getir_code IS NULL AND m2.yemeksepeti_code IS NULL)';
 		}
-		if ($filterPrefix === 'BK') {
-			return (int)$this->db->query("SELECT COUNT(*) FROM tamsoft_urunler WHERE UPPER(ext_urun_id) LIKE 'BK%'")->fetchColumn();
+		if ($depoId !== null || $onlyPositive !== null) {
+			$sw = [];
+			if ($depoId !== null) { $sw[] = 's.depo_id = '.(int)$depoId; }
+			if ($onlyPositive !== null) { $sw[] = $onlyPositive ? 's.miktar > 0' : '1=1'; }
+			$where[] = 'EXISTS (SELECT 1 FROM tamsoft_depo_stok_ozet s WHERE s.urun_id = u.id'.(empty($sw)?'':' AND '.implode(' AND ', $sw)).')';
 		}
-		return (int)$this->db->query("SELECT COUNT(*) FROM tamsoft_urunler")->fetchColumn();
+		$sql = 'SELECT COUNT(*) FROM tamsoft_urunler u LEFT JOIN urun_entegrasyon_map m1 ON m1.urun_kodu = u.ext_urun_id LEFT JOIN urun_entegrasyon_map m2 ON m2.barkod = u.barkod';
+		if (!empty($where)) { $sql .= ' WHERE '.implode(' AND ', $where); }
+		return (int)$this->db->query($sql)->fetchColumn();
 	}
 
-	public function countProductsFiltered(?string $search, ?string $filterPrefix = null): int
+	public function countProductsFiltered(?string $search, ?string $filterPrefix = null, ?int $hasIntegration = null, ?int $onlyPositive = null, ?int $depoId = null): int
 	{
 		$search = trim((string)$search);
 		$where = [];
 		$params = [];
 		if ($filterPrefix === 'IPT') { $where[] = "(UPPER(u.ext_urun_id) LIKE 'IPT%' OR u.ext_urun_id LIKE 'İPT%')"; }
 		if ($filterPrefix === 'BK') { $where[] = "(UPPER(u.ext_urun_id) LIKE 'BK%')"; }
+		if ($hasIntegration !== null) {
+			$where[] = $hasIntegration ? '(m1.trendyolgo_sku IS NOT NULL OR m1.getir_code IS NOT NULL OR m1.yemeksepeti_code IS NOT NULL OR m2.trendyolgo_sku IS NOT NULL OR m2.getir_code IS NOT NULL OR m2.yemeksepeti_code IS NOT NULL)'
+				: '(m1.trendyolgo_sku IS NULL AND m1.getir_code IS NULL AND m1.yemeksepeti_code IS NULL AND m2.trendyolgo_sku IS NULL AND m2.getir_code IS NULL AND m2.yemeksepeti_code IS NULL)';
+		}
+		if ($depoId !== null || $onlyPositive !== null) {
+			$sw = [];
+			if ($depoId !== null) { $sw[] = 's.depo_id = '.(int)$depoId; }
+			if ($onlyPositive !== null) { $sw[] = $onlyPositive ? 's.miktar > 0' : '1=1'; }
+			$where[] = 'EXISTS (SELECT 1 FROM tamsoft_depo_stok_ozet s WHERE s.urun_id = u.id'.(empty($sw)?'':' AND '.implode(' AND ', $sw)).')';
+		}
 		if ($search !== '') {
 			$where[] = '(u.ext_urun_id LIKE :s OR u.urun_adi LIKE :s)';
 			$params[':s'] = '%'.$search.'%';
 		}
-		$sql = 'SELECT COUNT(*) FROM tamsoft_urunler u';
+		$sql = 'SELECT COUNT(*) FROM tamsoft_urunler u LEFT JOIN urun_entegrasyon_map m1 ON m1.urun_kodu = u.ext_urun_id LEFT JOIN urun_entegrasyon_map m2 ON m2.barkod = u.barkod';
 		if (!empty($where)) { $sql .= ' WHERE '.implode(' AND ', $where); }
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute($params);
@@ -321,7 +525,7 @@ class TamsoftStockRepo extends Model
 		return $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
 	}
 
-	public function listProductsWithDepotsPage(int $start, int $length, ?string $search, string $orderBy, string $orderDir, ?string $filterPrefix = null, ?int $hasIntegration = null, ?int $onlyPositive = null, ?int $depoId = null): array
+	public function listProductsWithDepotsPage(int $start, int $length, ?string $search, string $orderBy, string $orderDir, ?string $filterPrefix = null, ?int $hasIntegration = null, ?int $onlyPositive = null, ?int $depoId = null, ?int $orderDepotId = null): array
 	{
 		$depots = $this->getActiveDepots();
 		$search = trim((string)$search);
@@ -360,7 +564,11 @@ class TamsoftStockRepo extends Model
 		// Ürün + map temel alt sorgu
 		$baseSql = "SELECT u.id, u.ext_urun_id, u.barkod, u.urun_adi, u.birim, u.kdv, u.fiyat, u.miktari,\n\t\tCOALESCE(m1.trendyolgo_sku, m2.trendyolgo_sku) AS trendyolgo_sku,\n\t\tCOALESCE(m1.getir_code, m2.getir_code) AS getir_code,\n\t\tCOALESCE(m1.yemeksepeti_code, m2.yemeksepeti_code) AS yemeksepeti_code\n\t\tFROM tamsoft_urunler u\n\t\tLEFT JOIN urun_entegrasyon_map m1 ON m1.urun_kodu = u.ext_urun_id\n\t\tLEFT JOIN urun_entegrasyon_map m2 ON m2.barkod = u.barkod";
 		if (!empty($where)) { $baseSql .= ' WHERE '.implode(' AND ', $where); }
-		$sql = "SELECT P.*, S.* FROM (".$baseSql.") P LEFT JOIN (".$pivotSql.") S ON S.urun_id = P.id ORDER BY $orderByOut $orderDir LIMIT :lim OFFSET :off";
+		if ($orderDepotId !== null) {
+			$sql = "SELECT P.*, S.* FROM (".$baseSql.") P LEFT JOIN (".$pivotSql.") S ON S.urun_id = P.id ORDER BY COALESCE(S.dp_".(int)$orderDepotId.",0) $orderDir, $orderByOut $orderDir LIMIT :lim OFFSET :off";
+		} else {
+			$sql = "SELECT P.*, S.* FROM (".$baseSql.") P LEFT JOIN (".$pivotSql.") S ON S.urun_id = P.id ORDER BY $orderByOut $orderDir LIMIT :lim OFFSET :off";
+		}
 		$stmt = $this->db->prepare($sql);
 		foreach ($params as $k=>$v) {
 			if ($k === ':lim' || $k === ':off') { $stmt->bindValue($k, $v, \PDO::PARAM_INT); } else { $stmt->bindValue($k, $v); }
@@ -466,6 +674,59 @@ class TamsoftStockRepo extends Model
 		$stmt->bindValue(':lim', $limit, \PDO::PARAM_INT);
 		$stmt->execute();
 		return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+	}
+
+	// Fiyat güncelleme yardımcıları
+	public function findProductIdByExtOrBarcode(?string $extId, ?string $barcode): ?int
+	{
+		if ($barcode) {
+			$stmt = $this->db->prepare("SELECT id FROM tamsoft_urunler WHERE barkod=:b LIMIT 1");
+			$stmt->execute([':b'=>$barcode]);
+			$id = $stmt->fetchColumn(); if ($id) return (int)$id;
+		}
+		if ($extId) {
+			$stmt = $this->db->prepare("SELECT id FROM tamsoft_urunler WHERE ext_urun_id=:e LIMIT 1");
+			$stmt->execute([':e'=>$extId]);
+			$id = $stmt->fetchColumn(); if ($id) return (int)$id;
+		}
+		return null;
+	}
+
+	public function updateProductPriceById(int $urunId, ?float $price): void
+	{
+		$this->db->prepare("UPDATE tamsoft_urunler SET fiyat=:f WHERE id=:id")
+			->execute([':f'=>$price, ':id'=>$urunId]);
+	}
+
+	public function updateBarcodePrice(?string $barcode, ?float $price): void
+	{
+		if (!$barcode) return;
+		$this->db->prepare("UPDATE tamsoft_urun_barkodlar SET fiyat=:f WHERE barkod=:b")
+			->execute([':f'=>$price, ':b'=>$barcode]);
+	}
+
+	public function updateAllBarcodesPriceByProductId(int $urunId, ?float $price): void
+	{
+		$this->db->prepare("UPDATE tamsoft_urun_barkodlar SET fiyat=:f WHERE urun_id=:u")
+			->execute([':f'=>$price, ':u'=>$urunId]);
+	}
+
+	public function updateDepotSummaryPriceByProduct(int $urunId, ?float $price): void
+	{
+		$this->db->prepare("UPDATE tamsoft_depo_stok_ozet SET fiyat=:f WHERE urun_id=:u")
+			->execute([':f'=>$price, ':u'=>$urunId]);
+	}
+
+	public function updatePriceByExtOrBarcode(?string $extId, ?string $barcode, ?float $price): bool
+	{
+		$urunId = $this->findProductIdByExtOrBarcode($extId, $barcode);
+		if (!$urunId) { return false; }
+		if ($price === null) { return false; }
+		$this->updateProductPriceById($urunId, $price);
+		// İlgili ürünün TÜM barkod fiyatlarını güncelle (tek barkodla sınırlı kalma)
+		$this->updateAllBarcodesPriceByProductId($urunId, $price);
+		$this->updateDepotSummaryPriceByProduct($urunId, $price);
+		return true;
 	}
 }
 

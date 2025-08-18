@@ -11,18 +11,7 @@ class CihazTokenController extends Controller {
     public function __construct() {
         $this->kullaniciModel = new Kullanici();
         
-        // API için CORS headers
-        // PWA standalone isteğinde çerezler için Origin kısıtla
-        $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-        if ($origin && preg_match('#^https?://(www\.)?magazatakip\.com\.tr$#', $origin)) {
-            header('Access-Control-Allow-Origin: ' . $origin);
-            header('Vary: Origin');
-        } else {
-            header('Access-Control-Allow-Origin: https://magazatakip.com.tr');
-        }
-        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
-        header('Access-Control-Allow-Credentials: true');
+        // Response tipi
         header('Content-Type: application/json; charset=utf-8');
         
         // Cache prevention headers
@@ -30,11 +19,7 @@ class CihazTokenController extends Controller {
         header('Pragma: no-cache');
         header('Expires: -1');
         
-        // OPTIONS request için
-        if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-            http_response_code(200);
-            exit();
-        }
+        // OPTIONS ApiAuthMiddleware tarafından handle edilir
     }
     
     /**

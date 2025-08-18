@@ -1,5 +1,5 @@
 <?php
-$title="<h2>Geri Bildirimler</h2>";
+$title = "Geri Bildirimler";
 $link = "Geri Bildirimler" ;
 
 require_once 'app/Views/layouts/header.php';

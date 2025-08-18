@@ -109,7 +109,64 @@ require_once 'app/Views/layouts/navbar.php';
                                 </div>
                             </div>
 
+                            <div class="row g-9 mb-8">
+                                <div class="col-md-6 fv-row">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="log_enabled" name="log_enabled" <?= (($logAyarlar['enabled'] ?? true) ? 'checked' : '') ?>>
+                                        <label class="form-check-label" for="log_enabled">Uygulama Logları Açık</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 fv-row">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="log_slow" name="log_slow" <?= (($logAyarlar['slow'] ?? true) ? 'checked' : '') ?>>
+                                        <label class="form-check-label" for="log_slow">Yavaş İstek Logları Açık</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row g-9 mb-8">
+                                <div class="col-md-6 fv-row">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="log_router" name="log_router" <?= (($logAyarlar['router'] ?? false) ? 'checked' : '') ?>>
+                                        <label class="form-check-label" for="log_router">Router İstek Logları (DEBUG hariç)</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 fv-row d-flex align-items-center text-muted">
+                                    <small>Yavaş istek eşiğini ENV `SLOW_LOG_MS` ile belirleyebilirsiniz.</small>
+                                </div>
+                            </div>
+
+                            <div class="row g-9 mb-8">
+                                <div class="col-12">
+                                    <h4 class="mb-3">Rate Limit</h4>
+                                </div>
+                                <div class="col-md-3 fv-row">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="rl_enabled" name="rl_enabled" <?= (($rateLimit['enabled'] ?? true) ? 'checked' : '') ?>>
+                                        <label class="form-check-label" for="rl_enabled">Rate Limit Aktif</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 fv-row">
+                                    <label class="fs-6 fw-semibold mb-2" for="rl_window">Pencere (sn):</label>
+                                    <input class="form-control form-control-solid" type="number" min="1" id="rl_window" name="rl_window" value="<?= (int)($rateLimit['window_seconds'] ?? 60) ?>">
+                                </div>
+                                <div class="col-md-3 fv-row">
+                                    <label class="fs-6 fw-semibold mb-2" for="rl_default_max">Varsayılan Limit:</label>
+                                    <input class="form-control form-control-solid" type="number" min="1" id="rl_default_max" name="rl_default_max" value="<?= (int)($rateLimit['default']['max_requests'] ?? 60) ?>">
+                                </div>
+                                <div class="col-md-3 fv-row">
+                                    <label class="fs-6 fw-semibold mb-2" for="rl_login_max">/api/auth/login Limiti:</label>
+                                    <input class="form-control form-control-solid" type="number" min="1" id="rl_login_max" name="rl_login_max" value="<?= (int)($rateLimit['overrides']['api/auth/login']['max_requests'] ?? 10) ?>">
+                                </div>
+                            </div>
+
                             <div class="card-footer d-flex justify-content-end py-6 px-9">
+                                <button formaction="/admin/site-ayarlar/log-kaydet" type="submit" class="btn btn-light-primary me-3">
+                                    <i class="ki-outline ki-setting fs-2"></i>Log Ayarlarını Kaydet
+                                </button>
+                                <button formaction="/admin/site-ayarlar/rate-limit-kaydet" type="submit" class="btn btn-light-warning me-3">
+                                    <i class="ki-outline ki-time fs-2"></i>Rate Limit Ayarlarını Kaydet
+                                </button>
                                 <button type="submit" class="btn btn-primary">
                                     <i class="ki-outline ki-check fs-2"></i>Kaydet
                                 </button>

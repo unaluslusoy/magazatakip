@@ -20,7 +20,9 @@ class TrendyolGoService
             'token' => (string)($db['token'] ?? ''),
             'default_store_id' => (string)($db['default_store_id'] ?? ''),
             'enabled' => (bool)($db['enabled'] ?? 0),
-            'schedule_minutes' => (int)($db['schedule_minutes'] ?? 0)
+            'schedule_minutes' => (int)($db['schedule_minutes'] ?? 0),
+            'price_markup_percent' => isset($db['price_markup_percent']) ? (float)$db['price_markup_percent'] : null,
+            'price_add_abs' => isset($db['price_add_abs']) ? (float)$db['price_add_abs'] : null
         ];
     }
 
@@ -391,6 +393,35 @@ class TrendyolGoService
         if (!$resp) { return [ 'success' => false, 'error' => 'no_response' ]; }
         $ok = (int)($resp['status'] ?? 0) === 200;
         return [ 'success' => $ok, 'status' => $resp['status'] ?? 0, 'last_request' => $resp['debug'] ?? null, 'body' => $resp['body'] ?? null ];
+    }
+
+    /**
+     * Ürün fiyat/stock güncelleme (tek kalem)
+     * Not: TGO dokümana göre endpoint/şema değişkenlik gösterebilir; candidate paths denenir
+     */
+    public function updateProductPriceStock(string $productCode, ?float $price, ?int $stock, ?string $storeId = null): array
+    {
+        $cfg = $this->getConfig();
+        if (empty($cfg['api_key']) || empty($cfg['api_secret']) || empty($cfg['satici_cari_id'])) {
+            return [ 'success' => false, 'error' => 'config_missing' ];
+        }
+        $payload = [ 'productCode' => $productCode ];
+        if ($price !== null) { $payload['price'] = $price; }
+        if ($stock !== null) { $payload['stock'] = $stock; }
+        if ($storeId) { $payload['storeId'] = $storeId; }
+        $candidates = [
+            [ 'POST', '/integrator/product/grocery/product/update', null, $payload ],
+            [ 'POST', '/integrator/product/grocery/products/update', null, [ 'items' => [ $payload ] ] ],
+        ];
+        $resp = null; $lastDebug = null;
+        foreach ($candidates as $req) {
+            [ $m, $p, $q, $b ] = $req;
+            $resp = $this->tgoRequest($m, $p, $q ?? [], $cfg, $b);
+            $lastDebug = $resp['debug'] ?? null;
+            if ($resp && in_array((int)($resp['status'] ?? 0), [200,201], true)) break;
+        }
+        $ok = $resp && in_array((int)($resp['status'] ?? 0), [200,201], true);
+        return [ 'success' => $ok, 'status' => (int)($resp['status'] ?? 0), 'last_request' => $lastDebug, 'body' => $resp['body'] ?? null ];
     }
 }
 

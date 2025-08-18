@@ -1,5 +1,5 @@
 <?php
-$title = "<h2>Kullanıcı Güncelleme</h2>";
+$title = "Kullanıcı Güncelleme";
 $link = "Kullanıcı Düzenle";
 require_once 'app/Views/layouts/header.php';
 require_once 'app/Views/layouts/navbar.php';

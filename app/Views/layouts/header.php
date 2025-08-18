@@ -9,6 +9,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<meta property="og:locale" content="tr_TR" />
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="Mağaza Takip">
     <link rel="apple-touch-icon" href="/public/icons/icon-192x192.png">
@@ -27,16 +28,7 @@
         // Oturum açıksa OneSignal alias eşlemesi için CURRENT_USER_ID'yi global olarak yayınla
         window.CURRENT_USER_ID = <?php echo isset($_SESSION['user_id']) ? json_encode((string)$_SESSION['user_id']) : 'null'; ?>;
     </script>
-    <style>
-        .alert { border-radius: 6px; border: 1px solid transparent; }
-        .alert-success { background: #d1e7dd; color: #0f5132; border-color:#badbcc; }
-        .alert-danger { background: #f8d7da; color: #842029; border-color:#f5c2c7; }
-        .alert-info { background: #cff4fc; color:#055160; border-color:#b6effb; }
-        /* Modals ve SweetAlert uyarıları her zaman overlay'lerin üstünde olsun */
-        .swal2-container { z-index: 20000 !important; }
-        .modal { z-index: 20010 !important; }
-        .modal-backdrop { z-index: 20000 !important; }
-    </style>
+  
     <script src="/public/js/token-registration.js?v=<?php echo time(); ?>" defer></script>
 
 </head>
