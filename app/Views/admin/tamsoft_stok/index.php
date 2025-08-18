@@ -5,8 +5,14 @@
 	<div class="card">
 		<div class="card-header d-flex justify-content-between align-items-center">
 			<h3 class="card-title mb-0">Tamsoft ERP - Dashboard</h3>
+			<div class="d-flex gap-2">
+				<a href="/admin/tamsoft-stok/jobs" class="btn btn-sm btn-light">Job Manager</a>
+			</div>
 		</div>
 		<div class="card-body">
+			<div class="d-flex gap-2 mb-3">
+				<button class="btn btn-sm btn-outline-success" id="btnPriceRefreshManual">Fiyatları Güncelle (manuel)</button>
+			</div>
 			<div class="row g-3">
 				<div class="col-md-3">
 					<div class="card border">
@@ -56,9 +62,33 @@
 				<div id="sumInfo" class="text-muted"></div>
 				<span id="svcBadge" class="badge bg-secondary">Servis: -</span>
 			</div>
-			<div class="mt-4">
-				<h5>Son İşlemler</h5>
-				<ul id="sumLogs" class="mb-0"></ul>
+			<div class="row g-3 mt-3">
+				<div class="col-md-6">
+					<div class="card border h-100">
+						<div class="card-body">
+							<div class="d-flex justify-content-between align-items-center mb-2">
+								<h5 class="mb-0">Kuyruk Durumu</h5>
+								<button class="btn btn-sm btn-light" id="btnQueueReload">Yenile</button>
+							</div>
+							<div class="d-flex gap-3">
+								<div>Pending: <span id="qPending">-</span></div>
+								<div>Reserved: <span id="qReserved">-</span></div>
+								<div>Failed(24h): <span id="qFailed">-</span></div>
+								<div>Due Jobs: <span id="qDue">-</span></div>
+							</div>
+							<div class="mt-3 small text-muted">Son Çalıştırmalar</div>
+							<pre id="qRuns" class="bg-light p-2" style="max-height:220px; overflow:auto"></pre>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-6">
+					<div class="card border h-100">
+						<div class="card-body">
+							<h5>Son İşlemler</h5>
+							<ul id="sumLogs" class="mb-0"></ul>
+						</div>
+					</div>
+				</div>
 			</div>
 			<pre id="respBox" class="mt-3 d-none"></pre>
 		</div>
@@ -99,6 +129,22 @@ async function loadSummary(){
 	}catch(e){/* yut */}
 }
 loadSummary();
+// Kuyruk özetini yükle
+async function loadQueue(){
+    try{
+        const r = await fetch('/admin/tamsoft-stok/queue/summary');
+        const d = await r.json();
+        if (d && d.success){
+            document.getElementById('qPending').textContent = d.queue?.pending ?? '-';
+            document.getElementById('qReserved').textContent = d.queue?.reserved ?? '-';
+            document.getElementById('qFailed').textContent = d.queue?.failed ?? '-';
+            document.getElementById('qDue').textContent = d.due_jobs ?? '-';
+            document.getElementById('qRuns').textContent = JSON.stringify(d.last_runs||[], null, 2);
+        }
+    }catch(e){}
+}
+loadQueue();
+document.getElementById('btnQueueReload')?.addEventListener('click', loadQueue);
 // basit auto sync (UI tarafı)
 let syncTimer = null;
 const auto = document.getElementById('autoSync');
@@ -107,31 +153,44 @@ auto.addEventListener('change', ()=>{
 	if (auto.checked) {
 		const sec = parseInt(inp.value || '900', 10);
 		if (syncTimer) clearInterval(syncTimer);
-		syncTimer = setInterval(()=>document.getElementById('btnRefresh').click(), Math.max(15, sec) * 1000);
+		syncTimer = setInterval(()=>document.getElementById('btnRefresh')?.click(), Math.max(15, sec) * 1000);
 	} else {
 		if (syncTimer) clearInterval(syncTimer);
 		syncTimer = null;
 	}
 });
-document.getElementById('btnTokenTest').addEventListener('click', async ()=>{
-	const r = await fetch('/admin/tamsoft-stok/token-test', { method:'POST' });
+const CSRF = (document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'))||'';
+document.getElementById('btnTokenTest')?.addEventListener('click', async ()=>{
+	const r = await fetch('/admin/tamsoft-stok/token-test', { method:'POST', headers: { 'X-CSRF-Token': CSRF } });
 	const d = await r.json();
 	document.getElementById('respBox').textContent = JSON.stringify(d, null, 2);
 });
-document.getElementById('btnDepoSync').addEventListener('click', async ()=>{
-	const r = await fetch('/admin/tamsoft-stok/depolar/sync', { method:'POST' });
+document.getElementById('btnDepoSync')?.addEventListener('click', async ()=>{
+	const r = await fetch('/admin/tamsoft-stok/depolar/sync', { method:'POST', headers: { 'X-CSRF-Token': CSRF } });
 	const d = await r.json();
 	document.getElementById('respBox').textContent = JSON.stringify(d, null, 2);
 });
-document.getElementById('btnDepoPreview').addEventListener('click', async ()=>{
+document.getElementById('btnDepoPreview')?.addEventListener('click', async ()=>{
 	const r = await fetch('/admin/tamsoft-stok/depolar/preview');
 	const d = await r.json();
 	document.getElementById('respBox').textContent = JSON.stringify(d, null, 2);
 });
-document.getElementById('btnStokPreview').addEventListener('click', async ()=>{
-	const r = await fetch('/admin/tamsoft-stok/stok/preview', { method:'POST' });
+document.getElementById('btnStokPreview')?.addEventListener('click', async ()=>{
+	const r = await fetch('/admin/tamsoft-stok/stok/preview', { method:'POST', headers: { 'X-CSRF-Token': CSRF } });
 	const d = await r.json();
 	document.getElementById('respBox').textContent = JSON.stringify(d, null, 2);
+});
+// Manuel fiyat güncelle
+document.getElementById('btnPriceRefreshManual')?.addEventListener('click', async ()=>{
+    const btn = document.getElementById('btnPriceRefreshManual');
+    btn.disabled = true; const old = btn.innerText; btn.innerText = 'Çalışıyor...';
+    try{
+        const fd = new FormData(); fd.append('_csrf', CSRF);
+        const r = await fetch('/admin/tamsoft-stok/price-refresh', { method:'POST', body: fd, headers: { 'X-CSRF-Token': CSRF } });
+        const d = await r.json();
+        showToast(d.success ? (`Fiyat güncellendi. updated=${d.updated||0}`) : ('Hata: '+(d.error||'')), d.success?'success':'danger');
+    }catch(e){ showToast('Hata', 'danger'); }
+    finally{ btn.disabled=false; btn.innerText = old; }
 });
 </script>
 

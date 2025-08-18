@@ -34,6 +34,12 @@ class TrendyolGoController extends Controller
     public function ayarlar()
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Yerelleştirilmiş sayı girişlerini normalize et (virgül -> nokta)
+            $markupRaw = isset($_POST['price_markup_percent']) ? (string)$_POST['price_markup_percent'] : '';
+            $markupNorm = $markupRaw !== '' ? (float)str_replace(',', '.', $markupRaw) : null;
+            $addRaw = isset($_POST['price_add_abs']) ? (string)$_POST['price_add_abs'] : '';
+            $addNorm = $addRaw !== '' ? (float)str_replace(',', '.', $addRaw) : null;
+
             $ok = $this->ayar->updateAyarlar([
                 'api_key' => trim($_POST['api_key'] ?? ''),
                 'satici_cari_id' => trim($_POST['satici_cari_id'] ?? ''),
@@ -42,6 +48,8 @@ class TrendyolGoController extends Controller
                 'token' => trim($_POST['token'] ?? ''),
                 'default_store_id' => trim($_POST['default_store_id'] ?? ''),
                 'schedule_minutes' => (int)($_POST['schedule_minutes'] ?? 0),
+                'price_markup_percent' => $markupNorm,
+                'price_add_abs' => $addNorm,
                 'enabled' => !empty($_POST['enabled']) ? 1 : 0,
             ]);
             $_SESSION['alert_message'] = [ 'text' => $ok ? 'Ayarlar kaydedildi' : 'Kayıt hatası', 'icon' => $ok ? 'success' : 'error', 'confirmButtonText' => 'Tamam' ];
@@ -89,13 +97,147 @@ class TrendyolGoController extends Controller
         $this->view('admin/trendyolgo/urunler', $data);
     }
 
+    public function eslesmeler()
+    {
+        $data = [ 'title' => 'Trendyol Go - Eşleşmeler', 'link' => 'Trendyol Go' ];
+        $storeId = isset($_GET['store_id']) ? (string)$_GET['store_id'] : '';
+        // Basit liste: urun_entegrasyon_map'ten TrendyolGO kayıtları
+        try {
+            $pdo = (new \app\Models\TamsoftStockRepo());
+            $ref = new \ReflectionClass($pdo);
+            $prop = $ref->getParentClass()->getProperty('db');
+            $prop->setAccessible(true);
+            /** @var \PDO $db */
+            $db = $prop->getValue($pdo);
+            $where = "WHERE (m.platform IS NULL OR m.platform = 'trendyolgo')";
+            $params = [];
+            if ($storeId !== '') { $where .= " AND (m.store_id = :sid OR m.store_id IS NULL)"; $params[':sid'] = $storeId; }
+            $stmt = $db->prepare("SELECT m.id, m.urun_kodu, m.barkod, m.store_id, m.trendyolgo_sku, m.match_confidence, m.match_source, m.manual_override, m.last_matched_at, u.urun_adi FROM urun_entegrasyon_map m LEFT JOIN tamsoft_urunler u ON u.ext_urun_id = m.urun_kodu {$where} ORDER BY m.updated_at DESC LIMIT 1000");
+            foreach ($params as $k=>$v) { $stmt->bindValue($k,$v); }
+            $stmt->execute();
+            $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+            // Sayaçlar
+            $matchedCount = (int)$db->query("SELECT COUNT(*) FROM urun_entegrasyon_map WHERE (platform IS NULL OR platform='trendyolgo')")->fetchColumn();
+            $matchedDistinctTamsoft = (int)$db->query("SELECT COUNT(DISTINCT urun_kodu) FROM urun_entegrasyon_map WHERE (platform IS NULL OR platform='trendyolgo')")->fetchColumn();
+            $totalTamsoft = (int)$db->query("SELECT COUNT(*) FROM tamsoft_urunler WHERE aktif=1")->fetchColumn();
+            $unmatchedTamsoft = max(0, $totalTamsoft - $matchedDistinctTamsoft);
+            $unmatchedTrendyol = null;
+            if ($storeId !== '') {
+                // Mağaza bazlı Trendyol ürünleri için eşleşmeyen yaklaşık sayı (SKU'ya göre)
+                $stmtT = $db->prepare("SELECT COUNT(*) FROM trendyol_urunler WHERE store_id = :sid");
+                $stmtT->execute([':sid'=>$storeId]);
+                $totalTr = (int)$stmtT->fetchColumn();
+                $stmtM = $db->prepare("SELECT COUNT(DISTINCT trendyolgo_sku) FROM urun_entegrasyon_map WHERE (platform IS NULL OR platform='trendyolgo') AND (store_id = :sid OR store_id IS NULL)");
+                $stmtM->execute([':sid'=>$storeId]);
+                $matchedSku = (int)$stmtM->fetchColumn();
+                $unmatchedTrendyol = max(0, $totalTr - $matchedSku);
+            }
+            $data['matched_count'] = $matchedCount;
+            $data['unmatched_tamsoft_count'] = $unmatchedTamsoft;
+            $data['unmatched_trendyol_count'] = $unmatchedTrendyol;
+        } catch (\Throwable $e) { $rows = []; }
+        $data['rows'] = $rows;
+        try { $data['stores'] = $this->magaza->getAllCached(); } catch (\Throwable $e) { $data['stores'] = []; }
+        $data['store_id'] = $storeId;
+        $this->view('admin/trendyolgo/eslesmeler', $data);
+    }
+
+    public function eslesmelerData()
+    {
+        $draw = (int)($_GET['draw'] ?? 1);
+        $start = isset($_GET['start']) ? max(0, (int)$_GET['start']) : 0;
+        $length = isset($_GET['length']) ? max(10, (int)$_GET['length']) : 50;
+        $searchVal = isset($_GET['search']['value']) ? trim((string)$_GET['search']['value']) : '';
+        $storeId = isset($_GET['store_id']) ? (string)$_GET['store_id'] : '';
+        $orderColIdx = isset($_GET['order'][0]['column']) ? (int)$_GET['order'][0]['column'] : 0;
+        $orderDir = isset($_GET['order'][0]['dir']) ? (string)$_GET['order'][0]['dir'] : 'desc';
+        $orderable = ['m.id','m.urun_kodu','u.urun_adi','m.barkod','m.store_id','m.trendyolgo_sku','m.match_confidence','m.match_source','m.manual_override','m.last_matched_at'];
+        $orderBy = $orderable[$orderColIdx] ?? 'm.updated_at';
+        $orderDirSql = (strtoupper($orderDir) === 'DESC') ? 'DESC' : 'ASC';
+        try {
+            $pdo = (new \app\Models\TamsoftStockRepo());
+            $ref = new \ReflectionClass($pdo);
+            $prop = $ref->getParentClass()->getProperty('db');
+            $prop->setAccessible(true);
+            /** @var \PDO $db */
+            $db = $prop->getValue($pdo);
+            $where = "WHERE (m.platform IS NULL OR m.platform = 'trendyolgo')";
+            $params = [];
+            if ($storeId !== '') { $where .= " AND (m.store_id = :sid OR m.store_id IS NULL)"; $params[':sid'] = $storeId; }
+            if ($searchVal !== '') {
+                $where .= " AND (m.urun_kodu LIKE :q OR m.barkod LIKE :q OR m.trendyolgo_sku LIKE :q OR u.urun_adi LIKE :q)";
+                $params[':q'] = '%' . $searchVal . '%';
+            }
+            $sqlBase = "FROM urun_entegrasyon_map m LEFT JOIN tamsoft_urunler u ON u.ext_urun_id = m.urun_kodu {$where}";
+            $stmtCount = $db->prepare("SELECT COUNT(*) {$sqlBase}");
+            foreach ($params as $k=>$v) { $stmtCount->bindValue($k,$v); }
+            $stmtCount->execute();
+            $recordsFiltered = (int)$stmtCount->fetchColumn();
+            $recordsTotal = (int)$db->query("SELECT COUNT(*) FROM urun_entegrasyon_map WHERE (platform IS NULL OR platform='trendyolgo')")->fetchColumn();
+            $stmt = $db->prepare("SELECT m.id, m.urun_kodu, m.barkod, m.store_id, m.trendyolgo_sku, m.match_confidence, m.match_source, m.manual_override, m.last_matched_at, u.urun_adi {$sqlBase} ORDER BY {$orderBy} {$orderDirSql} LIMIT :lim OFFSET :off");
+            foreach ($params as $k=>$v) { $stmt->bindValue($k,$v); }
+            $stmt->bindValue(':lim', $length, \PDO::PARAM_INT);
+            $stmt->bindValue(':off', $start, \PDO::PARAM_INT);
+            $stmt->execute();
+            $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'draw' => $draw,
+                'recordsTotal' => $recordsTotal,
+                'recordsFiltered' => $recordsFiltered,
+                'data' => $rows
+            ]);
+        } catch (\Throwable $e) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['draw'=>$draw,'recordsTotal'=>0,'recordsFiltered'=>0,'data'=>[]]);
+        }
+    }
+
+    // Eşleşme güncelle (modal kaydet)
+    public function eslesmelerUpdate()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            $raw = file_get_contents('php://input');
+            $data = $_POST;
+            if ($raw && (($_SERVER['CONTENT_TYPE'] ?? '') === 'application/json' || str_contains(($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json'))) {
+                $dec = json_decode($raw, true);
+                if (is_array($dec)) { $data = $dec; }
+            }
+            $id = (int)($data['id'] ?? 0);
+            if ($id <= 0) { throw new \InvalidArgumentException('Geçersiz ID'); }
+            $payload = [];
+            if (array_key_exists('trendyolgo_sku', $data)) { $payload['trendyolgo_sku'] = (string)$data['trendyolgo_sku']; }
+            if (array_key_exists('barkod', $data)) { $payload['barkod'] = ($data['barkod'] !== '' ? (string)$data['barkod'] : null); }
+            if (array_key_exists('manual_override', $data)) { $payload['manual_override'] = !empty($data['manual_override']) ? 1 : 0; }
+            if (array_key_exists('store_id', $data)) { $payload['store_id'] = ($data['store_id'] !== '' ? (string)$data['store_id'] : null); }
+            $payload['updated_at'] = date('Y-m-d H:i:s');
+            $map = new \app\Models\UrunEntegrasyonMap();
+            $ok = $map->update($id, $payload);
+            echo json_encode(['success'=>(bool)$ok]);
+        } catch (\Throwable $e) { echo json_encode(['success'=>false,'error'=>$e->getMessage()]); }
+    }
+
+    public function eslesmelerDelete()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            $id = (int)($_POST['id'] ?? 0);
+            if ($id <= 0) { throw new \InvalidArgumentException('Geçersiz ID'); }
+            $map = new \app\Models\UrunEntegrasyonMap();
+            $ok = $map->delete($id);
+            echo json_encode(['success'=>(bool)$ok]);
+        } catch (\Throwable $e) { echo json_encode(['success'=>false,'error'=>$e->getMessage()]); }
+    }
+
 	public function urunlerData()
 	{
 		$draw = (int)($_GET['draw'] ?? 1);
 		$start = isset($_GET['start']) ? max(0, (int)$_GET['start']) : 0;
 		$length = isset($_GET['length']) ? max(10, (int)$_GET['length']) : 50;
-		$searchVal = isset($_GET['search']['value']) ? (string)$_GET['search']['value'] : '';
+		$searchVal = isset($_GET['search']['value']) ? (string)$_GET['search']['value'] : (string)($_GET['q'] ?? '');
 		$storeId = $_GET['store_id'] ?? '';
+		$onlyUnmatched = isset($_GET['unmatched']) && (int)$_GET['unmatched'] === 1;
 		$orderColIdx = isset($_GET['order'][0]['column']) ? (int)$_GET['order'][0]['column'] : 1;
 		$orderDir = isset($_GET['order'][0]['dir']) ? (string)$_GET['order'][0]['dir'] : 'asc';
 		// columns mapping: 0 img,1 title(name),2 barcode,3 category,4 brand,5 sku,6 stock,7 trendyolPrice,8 listPrice,9 status,10 description
@@ -104,14 +246,51 @@ class TrendyolGoController extends Controller
 		$per = $length;
 		$model = new \app\Models\TrendyolUrun();
 		try {
-			list($recordsTotal, $recordsFiltered) = $model->countDedupTotals(($storeId !== '' ? $storeId : null), $searchVal);
-			$dedup = $model->listDedup($searchVal, $page, $per, ($storeId !== '' ? $storeId : null), $orderBy, strtoupper($orderDir) === 'DESC' ? 'DESC' : 'ASC');
+			$pdo = (new \app\Models\TamsoftStockRepo());
+			$ref = new \ReflectionClass($pdo);
+			$prop = $ref->getParentClass()->getProperty('db');
+			$prop->setAccessible(true);
+			/** @var \PDO $db */
+			$db = $prop->getValue($pdo);
+			$where = [];
+			$params = [];
+			if ($storeId !== '') { $where[] = 'store_id = :sid'; $params[':sid'] = $storeId; }
+			if ($searchVal !== '') {
+				$where[] = '(barcode LIKE :q OR title LIKE :q OR brand_name LIKE :q OR sku LIKE :q OR stock_code LIKE :q)';
+				$params[':q'] = '%'.$searchVal.'%';
+			}
+			$whereSql = empty($where) ? '' : ('WHERE ' . implode(' AND ', $where));
+			// counts
+			$stmtTot = $db->prepare('SELECT COUNT(*) FROM trendyol_urunler' . ( $storeId!=='' ? ' WHERE store_id = :sid' : '' ));
+			if ($storeId !== '') { $stmtTot->bindValue(':sid', $storeId); }
+			$stmtTot->execute();
+			$recordsTotal = (int)$stmtTot->fetchColumn();
+			$stmtFil = $db->prepare('SELECT COUNT(*) FROM trendyol_urunler '.$whereSql);
+			foreach ($params as $k=>$v) { $stmtFil->bindValue($k,$v); }
+			$stmtFil->execute();
+			$recordsFiltered = (int)$stmtFil->fetchColumn();
+			// data
+			$sql = "SELECT barcode, title AS name, brand_name AS brand, category_id AS categoryId, category_name AS categoryName, image_url AS imageUrl, sku, quantity AS stock, selling_price AS trendyolPrice, original_price AS listPrice, status, description FROM trendyol_urunler {$whereSql} ORDER BY ".($orderBy==='barcode'?'barcode':'title')." ".(strtoupper($orderDir)==='DESC'?'DESC':'ASC')." LIMIT :lim OFFSET :off";
+			$stmt = $db->prepare($sql);
+			foreach ($params as $k=>$v) { $stmt->bindValue($k,$v); }
+			$stmt->bindValue(':lim', $per, \PDO::PARAM_INT);
+			$stmt->bindValue(':off', $start, \PDO::PARAM_INT);
+			$stmt->execute();
+			$items = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+			// matched flag
+			$st = $db->prepare("SELECT 1 FROM urun_entegrasyon_map m WHERE (m.platform IS NULL OR m.platform='trendyolgo') AND ((:sku<>'' AND m.trendyolgo_sku=:sku) OR (:bc<>'' AND m.barkod=:bc)) AND (:sid='' OR m.store_id=:sid OR m.store_id IS NULL) LIMIT 1");
+			foreach ($items as &$row) {
+				$sku = (string)($row['sku'] ?? '');
+				$bc = (string)($row['barcode'] ?? '');
+				$st->execute([':sku'=>$sku, ':bc'=>$bc, ':sid'=>($storeId ?? '')]);
+				$row['matched'] = $st->fetchColumn() ? 1 : 0;
+			}
 			header('Content-Type: application/json; charset=utf-8');
 			echo json_encode([
 				'draw' => $draw,
 				'recordsTotal' => $recordsTotal,
 				'recordsFiltered' => $recordsFiltered,
-				'data' => $dedup['items'] ?? []
+				'data' => $items
 			]);
 		} catch (\Throwable $e) {
 			header('Content-Type: application/json; charset=utf-8');

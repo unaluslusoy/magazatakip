@@ -1,6 +1,6 @@
 <?php
-$title="<h2>Gösterge Paneli</h2>" ;
-$link="Gösterge" ;
+$title = "Gösterge Paneli";
+$link = "Gösterge";
 require_once 'app/Views/layouts/header.php';
 require_once 'app/Views/layouts/navbar.php';
 ?>
@@ -59,6 +59,6 @@ require_once 'app/Views/layouts/navbar.php';
 			<!--end::Statistics Widget 5-->
 		</div>
 	</div>
-<?php
+	<?php
 require_once 'app/Views/layouts/footer.php';
 

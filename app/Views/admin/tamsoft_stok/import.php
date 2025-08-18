@@ -26,7 +26,12 @@
 document.getElementById('btnRun').addEventListener('click', async ()=>{
 	const form = document.getElementById('frmImport');
 	const fd = new FormData(form);
-	const r = await fetch('/admin/tamsoft-stok/import', { method:'POST', body: fd });
+	const f = form.querySelector('input[type="file"][name="file"]').files[0];
+	const CSRF = (document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'))||'';
+	if (!f) { showToast('Dosya seçiniz', 'danger'); return; }
+	if (f && f.size > 25*1024*1024) { showToast('Dosya çok büyük (25MB üzeri)', 'danger'); return; }
+	fd.append('_csrf', CSRF);
+	const r = await fetch('/admin/tamsoft-stok/import', { method:'POST', body: fd, headers: { 'X-CSRF-Token': CSRF } });
 	const d = await r.json();
 	document.getElementById('respBox').textContent = JSON.stringify(d, null, 2);
 });

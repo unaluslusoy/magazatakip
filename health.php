@@ -2,6 +2,11 @@
 // Basit sağlık kontrolü (geçici)
 header('Content-Type: text/plain; charset=utf-8');
 
+$__started = false;
+try {
+    if (session_status() !== PHP_SESSION_ACTIVE) { @session_start(); $__started = true; }
+} catch (Throwable $e) {}
+
 $results = [
     'time' => date('Y-m-d H:i:s'),
     'php_version' => PHP_VERSION,
@@ -35,9 +40,11 @@ try {
 
 // 4) session yazma testi
 try {
-    if (session_status() !== PHP_SESSION_ACTIVE) { session_start(); }
+    if (!$__started && session_status() !== PHP_SESSION_ACTIVE) { session_start(); }
     $_SESSION['health_check'] = time();
     echo "Session: OK\n";
+    echo 'Session handler: ' . (ini_get('session.save_handler') ?: 'unknown') . "\n";
+    echo 'Session save_path: ' . (ini_get('session.save_path') ?: 'unknown') . "\n";
 } catch (Throwable $e) {
     echo "Session: ERROR => " . $e->getMessage() . "\n";
 }
@@ -63,6 +70,16 @@ try {
 // 6) Özet
 echo "--\n";
 foreach ($results as $k => $v) { echo $k . ': ' . $v . "\n"; }
+
+// 7) Cache/Redis durumu
+try {
+    require_once __DIR__ . '/core/CacheManager.php';
+    $cm = core\CacheManager::getInstance();
+    $isRedis = $cm->isRedisAvailable();
+    echo 'Cache backend: ' . ($isRedis ? 'Redis' : 'File Cache') . "\n";
+} catch (Throwable $e) {
+    echo 'Cache: ERROR => ' . $e->getMessage() . "\n";
+}
 
 // Not: İş bittiğinde bu dosyayı silebiliriz.
 

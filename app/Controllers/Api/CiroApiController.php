@@ -12,10 +12,7 @@ class CiroApiController extends Controller {
     public function __construct() {
         $this->ciroModel = new CiroModel();
         
-        // API için CORS headers
-        header('Access-Control-Allow-Origin: *');
-        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+        // API için response tipi
         header('Content-Type: application/json; charset=utf-8');
         
         // Cache prevention headers
@@ -37,7 +34,14 @@ class CiroApiController extends Controller {
      */
     public function getCiroListesi() {
         try {
-            $ciroListesi = $this->ciroModel->ciroListele();
+            // 30 sn cache
+            $cacheKey = 'ciro_listesi_all';
+            $cache = \core\CacheManager::getInstance();
+            $ciroListesi = $cache->get($cacheKey);
+            if ($ciroListesi === null) {
+                $ciroListesi = $this->ciroModel->ciroListele();
+                $cache->set($cacheKey, $ciroListesi, 30);
+            }
             
             $response = [
                 'success' => true,

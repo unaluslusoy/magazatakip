@@ -24,7 +24,8 @@ class GetirWebhookController extends Controller
         $enabled = !empty($ayar['enabled']);
 
         if (!$enabled) {
-            http_response_code(503);
+            // 503 yerine 200 + kapalı bilgisi döndürmek, yük dengeleyici healthcheck'i etkilemesin
+            http_response_code(200);
             echo json_encode([ 'success' => false, 'error' => 'service_disabled' ]);
             return;
         }

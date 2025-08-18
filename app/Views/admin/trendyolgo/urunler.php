@@ -16,7 +16,7 @@
 				<div class="text-dark"><b>Mağaza:</b> <?= htmlspecialchars(($store_name ?? '') !== '' ? ($store_name . ' (#' . ($store_id ?? '-') . ')') : ($store_id ?? '-')) ?></div>
 				<div class="text-dark"><b>Toplam ürün:</b> <?= (int)($total ?? count($items)) ?></div>
 			</div>
-			<div id="noDataAlert" class="alert alert-info" style="display:none">Henüz veri yok.</div>
+			
 			<div class="table-responsive">
 				<table class="table table-row-dashed align-middle" id="urunlerTable">
 					<thead>
@@ -32,6 +32,7 @@
 							<th>Liste Fiyatı</th>
 							<th>Durum</th>
 							<th>Açıklama</th>
+							<th>Eşleştirme</th>
 						</tr>
 					</thead>
 					<tbody></tbody>
@@ -46,13 +47,17 @@
 	const storeId = '<?= htmlspecialchars($store_id ?? '') ?>';
 	document.addEventListener('DOMContentLoaded', function(){
 		if (window.jQuery && jQuery.fn && jQuery.fn.DataTable){
-			jQuery('#urunlerTable').DataTable({
+			const dt = jQuery('#urunlerTable').DataTable({
 				serverSide: true,
 				processing: true,
+				language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json' },
 				ajax: {
 					url: '/admin/trendyolgo/urunler/data',
 					type: 'GET',
-					data: function(d){ d.store_id = storeId; }
+					data: function(d){
+						d.store_id = storeId;
+						// extra filters removed
+					}
 				},
 				columns: [
 					{ data: 'imageUrl', render: (d)=> d ? '<img src="'+d+'" style="width:56px;height:56px;object-fit:cover;border-radius:6px;"/>' : '-' },
@@ -65,13 +70,20 @@
 					{ data: 'trendyolPrice', render: (d)=> (typeof d==='number'? d.toLocaleString('tr-TR',{minimumFractionDigits:2}) : '-') },
 					{ data: 'listPrice', render: (d)=> (typeof d==='number'? d.toLocaleString('tr-TR',{minimumFractionDigits:2}) : '-') },
 					{ data: 'status' },
-					{ data: 'description', render: (d)=> `<div style=\"max-width:380px;white-space:normal;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;\">${d||'-'}</div>` }
+					{ data: 'description', render: (d)=> `<div style=\"max-width:380px;white-space:normal;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;\">${d||'-'}</div>` },
+					{ data: null, orderable:false, render: function(_d,_t,row){
+						const isMatched = !!row.matched;
+						const stateIcon = isMatched ? '<i class="bi bi-link-45deg text-success" title="Eşleşmiş"></i>' : '<i class="bi bi-link-45deg text-muted" title="Eşleşmemiş"></i>';
+						const href = '/admin/match';
+						return `<a href=\"${href}\" class=\"btn btn-sm ${isMatched?'btn-success':'btn-light'}\" title=\"Eşleştir\" data-sku=\"${row.sku||''}\" data-bc=\"${row.barcode||''}\">${stateIcon}</a>`;
+					} }
 				],
 				pageLength: 50,
 				lengthMenu: [ [25,50,100,200], [25,50,100,200] ],
 				order: [[1,'asc']],
 				initComplete: function(settings, json){ if (!json || !json.data || !json.data.length) { document.getElementById('noDataAlert').style.display=''; } }
 			});
+			// filters removed
 		}
 	});
 })();

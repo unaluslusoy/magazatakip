@@ -95,19 +95,12 @@
 </div>
 <?php require_once __DIR__ . '/../../layouts/footer.php'; ?>
 <script>
-// Export CSV (UTF-8 BOM ile)
+// Export CSV (server-side)
 document.addEventListener('click', async (e)=>{
 	if(e.target && e.target.id==='btnExport'){
-		const url = $('#tb').DataTable().ajax.url();
-		const r = await fetch(url);
-		const d = await r.json();
-		const rows = (d.data||d.rows||[]);
-		let csv = '\ufeff' + 'Kod;Barkod;Ürün Adı;Birim;KDV;Fiyat;Miktar\n';
-		rows.forEach(row=>{
-			csv += [row.ext_urun_id,row.barkod,row.urun_adi,row.birim,row.kdv,row.fiyat,row.miktari].map(v=>`"${(v??'').toString().replaceAll('"','""')}"`).join(';')+"\n";
-		});
-		const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-		const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'envanter.csv'; a.click();
+		const qs = new URLSearchParams(location.search);
+		const url = '/admin/tamsoft-stok/envanter/export?' + qs.toString();
+		window.open(url, '_blank');
 	}
 });
 </script>
@@ -118,7 +111,8 @@ document.addEventListener('click', async (e)=>{
 	const togglesEl = document.getElementById('colToggleBody');
 	const selDepo = document.getElementById('fltDepo');
 	let dt;
-	function fmtInt(v){ if(v===undefined||v===null||v==='') return ''; const n=parseFloat(v); if (isNaN(n)) return ''; return String(Math.round(n)); }
+	function fmtInt(v){ if(v===undefined||v===null||v==='') return ''; const n=parseFloat(v); if (isNaN(n)) return ''; return new Intl.NumberFormat('tr-TR', {maximumFractionDigits:0}).format(n); }
+	function fmtPrice(v){ if(v===undefined||v===null||v==='') return ''; const n=parseFloat(v); if (isNaN(n)) return ''; return new Intl.NumberFormat('tr-TR', {minimumFractionDigits:2, maximumFractionDigits:2}).format(n); }
 	function loadVisPrefs(){ try{ return JSON.parse(localStorage.getItem('tamsoft_envanter_cols')||'{}'); }catch(e){ return {}; } }
 	function saveVisPrefs(p){ localStorage.setItem('tamsoft_envanter_cols', JSON.stringify(p)); }
 	(async function init(){
@@ -140,13 +134,13 @@ document.addEventListener('click', async (e)=>{
 			{ data: 'urun_adi', title: 'Ürün Adı', className:'col-name text-start align-middle' },
 			{ data: 'birim', title: 'Birim', className:'text-center align-middle' },
 			{ data: 'kdv', title: 'KDV', className:'text-center align-middle' },
-			{ data: 'fiyat', title: 'Fiyat', className:'text-end align-middle', render:(d)=>fmtInt(d) },
+			{ data: 'fiyat', title: 'Fiyat', className:'text-end align-middle', render:(d)=>fmtPrice(d) },
 			{ data: 'miktari', title: 'Miktar', className:'text-end align-middle', render:(d)=>fmtInt(d) },
 			{ data: null, title: 'Entegrasyon', className:'text-center align-middle', orderable:false, searchable:false, render: (data,type,row)=>{
 				const logos = [];
-				if (row.trendyolgo_sku) logos.push('<img alt="TY" src="/public/media/logos/tgo-logo.png" height="18"/>');
-				if (row.getir_code) logos.push('<img alt="Getir" src="/public/media/logos/getircarsi-logo.png" height="18"/>');
-				if (row.yemeksepeti_code) logos.push('<img alt="YS" src="/public/media/logos/yemeksepeti-logo.png" height="18"/>');
+				if (row.trendyolgo_sku) logos.push('<img alt="TY" src="/public/media/logos/tgo-logo.png" height="18"/>' );
+				if (row.getir_code) logos.push('<img alt="Getir" src="/public/media/logos/getircarsi-logo.png" height="18"/>' );
+				if (row.yemeksepeti_code) logos.push('<img alt="YS" src="/public/media/logos/yemeksepeti-logo.png" height="18"/>' );
 				return logos.join(' ');
 			}}
 		];
@@ -207,8 +201,20 @@ document.addEventListener('click', async (e)=>{
 			if (op) qs.set('only_positive', op); else qs.delete('only_positive');
 			const hi = document.getElementById('fltHasInt').value;
 			if (hi!=="") qs.set('has_integration', hi); else qs.delete('has_integration');
+			// filtreleri kalıcılaştır
+			localStorage.setItem('tamsoft_envanter_filters', JSON.stringify({
+				search: s, depo_id: d, only_positive: op, has_integration: hi
+			}));
 			dt.ajax.url('/admin/tamsoft-stok/envanter/data?'+qs.toString()).load();
 		});
+		// filtreleri geri yükle
+		try {
+			const saved = JSON.parse(localStorage.getItem('tamsoft_envanter_filters')||'{}');
+			if (saved.search) document.getElementById('fltSearch').value = saved.search;
+			if (saved.depo_id) document.getElementById('fltDepo').value = saved.depo_id;
+			if (saved.only_positive==='1') document.getElementById('fltOnlyPos').checked = true;
+			if (saved.has_integration!==undefined) document.getElementById('fltHasInt').value = saved.has_integration;
+		} catch(e) {}
 	})();
 })();
 </script>

@@ -23,10 +23,7 @@ class UserApiController extends Controller {
         $this->giderModel = new Gider();
         $this->isEmriModel = new IsEmriModel();
         
-        // API için CORS headers
-        header('Access-Control-Allow-Origin: *');
-        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+        // API için response tipi
         header('Content-Type: application/json; charset=utf-8');
         
         // Cache prevention headers
@@ -290,16 +287,25 @@ class UserApiController extends Controller {
             $magaza_id = $user['magaza_id'];
             
             // İstatistikleri topla
-            $stats = [
-                'bekleyenIsler' => $this->isEmriModel->getPendingCount($magaza_id),
-                'aktifIsler' => $this->isEmriModel->getInProgressCount($magaza_id),
-                'aylikGelir' => $this->ciroModel->getMonthlyTotal($magaza_id),
-                'aylikGider' => $this->giderModel->getMonthlyTotal($magaza_id),
-                'netCiro' => $this->ciroModel->getMonthlyTotal($magaza_id) - $this->giderModel->getMonthlyTotal($magaza_id),
-                'toplamCiro' => $this->ciroModel->getTotal($magaza_id),
-                'bugunGelir' => $this->ciroModel->getTodayTotal($magaza_id),
-                'bugunGider' => $this->giderModel->getTodayTotal($magaza_id)
-            ];
+            // 30 sn cache (kullanıcı bazlı)
+            $cacheKey = 'dashboard_stats_user_' . (int)$magaza_id;
+            $cache = \core\CacheManager::getInstance();
+            $stats = $cache->get($cacheKey);
+            if ($stats === null) {
+                $monthlyIn = $this->ciroModel->getMonthlyTotal($magaza_id);
+                $monthlyOut = $this->giderModel->getMonthlyTotal($magaza_id);
+                $stats = [
+                    'bekleyenIsler' => $this->isEmriModel->getPendingCount($magaza_id),
+                    'aktifIsler' => $this->isEmriModel->getInProgressCount($magaza_id),
+                    'aylikGelir' => $monthlyIn,
+                    'aylikGider' => $monthlyOut,
+                    'netCiro' => $monthlyIn - $monthlyOut,
+                    'toplamCiro' => $this->ciroModel->getTotal($magaza_id),
+                    'bugunGelir' => $this->ciroModel->getTodayTotal($magaza_id),
+                    'bugunGider' => $this->giderModel->getTodayTotal($magaza_id)
+                ];
+                $cache->set($cacheKey, $stats, 30);
+            }
             
             $response = [
                 'success' => true,

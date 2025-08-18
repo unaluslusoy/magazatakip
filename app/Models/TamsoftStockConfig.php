@@ -33,6 +33,14 @@ class TamsoftStockConfig extends Model
 			quiet_start TIME NULL,
 			quiet_end TIME NULL,
 			verbose_stock_log TINYINT(1) NOT NULL DEFAULT 0,
+			bulk_stock_summary TINYINT(1) NOT NULL DEFAULT 0,
+			-- yeni ayarlar
+			master_batch INT NULL,
+			price_batch INT NULL,
+			price_max_pages INT NULL,
+			price_max_seconds INT NULL,
+			max_seconds_per_depot INT NULL,
+			max_pages_per_depot INT NULL,
 			max_parallel_depots TINYINT NOT NULL DEFAULT 3,
 			throttle_ms INT NOT NULL DEFAULT 75,
 			max_retries TINYINT NOT NULL DEFAULT 3,
@@ -63,6 +71,14 @@ class TamsoftStockConfig extends Model
 		try { $this->db->exec("ALTER TABLE {$this->table} ADD COLUMN quiet_start TIME NULL"); } catch (\Throwable $e) {}
 		try { $this->db->exec("ALTER TABLE {$this->table} ADD COLUMN quiet_end TIME NULL"); } catch (\Throwable $e) {}
 		try { $this->db->exec("ALTER TABLE {$this->table} ADD COLUMN verbose_stock_log TINYINT(1) NOT NULL DEFAULT 0"); } catch (\Throwable $e) {}
+		try { $this->db->exec("ALTER TABLE {$this->table} ADD COLUMN bulk_stock_summary TINYINT(1) NOT NULL DEFAULT 0"); } catch (\Throwable $e) {}
+		// yeni kolonlar (varsa hata vermeden geç)
+		try { $this->db->exec("ALTER TABLE {$this->table} ADD COLUMN master_batch INT NULL"); } catch (\Throwable $e) {}
+		try { $this->db->exec("ALTER TABLE {$this->table} ADD COLUMN price_batch INT NULL"); } catch (\Throwable $e) {}
+		try { $this->db->exec("ALTER TABLE {$this->table} ADD COLUMN price_max_pages INT NULL"); } catch (\Throwable $e) {}
+		try { $this->db->exec("ALTER TABLE {$this->table} ADD COLUMN price_max_seconds INT NULL"); } catch (\Throwable $e) {}
+		try { $this->db->exec("ALTER TABLE {$this->table} ADD COLUMN max_seconds_per_depot INT NULL"); } catch (\Throwable $e) {}
+		try { $this->db->exec("ALTER TABLE {$this->table} ADD COLUMN max_pages_per_depot INT NULL"); } catch (\Throwable $e) {}
 		try { $this->db->exec("ALTER TABLE {$this->table} ADD COLUMN max_parallel_depots TINYINT NOT NULL DEFAULT 3"); } catch (\Throwable $e) {}
 	}
 
@@ -75,7 +91,7 @@ class TamsoftStockConfig extends Model
 			$sql = "INSERT INTO {$this->table}(id, created_at, updated_at) VALUES (1, :created_at, :updated_at)";
 			$stmt = $this->db->prepare($sql);
 			$stmt->execute([':created_at'=>$now, ':updated_at'=>$now]);
-			$cfg = [ 'api_url' => 'http://tamsoftintegration.camlica.com.tr', 'default_only_positive' => 1, 'default_last_barcode_only' => 0, 'default_only_ecommerce' => 0, 'sync_active'=>1, 'sync_by_depot'=>1, 'request_interval_sec'=>900, 'quiet_enabled'=>1, 'quiet_start'=>'22:30:00', 'quiet_end'=>'09:00:00', 'verbose_stock_log'=>0, 'max_parallel_depots'=>3, 'throttle_ms'=>75, 'max_retries'=>3, 'breaker_fail_threshold'=>5, 'breaker_cooldown_sec'=>300 ];
+			$cfg = [ 'api_url' => 'http://tamsoftintegration.camlica.com.tr', 'default_only_positive' => 1, 'default_last_barcode_only' => 0, 'default_only_ecommerce' => 0, 'sync_active'=>1, 'sync_by_depot'=>1, 'request_interval_sec'=>900, 'quiet_enabled'=>1, 'quiet_start'=>'22:00:00', 'quiet_end'=>'09:00:00', 'verbose_stock_log'=>0, 'bulk_stock_summary'=>0, 'max_parallel_depots'=>3, 'throttle_ms'=>75, 'max_retries'=>3, 'breaker_fail_threshold'=>5, 'breaker_cooldown_sec'=>300 ];
 		}
 		return $cfg;
 	}
@@ -95,6 +111,13 @@ class TamsoftStockConfig extends Model
 			quiet_enabled=:quiet_enabled,
 			quiet_start=:quiet_start,
 			quiet_end=:quiet_end,
+			bulk_stock_summary=:bulk_stock_summary,
+			master_batch=:master_batch,
+			price_batch=:price_batch,
+			price_max_pages=:price_max_pages,
+			price_max_seconds=:price_max_seconds,
+			max_seconds_per_depot=:max_seconds_per_depot,
+			max_pages_per_depot=:max_pages_per_depot,
 			throttle_ms=:throttle_ms,
 			max_retries=:max_retries,
 			breaker_fail_threshold=:breaker_fail_threshold,
@@ -117,10 +140,17 @@ class TamsoftStockConfig extends Model
 			':quiet_enabled' => isset($data['quiet_enabled']) ? (int)(!empty($data['quiet_enabled'])) : 1,
 			':quiet_start' => $data['quiet_start'] ?? '22:30:00',
 			':quiet_end' => $data['quiet_end'] ?? '09:00:00',
+			':bulk_stock_summary' => isset($data['bulk_stock_summary']) ? (int)(!empty($data['bulk_stock_summary'])) : 0,
 			':throttle_ms' => isset($data['throttle_ms']) && $data['throttle_ms'] !== '' ? (int)$data['throttle_ms'] : 75,
 			':max_retries' => isset($data['max_retries']) && $data['max_retries'] !== '' ? (int)$data['max_retries'] : 3,
 			':breaker_fail_threshold' => isset($data['breaker_fail_threshold']) && $data['breaker_fail_threshold'] !== '' ? (int)$data['breaker_fail_threshold'] : 5,
 			':breaker_cooldown_sec' => isset($data['breaker_cooldown_sec']) && $data['breaker_cooldown_sec'] !== '' ? (int)$data['breaker_cooldown_sec'] : 300,
+			':master_batch' => isset($data['master_batch']) && $data['master_batch'] !== '' ? (int)$data['master_batch'] : null,
+			':price_batch' => isset($data['price_batch']) && $data['price_batch'] !== '' ? (int)$data['price_batch'] : null,
+			':price_max_pages' => isset($data['price_max_pages']) && $data['price_max_pages'] !== '' ? (int)$data['price_max_pages'] : null,
+			':price_max_seconds' => isset($data['price_max_seconds']) && $data['price_max_seconds'] !== '' ? (int)$data['price_max_seconds'] : null,
+			':max_seconds_per_depot' => isset($data['max_seconds_per_depot']) && $data['max_seconds_per_depot'] !== '' ? (int)$data['max_seconds_per_depot'] : null,
+			':max_pages_per_depot' => isset($data['max_pages_per_depot']) && $data['max_pages_per_depot'] !== '' ? (int)$data['max_pages_per_depot'] : null,
 			':updated_at' => $now,
 		]);
 	}

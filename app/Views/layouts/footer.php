@@ -6,7 +6,14 @@
 </div>
 <!--end::Content wrapper-->
 <!--begin::Footer-->
-
+<div id="kt_app_footer" class="app-footer">
+	<div class="app-container container-fluid d-flex flex-column flex-md-row flex-center flex-md-stack py-3">
+		<div class="text-dark order-2 order-md-1">
+			<span class="text-muted fw-semibold me-1">© 2024</span>
+			<a href="#" class="text-gray-800 text-hover-primary">Mağaza Takip Sistemi</a>
+		</div>
+	</div>
+</div>
 <!--end::Footer-->
 </div>
 <!--end:::Main-->
@@ -15,12 +22,7 @@
 </div>
 <!--end::Page-->
 </div>
-
-<footer class="footer mt-auto py-3 bg-light">
-	<div class="container">
-		<span class="text-muted">© 2024 Mağaza Takip Sistemi</span>
-	</div>
-</footer>
+<!--end::Root-->
 <script>var hostUrl = "public/";</script>
 <!--begin::Global Javascript Bundle(mandatory for all pages)-->
 <script src="/public/plugins/global/plugins.bundle.js?v=<?php echo time(); ?>"></script>
@@ -35,18 +37,21 @@
 <script src="https://cdn.amcharts.com/lib/5/radar.js"></script>
 <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
 <!--end::Vendors Javascript-->
-<script src="/public/js/custom/utilities/search/horizontal.js"></script>
+<script>
+try { window.KTComponents = window.KTComponents || {}; } catch(e) {}
+</script>
+<script src="/public/js/custom/utilities/search/horizontal.js" defer></script>
 
 <!--begin::Auth Guard for Admin Panel-->
 <script>
-    // Cache buster for auth-guard.js
-    const cacheVersion = '?v=' + new Date().getTime();
-    const authScript = document.createElement('script');
-    authScript.src = '/auth-guard.js' + cacheVersion;
-    authScript.onload = function() {
-        console.log('✅ Auth Guard loaded for admin panel');
-    };
-    document.head.appendChild(authScript);
+	// Cache buster for auth-guard.js
+	const cacheVersion = '?v=' + new Date().getTime();
+	const authScript = document.createElement('script');
+	authScript.src = '/auth-guard.js' + cacheVersion;
+	authScript.onload = function() {
+		console.log('✅ Auth Guard loaded for admin panel');
+	};
+	document.head.appendChild(authScript);
 </script>
 <!--end::Auth Guard-->
 
@@ -56,17 +61,17 @@
 
 <!-- Global Preview Modal (image) -->
 <div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Ön İzleme</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center">
-                <img id="previewImage" src="#" alt="Ön İzleme" class="img-fluid rounded" />
-            </div>
-        </div>
-    </div>
+	<div class="modal-dialog modal-dialog-centered modal-lg">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Ön İzleme</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body text-center">
+				<img id="previewImage" src="#" alt="Ön İzleme" class="img-fluid rounded" />
+			</div>
+		</div>
+	</div>
 </div>
 
 <!--end::Javascript-->

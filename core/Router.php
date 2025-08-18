@@ -4,12 +4,38 @@ namespace core;
 class Router {
     public $routes = [];
 
+    private function getLogConfig() {
+        static $cfg = null;
+        if ($cfg !== null) { return $cfg; }
+        $path = __DIR__ . '/../config/app_logging.php';
+        $cfg = file_exists($path) ? (require $path) : ['enabled'=>true,'router'=>false,'slow'=>true];
+        return $cfg;
+    }
+
     private function logRequest($message) {
+        // Log kontrolü: DEBUG açık ise her zaman; aksi halde config'e bak
+        $cfg = $this->getLogConfig();
+        if (!(defined('DEBUG_MODE') && DEBUG_MODE)) {
+            if (empty($cfg['enabled']) || empty($cfg['router'])) { return; }
+        }
         try {
             $logDir = __DIR__ . '/../logs';
             if (!is_dir($logDir)) { @mkdir($logDir, 0775, true); }
             $line = '[' . date('Y-m-d H:i:s') . '] ' . ($message ?? '') . "\n";
             @file_put_contents($logDir . '/router.log', $line, FILE_APPEND);
+        } catch (\Throwable $e) {
+            // no-op
+        }
+    }
+
+    private function logSlow($message) {
+        $cfg = $this->getLogConfig();
+        if (empty($cfg['enabled']) || empty($cfg['slow'])) { return; }
+        try {
+            $logDir = __DIR__ . '/../logs/performance';
+            if (!is_dir($logDir)) { @mkdir($logDir, 0775, true); }
+            $line = '[' . date('Y-m-d H:i:s') . '] ' . ($message ?? '') . "\n";
+            @file_put_contents($logDir . '/access_slow.log', $line, FILE_APPEND);
         } catch (\Throwable $e) {
             // no-op
         }
@@ -225,6 +251,11 @@ class Router {
             call_user_func_array([$controller, $action], $allParameters);
             $durMs = round((microtime(true) - $start) * 1000);
             $this->logRequest("END {$method} /{$cleanUri} {$durMs}ms");
+            // Yavaş istekleri ayrı logla (DEBUG bağımsız)
+            $slowThreshold = (int)(getenv('SLOW_LOG_MS') ?: 2000);
+            if ($durMs >= $slowThreshold) {
+                $this->logSlow("{$method} /{$cleanUri} {$durMs}ms");
+            }
         } else {
             // Hata sayfasına yönlendir
             $this->logRequest("NOT_FOUND {$method} /{$cleanUri}");

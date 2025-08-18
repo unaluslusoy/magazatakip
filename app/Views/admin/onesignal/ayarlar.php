@@ -1,5 +1,5 @@
 <?php
-$title="<h2>Ayarlar</h2>";
+$title = "Ayarlar";
 $link = "OneSignal" ;
 
 require_once 'app/Views/layouts/header.php';

@@ -13,6 +13,7 @@
 		</div>
 		<div class="card-body">
 			<form method="post" class="row g-3">
+				<input type="hidden" name="_csrf" value="<?= htmlspecialchars(csrf_token()) ?>" />
 				<div class="col-md-6">
 					<label class="form-label">Satıcı ID (Cari ID)</label>
 					<input name="satici_cari_id" type="text" class="form-control" value="<?= htmlspecialchars($ayarlar['satici_cari_id'] ?? '') ?>" />
@@ -45,6 +46,14 @@
 				<div class="col-md-12">
 					<label class="form-label">Token</label>
 					<input name="token" type="text" class="form-control" value="<?= htmlspecialchars($ayarlar['token'] ?? '') ?>" />
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">Fiyat Çarpanı (%)</label>
+					<input name="price_markup_percent" type="text" inputmode="decimal" class="form-control" value="<?= htmlspecialchars((string)($ayarlar['price_markup_percent'] ?? '')) ?>" placeholder="örn: 25,00 => %25 artış" />
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">Sabit Fiyat Ekle (₺)</label>
+					<input name="price_add_abs" type="text" inputmode="decimal" class="form-control" value="<?= htmlspecialchars((string)($ayarlar['price_add_abs'] ?? '')) ?>" placeholder="örn: 1,25 => +₺1,25" />
 				</div>
 				<div class="col-md-6 form-check form-switch mt-3">
 					<input class="form-check-input" type="checkbox" role="switch" id="enabledSwitch" name="enabled" value="1" <?= !empty($ayarlar['enabled']) ? 'checked' : '' ?>>
@@ -179,7 +188,9 @@
 
 document.getElementById('btnHealth')?.addEventListener('click', async function(){
 	try {
-		const res = await fetch('/admin/trendyolgo/health');
+		const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+		const DEFAULT_HEADERS = { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': CSRF_TOKEN };
+		const res = await fetch('/admin/trendyolgo/health', { headers: DEFAULT_HEADERS, credentials: 'include' });
 		const d = await res.json();
 		const ok = d.service_ok ? 'Evet' : 'Hayır';
 		const base = d.base_url || '-';
@@ -196,7 +207,9 @@ document.getElementById('btnHealth')?.addEventListener('click', async function()
 document.getElementById('btnPreview')?.addEventListener('click', async function(){
 	try {
 		const storeId = document.getElementById('previewStoreId').value.trim();
-		const res = await fetch('/admin/trendyolgo/urunler/import-trigger' + (storeId?`?store_id=${encodeURIComponent(storeId)}`:''), { method:'POST' });
+		const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+		const DEFAULT_HEADERS = { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': CSRF_TOKEN };
+		const res = await fetch('/admin/trendyolgo/urunler/import-trigger' + (storeId?`?store_id=${encodeURIComponent(storeId)}`:''), { method:'POST', headers: DEFAULT_HEADERS, credentials: 'include' });
 		const data = await res.json();
 		const box = document.getElementById('importPreviewBox');
 		const tbody = document.getElementById('ayarPreviewTbody');
@@ -221,7 +234,9 @@ document.getElementById('btnImportAll')?.addEventListener('click', async functio
 		form.append('store_id', storeId);
 		form.append('per', '200');
 		form.append('max_pages', '100');
-		const res = await fetch('/admin/trendyolgo/urunler/import', { method:'POST', body: form });
+		const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+		const DEFAULT_HEADERS = { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': CSRF_TOKEN };
+		const res = await fetch('/admin/trendyolgo/urunler/import', { method:'POST', body: form, headers: DEFAULT_HEADERS, credentials: 'include' });
 		const d = await res.json();
 		if (d.success && window.Swal) {
 			Swal.fire({ toast:true, position:'top-end', icon:'success', title:`${d.inserted_or_updated} ürün kaydedildi`, showConfirmButton:false, timer:3000 });
@@ -238,7 +253,9 @@ document.getElementById('btnCronTrigger')?.addEventListener('click', async funct
 		const form = new FormData();
 		form.append('per', '200');
 		form.append('max_pages', '100');
-		const res = await fetch('/admin/trendyolgo/cron/import-all', { method:'POST', body: form });
+		const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+		const DEFAULT_HEADERS = { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': CSRF_TOKEN };
+		const res = await fetch('/admin/trendyolgo/cron/import-all', { method:'POST', body: form, headers: DEFAULT_HEADERS, credentials: 'include' });
 		const d = await res.json();
 		this.disabled = false;
 		this.innerText = 'Cronu Tetikle';
@@ -272,7 +289,9 @@ document.querySelectorAll('.btnStoreImport')?.forEach(btn => {
 			form.append('store_id', sid);
 			form.append('per', '200');
 			form.append('max_pages', '100');
-			const res = await fetch('/admin/trendyolgo/urunler/import', { method:'POST', body: form });
+			const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+			const DEFAULT_HEADERS = { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': CSRF_TOKEN };
+			const res = await fetch('/admin/trendyolgo/urunler/import', { method:'POST', body: form, headers: DEFAULT_HEADERS, credentials: 'include' });
 			const d = await res.json();
 			this.disabled = false;
 			if (d.success) {
@@ -292,7 +311,9 @@ document.querySelectorAll('.btnStoreImport')?.forEach(btn => {
 // Loglar aynı kaldı
 async function loadLogs(){
 	try {
-		const res = await fetch('/admin/trendyolgo/loglar');
+		const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+		const DEFAULT_HEADERS = { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': CSRF_TOKEN };
+		const res = await fetch('/admin/trendyolgo/loglar', { headers: DEFAULT_HEADERS, credentials: 'include' });
 		const d = await res.json();
 		const tbody = document.getElementById('tgoLogsBody');
 		tbody.innerHTML = '';
@@ -312,7 +333,9 @@ async function loadLogs(){
 document.getElementById('btnLogsYenile')?.addEventListener('click', loadLogs);
 document.getElementById('btnLogsTemizle')?.addEventListener('click', async function(){
 	if (!confirm('Logları temizlemek istediğinize emin misiniz?')) return;
-	const res = await fetch('/admin/trendyolgo/loglar/temizle', { method: 'POST' });
+	const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+	const DEFAULT_HEADERS = { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': CSRF_TOKEN };
+	const res = await fetch('/admin/trendyolgo/loglar/temizle', { method: 'POST', headers: DEFAULT_HEADERS, credentials: 'include' });
 	const d = await res.json();
 	if (d.success) { if (window.Swal) { Swal.fire({ toast:true, position:'top-end', icon:'success', title:'Loglar temizlendi', showConfirmButton:false, timer:2500 }); } loadLogs(); }
 });

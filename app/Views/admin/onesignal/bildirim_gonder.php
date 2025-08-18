@@ -1,5 +1,5 @@
 <?php
-$title="<h2>Bildirim Gönder</h2>";
+$title = "Bildirim Gönder";
 $link = "Bildirim" ;
 
 require_once 'app/Views/layouts/header.php';

@@ -58,7 +58,9 @@ class TrendyolUrun extends Model
 			'idx_brand' => 'CREATE INDEX idx_brand_name ON ' . $this->table . ' (brand_name)',
 			'idx_category' => 'CREATE INDEX idx_category_id ON ' . $this->table . ' (category_id)',
             'idx_selling' => 'CREATE INDEX idx_selling_price ON ' . $this->table . ' (selling_price)',
-            'idx_modified' => 'CREATE INDEX idx_modified_ts ON ' . $this->table . ' (modified_ts)'
+            'idx_modified' => 'CREATE INDEX idx_modified_ts ON ' . $this->table . ' (modified_ts)',
+            'idx_sku' => 'CREATE INDEX idx_sku ON ' . $this->table . ' (sku)',
+            'idx_stock_code' => 'CREATE INDEX idx_stock_code ON ' . $this->table . ' (stock_code)'
 		];
 		foreach ($indexes as $name => $sql) {
 			try { $this->db->exec($sql); } catch (\Throwable $e) { /* already exists */ }
@@ -181,7 +183,7 @@ class TrendyolUrun extends Model
 					'categoryId' => $r['category_id'] ?? null,
 					'categoryName' => $r['category_name'] ?? null,
 					'imageUrl' => $r['image_url'] ?? null,
-					'storeIds' => $r['store_ids'] ?? '',
+					' storeIds' => $r['store_ids'] ?? '',
 					'sku' => $r['sku'] ?? null,
 					// Ana listede stok toplama yapma: kullanıcı talebi gereği stok alanını boş bırakıyoruz
 					'stock' => null,
@@ -214,8 +216,11 @@ class TrendyolUrun extends Model
 			$where = 'WHERE store_id = :sid';
 			$params = [ ':sid' => $storeId ];
 			if ($search !== '') {
-				$where .= ' AND (barcode LIKE :q OR title LIKE :q OR brand_name LIKE :q)';
-				$params[':q'] = '%' . $search . '%';
+				$where .= ' AND (barcode = :qb OR sku = :qs OR stock_code = :qc OR title LIKE :qt OR brand_name LIKE :qt)';
+				$params[':qb'] = $search;
+				$params[':qs'] = $search;
+				$params[':qc'] = $search;
+				$params[':qt'] = '%' . $search . '%';
 			}
 			// Filtreli toplam
 			$sqlFiltered = "SELECT COUNT(*) AS c FROM {$this->table} {$where}";
@@ -281,8 +286,11 @@ class TrendyolUrun extends Model
 			$where = 'WHERE store_id = :sid';
 			$params = [ ':sid' => $storeId ];
 			if ($search !== '') {
-				$where .= ' AND (barcode LIKE :q OR title LIKE :q OR brand_name LIKE :q)';
-				$params[':q'] = '%' . $search . '%';
+				$where .= ' AND (barcode = :qb OR sku = :qs OR stock_code = :qc OR title LIKE :qt OR brand_name LIKE :qt)';
+				$params[':qb'] = $search;
+				$params[':qs'] = $search;
+				$params[':qc'] = $search;
+				$params[':qt'] = '%' . $search . '%';
 			}
 			$sqlFiltered = "SELECT COUNT(*) AS c FROM {$this->table} {$where}";
 			$stmtF = $this->db->prepare($sqlFiltered);
@@ -304,7 +312,7 @@ class TrendyolUrun extends Model
 		$whereFiltered = $whereAll;
 		$paramsFiltered = $paramsAll;
 		if ($search !== '') {
-			$whereFiltered[] = '(barcode LIKE :q OR title LIKE :q OR brand_name LIKE :q)';
+			$whereFiltered[] = '(barcode LIKE :q OR title LIKE :q OR brand_name LIKE :q OR sku LIKE :q OR stock_code LIKE :q)';
 			$paramsFiltered[':q'] = '%' . $search . '%';
 		}
 		$whereFilteredSql = empty($whereFiltered) ? '' : ('WHERE ' . implode(' AND ', $whereFiltered));

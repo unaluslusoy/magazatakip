@@ -13,10 +13,7 @@ class GiderApiController extends Controller {
     public function __construct() {
         $this->giderModel = new Gider();
         
-        // API için CORS headers
-        header('Access-Control-Allow-Origin: *');
-        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+        // Response tipi
         header('Content-Type: application/json; charset=utf-8');
         
         // Cache prevention headers
@@ -26,11 +23,7 @@ class GiderApiController extends Controller {
         header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
         header('ETag: "' . md5(time()) . '"');
         
-        // OPTIONS request için
-        if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-            http_response_code(200);
-            exit();
-        }
+        // OPTIONS istekleri ApiAuthMiddleware içinde handle edilir
     }
     
     /**
@@ -423,12 +416,19 @@ class GiderApiController extends Controller {
             $kullanici = $kullaniciModel->get($_SESSION['user_id']);
             $magaza_id = $kullanici ? $kullanici['magaza_id'] : null;
             
-            $stats = [
-                'bugun' => $this->giderModel->getTodayTotal($magaza_id),
-                'bu_ay' => $this->giderModel->getMonthlyTotal($magaza_id),
-                'bu_yil' => $this->giderModel->getYearlyTotal($magaza_id),
-                'toplam' => $this->giderModel->getTotal($magaza_id)
-            ];
+            // 30 sn cache
+            $cacheKey = 'gider_stats_user_' . (int)($_SESSION['user_id']);
+            $cache = \core\CacheManager::getInstance();
+            $stats = $cache->get($cacheKey);
+            if ($stats === null) {
+                $stats = [
+                    'bugun' => $this->giderModel->getTodayTotal($magaza_id),
+                    'bu_ay' => $this->giderModel->getMonthlyTotal($magaza_id),
+                    'bu_yil' => $this->giderModel->getYearlyTotal($magaza_id),
+                    'toplam' => $this->giderModel->getTotal($magaza_id)
+                ];
+                $cache->set($cacheKey, $stats, 30);
+            }
             
             $response = [
                 'success' => true,

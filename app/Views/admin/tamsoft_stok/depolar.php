@@ -55,15 +55,20 @@
 		}
 		el.textContent = msg;
 	}
+	const CSRF = (document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'))||'';
 	document.addEventListener('change', async (e)=>{
 		const el = e.target; if (el && el.matches('input[type="checkbox"][data-id]')){
-			const fd = new FormData(); fd.append('id', el.getAttribute('data-id')); fd.append('aktif', el.checked ? '1':'0');
-			await fetch('/admin/tamsoft-stok/depolar/set-active', { method:'POST', body: fd });
+			const fd = new FormData(); fd.append('id', el.getAttribute('data-id')); fd.append('aktif', el.checked ? '1':'0'); fd.append('_csrf', CSRF);
+			const r = await fetch('/admin/tamsoft-stok/depolar/set-active', { method:'POST', body: fd, headers: { 'X-CSRF-Token': CSRF } });
+			try{ const d = await r.json(); showToast(d.success? 'Güncellendi':'Hata oluştu','info'); }catch(e){}
 		}
 	});
-	document.getElementById('btnSync').addEventListener('click', async ()=>{
-		await fetch('/admin/tamsoft-stok/depolar/sync', { method:'POST' });
-		load();
+	const btnSync = document.getElementById('btnSync');
+	if (btnSync) btnSync.addEventListener('click', async ()=>{
+		btnSync.disabled = true; const old = btnSync.innerText; btnSync.innerText = 'Senkronize ediliyor...';
+		const r = await fetch('/admin/tamsoft-stok/depolar/sync', { method:'POST', headers: { 'X-CSRF-Token': CSRF } });
+		btnSync.disabled = false; btnSync.innerText = old; load();
+		try{ const d = await r.json(); showToast(d.success? 'Depolar güncellendi':'Hata oluştu','success'); }catch(e){}
 	});
 	load();
 })();

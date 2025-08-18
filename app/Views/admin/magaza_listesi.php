@@ -1,6 +1,6 @@
 <?php
-$title="<h2>Mağaza Listesi</h2>" ;
-$link="Mağazalar" ;
+$title = "Mağaza Listesi" ;
+$link = "Mağazalar" ;
 require_once 'app/Views/layouts/header.php';
 require_once 'app/Views/layouts/navbar.php';
 ?>

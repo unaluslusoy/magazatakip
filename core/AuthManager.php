@@ -135,11 +135,27 @@ class AuthManager {
      */
     public function login($email, $password, $remember = false) {
         $this->logActivity("Giriş denemesi: $email");
+
+        // Brute-force koruması
+        try {
+            $sec = $this->config['security'] ?? [];
+            $maxAttempts = (int)($sec['max_login_attempts'] ?? 5);
+            $lockSeconds = (int)($sec['lockout_duration'] ?? 900);
+            if (!class_exists('core\\Request')) { require_once __DIR__ . '/Request.php'; }
+            $ip = \core\Request::getClientIp();
+            $key = 'login_attempts:' . sha1(strtolower($email) . '|' . $ip);
+            $attempt = $this->cache->get($key) ?: ['count'=>0,'first'=>time()];
+            $now = time();
+            if ($attempt['count'] >= $maxAttempts && ($now - $attempt['first']) < $lockSeconds) {
+                return [ 'success' => false, 'message' => 'Çok fazla deneme. Lütfen sonra tekrar deneyin.' ];
+            }
+        } catch (\Throwable $e) { /* sessiz geç */ }
         
         $user = $this->getKullaniciModel()->getByEmail($email);
         
         if (!$user) {
             $this->logActivity("Kullanıcı bulunamadı: $email");
+            $this->recordLoginAttempt($email, isset($attempt) ? $attempt : null);
             return [
                 'success' => false,
                 'message' => 'Hatalı email veya şifre.'
@@ -148,6 +164,7 @@ class AuthManager {
         
         if (!password_verify($password, $user['sifre'])) {
             $this->logActivity("Hatalı şifre: " . $user['id']);
+            $this->recordLoginAttempt($email, isset($attempt) ? $attempt : null);
             return [
                 'success' => false,
                 'message' => 'Hatalı email veya şifre.'
@@ -156,6 +173,12 @@ class AuthManager {
         
         // Başarılı giriş
         $this->createSession($user);
+        // Başarılı girişte denemeleri temizle
+        try {
+            if (!class_exists('core\\Request')) { require_once __DIR__ . '/Request.php'; }
+            $rip = \core\Request::getClientIp();
+            $this->cache->delete('login_attempts:' . sha1(strtolower($email) . '|' . $rip));
+        } catch (\Throwable $e) {}
         
         // "Beni Hatırla" mantığı
         if ($remember) {
@@ -175,6 +198,22 @@ class AuthManager {
             'user' => $user,
             'redirect' => $this->getRedirectUrl($user)
         ];
+    }
+
+    private function recordLoginAttempt($email, $attempt)
+    {
+        try {
+            $sec = $this->config['security'] ?? [];
+            $lockSeconds = (int)($sec['lockout_duration'] ?? 900);
+            if (!class_exists('core\\Request')) { require_once __DIR__ . '/Request.php'; }
+            $ip = \core\Request::getClientIp();
+            $key = 'login_attempts:' . sha1(strtolower($email) . '|' . $ip);
+            $now = time();
+            $data = $attempt ?: ['count'=>0,'first'=>$now];
+            if (($now - $data['first']) >= $lockSeconds) { $data = ['count'=>0,'first'=>$now]; }
+            $data['count'] = ($data['count'] ?? 0) + 1;
+            $this->cache->set($key, $data, $lockSeconds);
+        } catch (\Throwable $e) { /* sessiz */ }
     }
     
     /**
