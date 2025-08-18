@@ -6,30 +6,43 @@ use app\Models\TamsoftStockRepo;
 use app\Models\TamsoftStockConfig;
 use app\Http\TamsoftHttpClient;
 use app\Utils\RateLimiter;
+use app\Services\TamsoftStockService;
 
 /**
  * Depo bazlı stok senkron servisi (iskele).
  */
 class DepotSyncService
 {
-\tprivate TamsoftStockRepo $repo;
-\tprivate TamsoftStockConfig $cfg;
-\tprivate TamsoftHttpClient $http;
-\tprivate RateLimiter $limiter;
+	private TamsoftStockRepo $repo;
+	private TamsoftStockConfig $cfg;
+	private TamsoftHttpClient $http;
+	private RateLimiter $limiter;
+	private TamsoftStockService $legacy;
 
-\tpublic function __construct()
-\t{
-\t\t$this->repo = new TamsoftStockRepo();
-\t\t$this->cfg = new TamsoftStockConfig();
-\t\t$this->http = new TamsoftHttpClient();
-\t\t$intervalMs = (int)($this->cfg->getConfig()['throttle_ms'] ?? 75);
-\t\t$this->limiter = new RateLimiter(max(0, $intervalMs));
-\t}
+	public function __construct()
+	{
+		$this->repo = new TamsoftStockRepo();
+		$this->cfg = new TamsoftStockConfig();
+		$this->http = new TamsoftHttpClient();
+		$intervalMs = (int)($this->cfg->getConfig()['throttle_ms'] ?? 75);
+		$this->limiter = new RateLimiter(max(0, $intervalMs));
+		$this->legacy = new TamsoftStockService();
+	}
 
-\tpublic function ping(): array
-\t{
-\t\treturn ['success'=>true, 'service'=>'DepotSyncService'];
-\t}
+	public function ping(): array
+	{
+		return ['success'=>true, 'service'=>'DepotSyncService'];
+	}
+
+	public function refreshStocks(?string $date = null, ?int $depoId = null, bool $onlyPositive = true, ?bool $lastBarcodeOnly = null, ?bool $onlyEcommerce = null): array
+	{
+		return $this->legacy->refreshStocks($date, $depoId, $onlyPositive, $lastBarcodeOnly, $onlyEcommerce);
+	}
+
+	public function refreshDepotQtyFromEcommerce(?string $date = null, ?int $depoId = null, int $maxPages = 200, int $batch = 100): array
+	{
+		return $this->legacy->refreshDepotQtyFromEcommerce($date, $depoId, $maxPages, $batch);
+	}
 }
 
 

@@ -5,6 +5,7 @@ namespace app\Services\Tamsoft;
 use app\Models\TamsoftStockRepo;
 use app\Models\TamsoftStockConfig;
 use app\Http\TamsoftHttpClient;
+use app\Services\TamsoftStockService;
 
 /**
  * Ürün master senkron servisi (iskele). Mevcut TamsoftStockService ile çakışmayacak şekilde kurgulandı.
@@ -12,21 +13,28 @@ use app\Http\TamsoftHttpClient;
  */
 class MasterSyncService
 {
-\tprivate TamsoftStockRepo $repo;
-\tprivate TamsoftStockConfig $cfg;
-\tprivate TamsoftHttpClient $http;
+	private TamsoftStockRepo $repo;
+	private TamsoftStockConfig $cfg;
+	private TamsoftHttpClient $http;
+	private TamsoftStockService $legacy;
 
-\tpublic function __construct()
-\t{
-\t\t$this->repo = new TamsoftStockRepo();
-\t\t$this->cfg = new TamsoftStockConfig();
-\t\t$this->http = new TamsoftHttpClient();
-\t}
+	public function __construct()
+	{
+		$this->repo = new TamsoftStockRepo();
+		$this->cfg = new TamsoftStockConfig();
+		$this->http = new TamsoftHttpClient();
+		$this->legacy = new TamsoftStockService();
+	}
 
-\tpublic function ping(): array
-\t{
-\t\treturn ['success'=>true, 'service'=>'MasterSyncService'];
-\t}
+	public function ping(): array
+	{
+		return ['success'=>true, 'service'=>'MasterSyncService'];
+	}
+
+	public function monthlyProductMasterSync(?int $preferredDepotId = null): array
+	{
+		return $this->legacy->monthlyProductMasterSync($preferredDepotId);
+	}
 }
 
 
