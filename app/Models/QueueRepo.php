@@ -43,22 +43,26 @@ class QueueRepo extends Model
 
     public function reserveNext(string $workerId): ?array
     {
-        // Atomik rezervasyon: pending durumdaki en eski işi rezerve et
-        $this->db->beginTransaction();
+        // Kilitsiz atomik rezervasyon: UPDATE ... ORDER BY ... LIMIT 1 ile tek satırı rezerve et
         try {
-            $sel = $this->db->prepare("SELECT id FROM job_queue WHERE status='pending' AND available_at <= NOW() ORDER BY id ASC LIMIT 1 FOR UPDATE");
-            $sel->execute();
-            $id = $sel->fetchColumn();
-            if (!$id) { $this->db->commit(); return null; }
-            $upd = $this->db->prepare("UPDATE job_queue SET status='reserved', reserved_at=NOW(), worker_id=:w, updated_at=NOW() WHERE id=:id");
-            $upd->execute([':w'=>$workerId, ':id'=>$id]);
-            $get = $this->db->prepare("SELECT * FROM job_queue WHERE id=:id");
-            $get->execute([':id'=>$id]);
+            $upd = $this->db->prepare(
+                "UPDATE job_queue SET status='reserved', reserved_at=NOW(), worker_id=:w, updated_at=NOW() 
+                 WHERE id = (
+                   SELECT id FROM (
+                     SELECT id FROM job_queue 
+                     WHERE status='pending' AND available_at <= NOW() 
+                     ORDER BY id ASC LIMIT 1
+                   ) AS t
+                 )"
+            );
+            $upd->execute([':w'=>$workerId]);
+            if ($upd->rowCount() < 1) { return null; }
+            // Son rezerve edilen kaydı getir (aynı worker_id ile en yeni reserved satır)
+            $get = $this->db->prepare("SELECT * FROM job_queue WHERE worker_id=:w AND status='reserved' ORDER BY reserved_at DESC, id DESC LIMIT 1");
+            $get->execute([':w'=>$workerId]);
             $row = $get->fetch(\PDO::FETCH_ASSOC) ?: null;
-            $this->db->commit();
             return $row ?: null;
         } catch (\Throwable $e) {
-            $this->db->rollBack();
             return null;
         }
     }
