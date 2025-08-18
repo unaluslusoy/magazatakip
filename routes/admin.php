@@ -144,6 +144,7 @@ $router->post('/admin/tamsoft-stok/depolar/sync', 'Admin\\TamsoftStockController
 $router->post('/admin/tamsoft-stok/depolar/refresh-parallel', 'Admin\\TamsoftStockController@depolarRefreshParallel');
 $router->get('/admin/tamsoft-stok/depolar/preview', 'Admin\\TamsoftStockController@depolarPreview');
 $router->post('/admin/tamsoft-stok/stok/preview', 'Admin\\TamsoftStockController@stokPreview');
+$router->get('/admin/tamsoft-stok/ecommerce/preview', 'Admin\\TamsoftStockController@ecommercePreview');
 $router->post('/admin/tamsoft-stok/price-refresh', 'Admin\\TamsoftStockController@priceRefresh');
 $router->post('/admin/tamsoft-stok/cron/stock-sync', 'Admin\\TamsoftStockController@cronStockSync');
 $router->post('/admin/tamsoft-stok/cron/monthly-master', 'Admin\\TamsoftStockController@cronMonthlyMaster');
@@ -162,6 +163,7 @@ $router->post('/admin/tamsoft-stok/import', 'Admin\\TamsoftStockController@impor
 $router->get('/admin/tamsoft-stok/jobs', 'Admin\\TamsoftStockController@jobsPage');
 $router->get('/admin/tamsoft-stok/jobs/list', 'Admin\\TamsoftStockController@jobsList');
 $router->get('/admin/tamsoft-stok/jobs/runs', 'Admin\\TamsoftStockController@jobsRuns');
+$router->get('/admin/tamsoft-stok/cron/list', 'Admin\\TamsoftStockController@cronList');
 $router->post('/admin/tamsoft-stok/jobs/run', 'Admin\\TamsoftStockController@jobsRun');
 $router->post('/admin/tamsoft-stok/jobs/toggle', 'Admin\\TamsoftStockController@jobsToggle');
 $router->post('/admin/tamsoft-stok/jobs/lock/release', 'Admin\\TamsoftStockController@jobsLockRelease');

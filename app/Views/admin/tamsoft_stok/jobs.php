@@ -19,6 +19,7 @@
 		<div class="card-body">
 			<div class="d-flex gap-2 mb-3">
 				<button class="btn btn-sm btn-outline-primary" id="btnScheduleNow">Due Jobları Kuyruğa Al</button>
+				<button class="btn btn-sm btn-outline-secondary" id="btnLoadCron">Sunucu Cron'u Göster</button>
 			</div>
 			<div class="table-responsive">
 				<table class="table table-striped align-middle" id="tbJobs">
@@ -40,6 +41,13 @@
 			<h5>Son Çalıştırmalar</h5>
 			<pre id="runsBox" class="bg-light p-3" style="max-height:300px; overflow:auto"></pre>
 			<div class="mt-3"></div>
+			<div class="mt-4">
+				<h5>Sunucu Cron (okunur)</h5>
+				<div class="d-flex gap-2 mb-2">
+					<button class="btn btn-sm btn-light" id="btnCopyCron">Kopyala</button>
+				</div>
+				<pre id="cronBox" class="bg-light p-3" style="max-height:260px; overflow:auto"></pre>
+			</div>
 		</div>
 	</div>
 </div>
@@ -145,6 +153,19 @@
 		try{ const d = await r.json(); showToast(d.success?'Job eklendi':('Hata: '+(d.error||'')), d.success?'success':'danger'); if (d.success) { e.currentTarget.reset(); load(); } }catch(e){}
 	});
 	load();
+	// Cron listesi göster/kopyala
+	document.getElementById('btnLoadCron')?.addEventListener('click', async ()=>{
+		try{
+			const r = await fetch('/admin/tamsoft-stok/cron/list');
+			const d = await r.json();
+			document.getElementById('cronBox').textContent = d && d.success ? (d.output||[]).join('\n') : 'Okunamadı';
+		}catch(e){ document.getElementById('cronBox').textContent = 'Hata'; }
+	});
+	document.getElementById('btnCopyCron')?.addEventListener('click', ()=>{
+		const txt = document.getElementById('cronBox').textContent || '';
+		navigator.clipboard?.writeText(txt);
+		showToast('Kopyalandı','info');
+	});
 })();
 </script>
 <!-- Debug Modal -->

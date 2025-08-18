@@ -630,6 +630,51 @@ class TamsoftStockService
 		];
 	}
 
+	/**
+	 * Yeni endpoint önizleme: EticaretStokListesi (ilk N kayıt)
+	 * Dönen alanlar: UrunKodu, UrunAdi, Tutar, Envanter, trendyol_marketplace
+	 */
+	public function previewEcommerceStock(?string $date, ?int $depoId, int $limit = 4): array
+	{
+		$cfg = $this->cfg->getConfig();
+		$date = $date ?: (string)($cfg['default_date'] ?? '1900-01-01');
+		$token = $this->getToken();
+		$base = rtrim((string)($cfg['api_url'] ?? ''), '/');
+		// depo yoksa ilk aktif depo
+		if ($depoId === null) {
+			$active = $this->repo->getActiveDepotsFromDb();
+			if (!empty($active)) { $depoId = (int)$active[0]['id']; }
+		}
+		$params = [ 'tarih' => $date ]; if ($depoId) { $params['depoid'] = $depoId; }
+		$url = $base . '/api/Integration/EticaretStokListesi?' . http_build_query($params);
+		$meta = $this->httpGetMeta($url, $token);
+		$data = is_array($meta['json'] ?? null) ? $meta['json'] : [];
+		$rows = [];
+		$take = array_slice($data ?: [], 0, max(0, $limit));
+		$db = $this->repoDb();
+		$mapStmt = $db->prepare('SELECT trendyolgo_sku FROM urun_entegrasyon_map WHERE urun_kodu=:e OR barkod=:b LIMIT 1');
+		foreach ($take as $r) {
+			$ext = (string)($r['UrunKodu'] ?? '');
+			$barcode = (string)($r['Barkod'] ?? ($r['barkod'] ?? ''));
+			$sku = null; try { $mapStmt->execute([':e'=>$ext, ':b'=>$barcode]); $sku = $mapStmt->fetchColumn() ?: null; } catch (\Throwable $e) {}
+			$rows[] = [
+				'UrunKodu' => $ext,
+				'UrunAdi' => (string)($r['UrunAdi'] ?? ''),
+				'Tutar' => $this->normalizeDecimal($r['Tutar'] ?? null),
+				'Envanter' => isset($r['Envanter']) ? (float)$r['Envanter'] : null,
+				'trendyol_marketplace' => $sku,
+			];
+		}
+		return [
+			'success' => true,
+			'preview_count' => count($rows),
+			'rows' => $rows,
+			'endpoint' => $url,
+			'http_code' => $meta['http_code'] ?? null,
+			'raw_sample' => array_slice(is_array($data)?$data:[], 0, min(5, $limit)),
+		];
+	}
+
 	public function refreshStocks(?string $date = null, ?int $depoId = null, bool $onlyPositive = true, ?bool $lastBarcodeOnly = null, ?bool $onlyEcommerce = null): array
 	{
 		$cfg = $this->cfg->getConfig();

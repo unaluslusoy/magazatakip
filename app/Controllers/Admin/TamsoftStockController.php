@@ -194,6 +194,16 @@ class TamsoftStockController extends Controller
 		echo json_encode($this->svc->previewStocks($date, $depo, $onlyPos, $lastBarcode, $onlyEcom));
 	}
 
+	// Yeni: E-ticaret stok önizleme (4 kayıt)
+	public function ecommercePreview()
+	{
+		header('Content-Type: application/json; charset=utf-8');
+		$cfg = $this->svc->getConfig();
+		$date = $_GET['tarih'] ?? ($cfg['default_date'] ?? '1900-01-01');
+		$depo = isset($_GET['depoid']) && $_GET['depoid'] !== '' ? (int)$_GET['depoid'] : null;
+		echo json_encode($this->svc->previewEcommerceStock($date, $depo, 4));
+	}
+
 	// Manuel fiyat güncelleme tetikleme (yalnızca fiyat çekip günceller)
 	public function priceRefresh()
 	{
@@ -504,6 +514,20 @@ class TamsoftStockController extends Controller
 			$rows = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
 			echo json_encode(['success'=>true,'rows'=>$rows]);
 		} catch (\Throwable $e) { echo json_encode(['success'=>false,'error'=>$e->getMessage()]); }
+	}
+
+	// Sunucu cron (kullanıcı crontab) okunur liste
+	public function cronList()
+	{
+		header('Content-Type: application/json; charset=utf-8');
+		try {
+			$raw = @shell_exec('crontab -l 2>&1');
+			$raw = is_string($raw) ? $raw : '';
+			$lines = array_values(array_filter(array_map('rtrim', explode("\n", $raw)), fn($x)=>$x!==''));
+			echo json_encode(['success'=>true,'output'=>$lines], JSON_UNESCAPED_UNICODE);
+		} catch (\Throwable $e) {
+			echo json_encode(['success'=>false,'error'=>$e->getMessage()]);
+		}
 	}
 
 	public function jobsLockRelease()
