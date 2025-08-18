@@ -172,9 +172,10 @@ class TamsoftStockRepo extends Model
 	public function upsertDepot(int $depoId, ?string $depoAdi): void
 	{
 		// depo_adi asla NULL'a düşmesin: NULL veya '' gelirse mevcut adı koru
+		// Not: Aktif/pasif kullanıcı tercihidir; DUPLICATE durumda aktif alanını DEĞİŞTİRME
 		$sql = "INSERT INTO tamsoft_depolar(depo_id, depo_adi, aktif) VALUES(:did,:ad,1)
 			ON DUPLICATE KEY UPDATE depo_adi=CASE WHEN VALUES(depo_adi) IS NULL OR VALUES(depo_adi) = '' THEN tamsoft_depolar.depo_adi ELSE VALUES(depo_adi) END,
-			aktif=1";
+			aktif=tamsoft_depolar.aktif";
 		$this->db->prepare($sql)->execute([':did'=>$depoId, ':ad'=>$depoAdi]);
 	}
 
@@ -604,9 +605,15 @@ class TamsoftStockRepo extends Model
 	public function setDepotActive(int $depoId, bool $active): bool
 	{
 		try {
+			// Kayıt yoksa oluşturup aktif/pasif ayarla, varsa sadece aktif kolonunu güncelle
+			$this->db->beginTransaction();
+			$this->db->prepare("INSERT IGNORE INTO tamsoft_depolar(depo_id, depo_adi, aktif) VALUES(:id, NULL, :a)")
+				->execute([':id'=>$depoId, ':a'=>$active?1:0]);
 			$stmt = $this->db->prepare("UPDATE tamsoft_depolar SET aktif=:a WHERE depo_id=:id");
-			return $stmt->execute([':a'=>$active?1:0, ':id'=>$depoId]);
-		} catch (\Throwable $e) { return false; }
+			$ok = $stmt->execute([':a'=>$active?1:0, ':id'=>$depoId]);
+			$this->db->commit();
+			return $ok;
+		} catch (\Throwable $e) { try { $this->db->rollBack(); } catch (\Throwable $e2) {} return false; }
 	}
 
 	public function ensureDepotRows(int $depoId): void
