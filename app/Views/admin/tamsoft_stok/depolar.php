@@ -5,7 +5,9 @@
 	<div class="card">
 		<div class="card-header d-flex justify-content-between align-items-center">
 			<h3 class="card-title mb-0">Depolar</h3>
-			
+			<div class="d-flex gap-2">
+				<button class="btn btn-sm btn-outline-secondary" id="btnDebug">Debug</button>
+			</div>
 		</div>
 		<div class="card-body">
 			<div class="table-responsive">
@@ -18,14 +20,36 @@
 	</div>
 </div>
 <?php require_once __DIR__ . '/../../layouts/footer.php'; ?>
+<!-- Debug Modal -->
+<div class="modal fade" id="dbgModal" tabindex="-1" aria-hidden="true">
+	<div class="modal-dialog modal-lg">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Debug Çıktısı</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+			</div>
+			<div class="modal-body">
+				<pre id="dbgPre" class="bg-light p-3" style="max-height:60vh; overflow:auto"></pre>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+			</div>
+		</div>
+	</div>
+</div>
 <script>
 (async function(){
+	let lastDebug = null;
+	const dbgModal = new bootstrap.Modal(document.getElementById('dbgModal'));
+	const dbgPre = document.getElementById('dbgPre');
+	function showDebug(data){ try{ dbgPre.textContent = (typeof data==='string')?data:JSON.stringify(data,null,2); dbgModal.show(); }catch(e){ dbgPre.textContent = String(data); dbgModal.show(); } }
+	document.getElementById('btnDebug')?.addEventListener('click', ()=>{ showDebug(lastDebug || 'Debug verisi yok'); });
 	async function load(){
 		const tb = document.querySelector('#tbDepo tbody'); tb.innerHTML='';
 		try {
 			const resp = await fetch('/admin/tamsoft-stok/depolar/data', { headers: { 'Accept': 'application/json' } });
 			if (!resp.ok) { throw new Error('HTTP '+resp.status); }
-			const d = await resp.json();
+			const d = await resp.json(); lastDebug = d;
 			if (d && d.success && Array.isArray(d.rows)) {
 				(d.rows||[]).forEach(row=>{
 					const tr = document.createElement('tr');
@@ -60,7 +84,7 @@
 		const el = e.target; if (el && el.matches('input[type="checkbox"][data-id]')){
 			const fd = new FormData(); fd.append('id', el.getAttribute('data-id')); fd.append('aktif', el.checked ? '1':'0'); fd.append('_csrf', CSRF);
 			const r = await fetch('/admin/tamsoft-stok/depolar/set-active', { method:'POST', body: fd, headers: { 'X-CSRF-Token': CSRF } });
-			try{ const d = await r.json(); showToast(d.success? 'Güncellendi':'Hata oluştu','info'); }catch(e){}
+			try{ const d = await r.json(); lastDebug = d; showToast(d.success? 'Güncellendi':'Hata oluştu','info'); }catch(e){}
 		}
 	});
 	const btnSync = document.getElementById('btnSync');
@@ -68,7 +92,7 @@
 		btnSync.disabled = true; const old = btnSync.innerText; btnSync.innerText = 'Senkronize ediliyor...';
 		const r = await fetch('/admin/tamsoft-stok/depolar/sync', { method:'POST', headers: { 'X-CSRF-Token': CSRF } });
 		btnSync.disabled = false; btnSync.innerText = old; load();
-		try{ const d = await r.json(); showToast(d.success? 'Depolar güncellendi':'Hata oluştu','success'); }catch(e){}
+		try{ const d = await r.json(); lastDebug = d; showToast(d.success? 'Depolar güncellendi':'Hata oluştu','success'); }catch(e){}
 	});
 	load();
 })();

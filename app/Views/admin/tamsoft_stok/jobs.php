@@ -13,6 +13,7 @@
 					<button class="btn btn-sm btn-primary" type="submit">Ekle</button>
 				</form>
 				<button class="btn btn-sm btn-light" id="btnReload">Yenile</button>
+				<button class="btn btn-sm btn-outline-secondary" id="btnDebug">Debug</button>
 			</div>
 		</div>
 		<div class="card-body">
@@ -46,9 +47,14 @@
 <script>
 (function(){
 	const tb = document.querySelector('#tbJobs tbody');
+	let lastDebug = null;
+	const dbgModal = new bootstrap.Modal(document.getElementById('dbgModal'));
+	const dbgPre = document.getElementById('dbgPre');
+	function showDebug(data){ try{ dbgPre.textContent = (typeof data==='string')?data:JSON.stringify(data,null,2); dbgModal.show(); }catch(e){ dbgPre.textContent = String(data); dbgModal.show(); } }
+	document.getElementById('btnDebug')?.addEventListener('click', ()=>{ showDebug(lastDebug || 'Debug verisi yok'); });
 	async function load(){
 		const r = await fetch('/admin/tamsoft-stok/jobs/list');
-		const d = await r.json();
+		const d = await r.json(); lastDebug = d;
 		tb.innerHTML = '';
 		(d.rows||[]).forEach(j=>{
 			const tr = document.createElement('tr');
@@ -71,7 +77,7 @@
 	}
 	async function loadRuns(){
 		const r = await fetch('/admin/tamsoft-stok/jobs/runs?limit=50');
-		const d = await r.json();
+		const d = await r.json(); lastDebug = d;
 		document.getElementById('runsBox').textContent = JSON.stringify(d.rows||[], null, 2);
 	}
 	const CSRF = (document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'))||'';
@@ -79,7 +85,7 @@
 		const el = e.target; if (el && el.classList.contains('toggle')){
 			const fd = new FormData(); fd.append('job_key', el.getAttribute('data-key')); fd.append('enabled', el.checked?'1':'0'); fd.append('_csrf', CSRF);
 			const r = await fetch('/admin/tamsoft-stok/jobs/toggle', { method:'POST', body: fd, headers: { 'X-CSRF-Token': CSRF } });
-			try{ const d = await r.json(); showToast(d.success?'Güncellendi':'Hata','info'); }catch(e){}
+			try{ const d = await r.json(); lastDebug = d; showToast(d.success?'Güncellendi':'Hata','info'); }catch(e){}
 		}
 	});
 	document.addEventListener('click', async (e)=>{
@@ -88,7 +94,7 @@
 			const fd = new FormData(); fd.append('job_key', el.getAttribute('data-key')); fd.append('_csrf', CSRF);
 			el.disabled = true; const old=el.innerText; el.innerText = 'Çalışıyor...';
 			const r = await fetch('/admin/tamsoft-stok/jobs/run', { method:'POST', body: fd, headers: { 'X-CSRF-Token': CSRF } });
-			const d = await r.json(); el.disabled=false; el.innerText=old; showToast(d.success? 'Başarılı':'Hata: '+(d.error||''), d.success?'success':'danger');
+			const d = await r.json(); lastDebug = d; el.disabled=false; el.innerText=old; showToast(d.success? 'Başarılı':'Hata: '+(d.error||''), d.success?'success':'danger');
 			loadRuns();
 		}
 		if (el && el.classList.contains('unlock')){
@@ -102,7 +108,7 @@
 			el.disabled = true; const old = el.innerText; el.innerText='Siliniyor...';
 			const r = await fetch('/admin/tamsoft-stok/jobs/delete', { method:'POST', body: fd, headers: { 'X-CSRF-Token': CSRF } });
 			el.disabled = false; el.innerText = old;
-			try{ const d = await r.json(); showToast(d.success?'Silindi':('Hata: '+(d.error||'')), d.success?'success':'danger'); if(d.success){ load(); } }catch(e){}
+			try{ const d = await r.json(); lastDebug = d; showToast(d.success?'Silindi':('Hata: '+(d.error||'')), d.success?'success':'danger'); if(d.success){ load(); } }catch(e){}
 		}
 		if (el && el.id==='btnReload'){ load(); }
 		if (el && el.id==='btnScheduleNow'){
@@ -110,7 +116,7 @@
 			const fd = new FormData(); fd.append('_csrf', CSRF);
 			try{
 				const r = await fetch('/admin/tamsoft-stok/jobs/schedule-now', { method:'POST', body: fd, headers:{ 'X-CSRF-Token': CSRF } });
-				const d = await r.json();
+				const d = await r.json(); lastDebug = d;
 				showToast(d.success ? (`Kuyruğa alındı: ${d.enqueued||0}, güncellendi: ${d.updated||0}`) : ('Hata: '+(d.error||'')), d.success?'success':'danger');
 				if (d.success) { load(); }
 			}catch(e){ showToast('Hata', 'danger'); }
@@ -121,7 +127,7 @@
 			try{
 				const fd = new FormData(); fd.append('job_key','tamsoft_price_refresh'); fd.append('_csrf', CSRF);
 				const r = await fetch('/admin/tamsoft-stok/jobs/run', { method:'POST', body: fd, headers: { 'X-CSRF-Token': CSRF } });
-				const d = await r.json();
+				const d = await r.json(); lastDebug = d;
 				showToast(d.success ? 'Fiyat güncelleme kuyruğa alındı' : ('Hata: '+(d.error||'')), d.success?'success':'danger');
 				if (d.success) { loadRuns(); }
 			}catch(e){ showToast('Hata', 'danger'); }
@@ -141,6 +147,23 @@
 	load();
 })();
 </script>
+<!-- Debug Modal -->
+<div class="modal fade" id="dbgModal" tabindex="-1" aria-hidden="true">
+	<div class="modal-dialog modal-lg">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Debug Çıktısı</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+			</div>
+			<div class="modal-body">
+				<pre id="dbgPre" class="bg-light p-3" style="max-height:60vh; overflow:auto"></pre>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+			</div>
+		</div>
+	</div>
+</div>
 
 
 

@@ -12,6 +12,7 @@
 		<div class="card-body">
 			<div class="d-flex gap-2 mb-3">
 				<button class="btn btn-sm btn-outline-success" id="btnPriceRefreshManual">Fiyatları Güncelle (manuel)</button>
+				<button class="btn btn-sm btn-outline-secondary" id="btnDebug">Debug</button>
 			</div>
 			<div class="row g-3">
 				<div class="col-md-3">
@@ -95,7 +96,29 @@
 	</div>
 </div>
 <?php require_once __DIR__ . '/../../layouts/footer.php'; ?>
+<!-- Debug Modal -->
+<div class="modal fade" id="dbgModal" tabindex="-1" aria-hidden="true">
+	<div class="modal-dialog modal-lg">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Debug Çıktısı</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+			</div>
+			<div class="modal-body">
+				<pre id="dbgPre" class="bg-light p-3" style="max-height:60vh; overflow:auto"></pre>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+			</div>
+		</div>
+	</div>
+</div>
 <script>
+const box = document.getElementById('respBox');
+const dbgModal = new bootstrap.Modal(document.getElementById('dbgModal'));
+const dbgPre = document.getElementById('dbgPre');
+function showDebug(data){ try{ const txt = (typeof data==='string')?data:JSON.stringify(data,null,2); box.textContent = txt; dbgPre.textContent = txt; dbgModal.show(); }catch(e){ box.textContent = String(data); } }
+document.getElementById('btnDebug')?.addEventListener('click', ()=>{ const txt = box.textContent || 'Debug verisi yok'; dbgPre.textContent = txt; dbgModal.show(); });
 async function loadSummary(){
 	try{
 		const r = await fetch('/admin/tamsoft-stok/summary');
