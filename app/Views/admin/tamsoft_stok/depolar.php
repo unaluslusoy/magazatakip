@@ -60,7 +60,7 @@
 					tr.innerHTML = `
 						<td>${row.id}</td>
 						<td>${row.depo_adi ?? ''}</td>
-						<td><input type="checkbox" class="form-check-input" data-id="${row.id}" ${row.aktif? 'checked':''}></td>
+						<td><input type="checkbox" class="form-check-input" data-id="${row.id}" ${Number(row.aktif)===1 ? 'checked':''}></td>
 					`;
 					tb.appendChild(tr);
 				});
@@ -88,7 +88,7 @@
 		const el = e.target; if (el && el.matches('input[type="checkbox"][data-id]')){
 			const fd = new FormData(); fd.append('id', el.getAttribute('data-id')); fd.append('aktif', el.checked ? '1':'0'); fd.append('_csrf', CSRF);
 			const r = await fetch('/admin/tamsoft-stok/depolar/set-active', { method:'POST', body: fd, headers: { 'X-CSRF-Token': CSRF } });
-			try{ const d = await r.json(); lastDebug = d; showToast(d.success? 'Güncellendi':'Hata oluştu','info'); }catch(e){}
+			try{ const d = await r.json(); lastDebug = d; showToast(d.success? 'Güncellendi':'Hata oluştu','info'); if (d.success) { load(); } }catch(e){}
 		}
 	});
 	const btnSync = document.getElementById('btnSync');
