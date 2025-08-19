@@ -186,12 +186,14 @@ class TamsoftStockController extends Controller
 	{
 		header('Content-Type: application/json; charset=utf-8');
 		$cfg = $this->svc->getConfig();
-		$date = $_POST['tarih'] ?? ($cfg['default_date'] ?? '1900-01-01');
-		$depo = isset($_POST['depoid']) && $_POST['depoid'] !== '' ? (int)$_POST['depoid'] : null;
-		$onlyPos = isset($_POST['only_positive']) ? (bool)$_POST['only_positive'] : null;
-		$lastBarcode = isset($_POST['last_barcode_only']) ? (bool)$_POST['last_barcode_only'] : null;
-		$onlyEcom = isset($_POST['only_ecommerce']) ? (bool)$_POST['only_ecommerce'] : null;
-		echo json_encode($this->svc->previewStocks($date, $depo, $onlyPos, $lastBarcode, $onlyEcom));
+		$src = $_REQUEST; // GET veya POST desteği — önizleme için CSRF gerektirmeden çalışır
+		$date = $src['tarih'] ?? ($cfg['default_date'] ?? '1900-01-01');
+		$depo = isset($src['depoid']) && $src['depoid'] !== '' ? (int)$src['depoid'] : null;
+		$onlyPos = isset($src['only_positive']) ? (bool)$src['only_positive'] : null;
+		$lastBarcode = isset($src['last_barcode_only']) ? (bool)$src['last_barcode_only'] : null;
+		$onlyEcom = isset($src['only_ecommerce']) ? (bool)$src['only_ecommerce'] : null;
+		$limit = isset($src['limit']) && is_numeric($src['limit']) ? max(1, (int)$src['limit']) : 50;
+		echo json_encode($this->svc->previewStocks($date, $depo, $onlyPos, $lastBarcode, $onlyEcom, $limit));
 	}
 
 	// Yeni: E-ticaret stok önizleme (4 kayıt)
@@ -403,6 +405,33 @@ class TamsoftStockController extends Controller
 		} catch (\Throwable $e) { echo json_encode(['success'=>false,'error'=>$e->getMessage()]); }
 	}
 
+	// Aktif depolar için E-ticaret stok joblarını kuyrukla
+	public function jobsEnqueueActiveDepots()
+	{
+		header('Content-Type: application/json; charset=utf-8');
+		try {
+			$date = isset($_POST['tarih']) ? (string)$_POST['tarih'] : null;
+			$repo = new \app\Models\TamsoftStockRepo();
+			$depots = $repo->getActiveDepots();
+			$qr = new \app\Models\QueueRepo();
+			$enq = 0; $ids = [];
+			foreach ($depots as $d) {
+				$id = (int)($d['id'] ?? 0);
+				if ($id <= 0) { continue; }
+				// Kuyruk basıncı: global ve tip bazlı eşikler (gerekirse güncellenebilir)
+				$globalThreshold = 200; // pending toplam sınırı
+				$typeThreshold = 120;   // ilgili tip için sınır
+				if ($qr->isQueueOverloaded($globalThreshold)) { break; }
+				if ($qr->isQueueOverloaded($typeThreshold, 'tamsoft_ecommerce_stock')) { break; }
+				$qr->enqueue('tamsoft_ecommerce_stock', [ 'date' => $date, 'depo_id' => $id ]);
+				$enq++; $ids[] = $id;
+			}
+			echo json_encode(['success'=>true,'enqueued'=>$enq,'depots'=>$ids]);
+		} catch (\Throwable $e) {
+			echo json_encode(['success'=>false,'error'=>$e->getMessage()]);
+		}
+	}
+
 	// Yeni job ekle/sil
 	public function jobsCreate()
 	{
@@ -444,6 +473,17 @@ class TamsoftStockController extends Controller
 			$db = $this->svc->repoDb();
 			$stmt = $db->prepare("UPDATE job_schedule SET enabled=:e, updated_at=NOW() WHERE job_key=:k");
 			$ok = $stmt->execute([':e'=>$enabled, ':k'=>$key]);
+			echo json_encode(['success'=>$ok]);
+		} catch (\Throwable $e) { echo json_encode(['success'=>false,'error'=>$e->getMessage()]); }
+	}
+
+	// Hızlı: monthly_master'ı geçici devre dışı bırakma (admin panelinden çağrılabilir)
+	public function jobsDisableMonthlyMaster()
+	{
+		header('Content-Type: application/json; charset=utf-8');
+		try {
+			$db = $this->svc->repoDb();
+			$ok = $db->prepare("UPDATE job_schedule SET enabled=0, updated_at=NOW() WHERE job_key='tamsoft_monthly_master'")->execute();
 			echo json_encode(['success'=>$ok]);
 		} catch (\Throwable $e) { echo json_encode(['success'=>false,'error'=>$e->getMessage()]); }
 	}

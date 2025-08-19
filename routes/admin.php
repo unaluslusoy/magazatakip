@@ -104,6 +104,8 @@ $router->get('/admin/cloudflare', 'Admin\\CloudflareController@index');
 $router->post('/admin/cloudflare/save', 'Admin\\CloudflareController@save');
 $router->post('/admin/cloudflare/devmode', 'Admin\\CloudflareController@devModeToggle');
 $router->post('/admin/cloudflare/purge', 'Admin\\CloudflareController@purge');
+$router->get('/admin/cloudflare/devmode', 'Admin\\CloudflareController@devModeToggle');
+$router->get('/admin/cloudflare/purge', 'Admin\\CloudflareController@purge');
 $router->post('/admin/cloudflare/dns-create', 'Admin\\CloudflareController@dnsCreate');
 $router->post('/admin/cloudflare/dns-delete', 'Admin\\CloudflareController@dnsDelete');
 $router->post('/admin/cloudflare/ssl-set', 'Admin\\CloudflareController@sslSet');
@@ -140,15 +142,23 @@ $router->get('/admin/tamsoft-stok/envanter/export', 'Admin\\TamsoftStockControll
 $router->post('/admin/tamsoft-stok/envanter/map-save', 'Admin\\TamsoftStockController@mapSave');
 $router->post('/admin/tamsoft-stok/refresh', 'Admin\\TamsoftStockController@refresh');
 $router->post('/admin/tamsoft-stok/token-test', 'Admin\\TamsoftStockController@tokenTest');
+$router->get('/admin/tamsoft-stok/token-test', 'Admin\\TamsoftStockController@tokenTest');
 $router->post('/admin/tamsoft-stok/depolar/sync', 'Admin\\TamsoftStockController@depolarSync');
+$router->get('/admin/tamsoft-stok/depolar/sync', 'Admin\\TamsoftStockController@depolarSync');
 $router->post('/admin/tamsoft-stok/depolar/refresh-parallel', 'Admin\\TamsoftStockController@depolarRefreshParallel');
+$router->get('/admin/tamsoft-stok/depolar/refresh-parallel', 'Admin\\TamsoftStockController@depolarRefreshParallel');
 $router->get('/admin/tamsoft-stok/depolar/preview', 'Admin\\TamsoftStockController@depolarPreview');
 $router->post('/admin/tamsoft-stok/stok/preview', 'Admin\\TamsoftStockController@stokPreview');
+$router->get('/admin/tamsoft-stok/stok/preview', 'Admin\\TamsoftStockController@stokPreview');
 $router->get('/admin/tamsoft-stok/ecommerce/preview', 'Admin\\TamsoftStockController@ecommercePreview');
 $router->post('/admin/tamsoft-stok/price-refresh', 'Admin\\TamsoftStockController@priceRefresh');
+$router->get('/admin/tamsoft-stok/price-refresh', 'Admin\\TamsoftStockController@priceRefresh');
 $router->post('/admin/tamsoft-stok/cron/stock-sync', 'Admin\\TamsoftStockController@cronStockSync');
+$router->get('/admin/tamsoft-stok/cron/stock-sync', 'Admin\\TamsoftStockController@cronStockSync');
 $router->post('/admin/tamsoft-stok/cron/monthly-master', 'Admin\\TamsoftStockController@cronMonthlyMaster');
+$router->get('/admin/tamsoft-stok/cron/monthly-master', 'Admin\\TamsoftStockController@cronMonthlyMaster');
 $router->post('/admin/tamsoft-stok/cron/ecommerce-stock', 'Admin\\TamsoftStockController@cronEcommerceStock');
+$router->get('/admin/tamsoft-stok/cron/ecommerce-stock', 'Admin\\TamsoftStockController@cronEcommerceStock');
 $router->get('/admin/tamsoft-stok/depolar', 'Admin\\TamsoftStockController@depolarPage');
 $router->get('/admin/tamsoft-stok/depolar/data', 'Admin\\TamsoftStockController@depolarData');
 $router->post('/admin/tamsoft-stok/depolar/set-active', 'Admin\\TamsoftStockController@depolarSetActive');
@@ -166,11 +176,11 @@ $router->get('/admin/tamsoft-stok/jobs/runs', 'Admin\\TamsoftStockController@job
 $router->get('/admin/tamsoft-stok/cron/list', 'Admin\\TamsoftStockController@cronList');
 $router->post('/admin/tamsoft-stok/jobs/run', 'Admin\\TamsoftStockController@jobsRun');
 $router->post('/admin/tamsoft-stok/jobs/toggle', 'Admin\\TamsoftStockController@jobsToggle');
-$router->post('/admin/tamsoft-stok/jobs/lock/release', 'Admin\\TamsoftStockController@jobsLockRelease');
-$router->post('/admin/tamsoft-stok/jobs/create', 'Admin\\TamsoftStockController@jobsCreate');
-$router->post('/admin/tamsoft-stok/jobs/delete', 'Admin\\TamsoftStockController@jobsDelete');
+$router->post('/admin/tamsoft-stok/jobs/disable-monthly', 'Admin\\TamsoftStockController@jobsDisableMonthlyMaster');
 $router->get('/admin/tamsoft-stok/queue/summary', 'Admin\\TamsoftStockController@queueSummary');
 $router->post('/admin/tamsoft-stok/jobs/schedule-now', 'Admin\\TamsoftStockController@jobsScheduleNow');
+// Yeni: Aktif depoları tek tıkla kuyrukla
+$router->post('/admin/tamsoft-stok/jobs/enqueue-active-depots', 'Admin\\TamsoftStockController@jobsEnqueueActiveDepots');
 
 // Ürün Eşleştirme (Faz 1 - kural+bulanık)
 $router->get('/admin/match', 'Admin\\ProductMatchController@page');

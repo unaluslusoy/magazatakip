@@ -7,13 +7,25 @@
 			<h3 class="card-title mb-0">Tamsoft ERP - Dashboard</h3>
 			<div class="d-flex gap-2">
 				<a href="/admin/tamsoft-stok/jobs" class="btn btn-sm btn-light">Job Manager</a>
+				<button class="btn btn-sm btn-outline-secondary" id="btnDebug">Debug</button>
 			</div>
 		</div>
 		<div class="card-body">
-			<div class="d-flex gap-2 mb-3">
-				<button class="btn btn-sm btn-outline-success" id="btnPriceRefreshManual">Fiyatları Güncelle (manuel)</button>
-				<button class="btn btn-sm btn-outline-secondary" id="btnDebug">Debug</button>
+			<div class="d-flex flex-wrap gap-2 mb-3">
+				<!-- Depo Listesi (DepoListesi) -->
+				<button class="btn btn-sm btn-outline-primary" id="btnDepoListPreview">Depo Listesi Önizleme (4)</button>
+				<button class="btn btn-sm btn-primary" id="btnDepoListRun">Depo Listesini Çek (manuel)</button>
+				<!-- Master Stok (StokListesi) -->
+				<button class="btn btn-sm btn-outline-primary" id="btnMasterPreview">Master Stok Önizleme (4)</button>
+				<button class="btn btn-sm btn-primary" id="btnMasterRun">Master Stoku Çek (manuel)</button>
+				<!-- Fiyat Güncelleme (StokListesi) -->
+				<button class="btn btn-sm btn-outline-success" id="btnPricePreview">Fiyat Önizleme (4)</button>
+				<button class="btn btn-sm btn-success" id="btnPriceRefreshManual">Fiyat Güncelle (manuel)</button>
+				<!-- E-ticaret Stok (EticaretStokListesi) -->
+				<button class="btn btn-sm btn-outline-primary" id="btnEcomPreview">E-ticaret Stok Önizleme (4)</button>
+				<button class="btn btn-sm btn-primary" id="btnEcomRun">E-ticaret Stok Çek (aktif depolar)</button>
 			</div>
+
 			<div class="row g-3">
 				<div class="col-md-3">
 					<div class="card border">
@@ -50,10 +62,7 @@
 					</div>
 				</div>
 			</div>
-			<div class="d-flex gap-2 mt-3">
-				<a class="btn btn-sm btn-light" href="/admin/tamsoft-stok/envanter?filter=IPT">IPT Ürün Listesi</a>
-				<a class="btn btn-sm btn-light" href="/admin/tamsoft-stok/envanter?filter=BK">BK Ürün Listesi</a>
-			</div>
+			
 			<div class="d-flex gap-3 align-items-center mt-4">
 				<div class="form-check form-switch">
 					<input class="form-check-input" type="checkbox" id="autoSync" />
@@ -72,11 +81,12 @@
 								<button class="btn btn-sm btn-light" id="btnQueueReload">Yenile</button>
 							</div>
 							<div class="d-flex gap-3">
-								<div>Pending: <span id="qPending">-</span></div>
-								<div>Reserved: <span id="qReserved">-</span></div>
-								<div>Failed(24h): <span id="qFailed">-</span></div>
-								<div>Due Jobs: <span id="qDue">-</span></div>
+								<div>Beklemede: <span id="qPending">-</span></div>
+								<div>Rezerve: <span id="qReserved">-</span></div>
+								<div>Başarısız (24s): <span id="qFailed">-</span></div>
+								<div>Vadesi Gelen İşler: <span id="qDue">-</span></div>
 							</div>
+
 							<div class="mt-3 small text-muted">Son Çalıştırmalar</div>
 							<pre id="qRuns" class="bg-light p-2" style="max-height:220px; overflow:auto"></pre>
 						</div>
@@ -115,9 +125,61 @@
 </div>
 <script>
 const box = document.getElementById('respBox');
-const dbgModal = new bootstrap.Modal(document.getElementById('dbgModal'));
+let dbgModal;
+try{ dbgModal = new bootstrap.Modal(document.getElementById('dbgModal')); }
+catch(_){
+	// Bootstrap JS yoksa manuel fallback ile modal göster
+	dbgModal = { show: () => {
+		const m = document.getElementById('dbgModal');
+		if (!m) return;
+		m.style.display = 'block';
+		m.classList.add('show');
+		document.body.classList.add('modal-open');
+		let backdrop = document.getElementById('dbgBackdrop');
+		if (!backdrop){
+			backdrop = document.createElement('div');
+			backdrop.id = 'dbgBackdrop';
+			backdrop.className = 'modal-backdrop fade show';
+			document.body.appendChild(backdrop);
+		}
+	}};
+}
 const dbgPre = document.getElementById('dbgPre');
-function showDebug(data){ try{ const txt = (typeof data==='string')?data:JSON.stringify(data,null,2); box.textContent = txt; dbgPre.textContent = txt; dbgModal.show(); }catch(e){ box.textContent = String(data); } }
+function showDebug(data){
+	try{
+		let txt;
+		if (typeof data === 'string') { txt = data; }
+		else { txt = JSON.stringify(data, null, 2) || String(data ?? ''); }
+		if (!txt || txt.trim() === '') { txt = 'Boş yanıt'; }
+		box.textContent = txt;
+		dbgPre.textContent = txt;
+		dbgModal.show();
+	}catch(e){ const txt = String(data ?? ''); box.textContent = txt; dbgPre.textContent = txt; dbgModal.show(); }
+}
+// Basit toast fallback (eğer global yoksa)
+if (typeof window.showToast !== 'function') {
+	window.showToast = function(message, type){
+		try {
+			const colors = { success: '#198754', danger: '#dc3545', info: '#0d6efd', warning: '#ffc107' };
+			const el = document.createElement('div');
+			el.textContent = message || '';
+			el.style.position = 'fixed'; el.style.right = '16px'; el.style.top = '16px'; el.style.zIndex = 1080;
+			el.style.background = (colors[type]||'#0d6efd'); el.style.color = '#fff'; el.style.padding = '10px 12px';
+			el.style.borderRadius = '6px'; el.style.boxShadow = '0 2px 10px rgba(0,0,0,.2)';
+			document.body.appendChild(el);
+			setTimeout(()=>{ el.remove(); }, 3000);
+		} catch (e) { alert(message); }
+	}
+}
+async function fetchJsonOrText(url, options){ const r = await fetch(url, options); const t = await r.text(); try{ return JSON.parse(t); }catch(_){ return t; } }
+async function fetchJsonOrTextInfo(url, options){
+	const r = await fetch(url, options);
+	const status = r.status; const redirected = !!r.redirected; const finalUrl = r.url;
+	const text = await r.text();
+	let isJson = false; let data;
+	try{ data = JSON.parse(text); isJson = true; }catch(_){ data = text; }
+	return { data, isJson, status, redirected, url: finalUrl };
+}
 document.getElementById('btnDebug')?.addEventListener('click', ()=>{ const txt = box.textContent || 'Debug verisi yok'; dbgPre.textContent = txt; dbgModal.show(); });
 async function loadSummary(){
 	try{
@@ -184,14 +246,10 @@ auto.addEventListener('change', ()=>{
 });
 const CSRF = (document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'))||'';
 document.getElementById('btnTokenTest')?.addEventListener('click', async ()=>{
-	const r = await fetch('/admin/tamsoft-stok/token-test', { method:'POST', headers: { 'X-CSRF-Token': CSRF } });
-	const d = await r.json();
-	document.getElementById('respBox').textContent = JSON.stringify(d, null, 2);
+	try{ const d = await fetchJsonOrText('/admin/tamsoft-stok/token-test'); showDebug(d); }catch(e){ showToast('Hata','danger'); }
 });
 document.getElementById('btnDepoSync')?.addEventListener('click', async ()=>{
-	const r = await fetch('/admin/tamsoft-stok/depolar/sync', { method:'POST', headers: { 'X-CSRF-Token': CSRF } });
-	const d = await r.json();
-	document.getElementById('respBox').textContent = JSON.stringify(d, null, 2);
+	try{ const d = await fetchJsonOrText('/admin/tamsoft-stok/depolar/sync'); showDebug(d); }catch(e){ showToast('Hata','danger'); }
 });
 document.getElementById('btnDepoPreview')?.addEventListener('click', async ()=>{
 	const r = await fetch('/admin/tamsoft-stok/depolar/preview');
@@ -199,21 +257,79 @@ document.getElementById('btnDepoPreview')?.addEventListener('click', async ()=>{
 	document.getElementById('respBox').textContent = JSON.stringify(d, null, 2);
 });
 document.getElementById('btnStokPreview')?.addEventListener('click', async ()=>{
-	const r = await fetch('/admin/tamsoft-stok/stok/preview', { method:'POST', headers: { 'X-CSRF-Token': CSRF } });
-	const d = await r.json();
-	document.getElementById('respBox').textContent = JSON.stringify(d, null, 2);
+	try{ const d = await fetchJsonOrText('/admin/tamsoft-stok/stok/preview?limit=4'); showDebug(d); }catch(e){ showToast('Hata','danger'); }
 });
 // Manuel fiyat güncelle
 document.getElementById('btnPriceRefreshManual')?.addEventListener('click', async ()=>{
     const btn = document.getElementById('btnPriceRefreshManual');
     btn.disabled = true; const old = btn.innerText; btn.innerText = 'Çalışıyor...';
     try{
-        const fd = new FormData(); fd.append('_csrf', CSRF);
-        const r = await fetch('/admin/tamsoft-stok/price-refresh', { method:'POST', body: fd, headers: { 'X-CSRF-Token': CSRF } });
-        const d = await r.json();
-        showToast(d.success ? (`Fiyat güncellendi. updated=${d.updated||0}`) : ('Hata: '+(d.error||'')), d.success?'success':'danger');
+        const fd = new FormData();
+        const CSRF = (document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'))||'';
+        fd.append('_csrf', CSRF);
+        const res = await fetch('/admin/tamsoft-stok/price-refresh', { method:'POST', body: fd, headers:{ 'X-CSRF-Token': CSRF } });
+        const txt = await res.text(); let data=null; try{ data = JSON.parse(txt); }catch(_){ data = txt; }
+        showDebug(data);
+        if (typeof data==='object' && data && data.success){ showToast(`Fiyat güncellendi. updated=${data.updated||0}`,'success'); }
+        else { showToast('Çalıştırıldı','info'); }
     }catch(e){ showToast('Hata', 'danger'); }
     finally{ btn.disabled=false; btn.innerText = old; }
+});
+
+// Depo listesi: önizleme ve çalıştırma
+document.getElementById('btnDepoListPreview')?.addEventListener('click', async ()=>{
+    try{ const res = await fetchJsonOrTextInfo('/admin/tamsoft-stok/depolar/preview'); if (res.redirected || res.status===302){ showToast('Oturum yönlendirildi. Lütfen yeniden giriş yapın.','warning'); } showDebug(res.data); }catch(e){ showToast('Hata','danger'); }
+});
+document.getElementById('btnDepoListRun')?.addEventListener('click', async ()=>{
+	try{
+		const fd = new FormData();
+		const CSRF = (document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'))||'';
+		fd.append('_csrf', CSRF);
+		const r = await fetch('/admin/tamsoft-stok/depolar/sync', { method:'POST', body: fd, headers:{ 'X-CSRF-Token': CSRF } });
+		const txt = await r.text(); let data=null; try{ data = JSON.parse(txt); }catch(_){ data = txt; }
+		showDebug(data);
+		const ok = (typeof data==='object' && data && data.success===true);
+		showToast(ok?'Depo listesi güncellendi':'Çalıştırıldı','info');
+	}catch(e){ showToast('Hata','danger'); }
+});
+
+// Master stok: önizleme ve çalıştırma
+document.getElementById('btnMasterPreview')?.addEventListener('click', async ()=>{
+    try{ const res = await fetchJsonOrTextInfo('/admin/tamsoft-stok/stok/preview?limit=4'); if (res.redirected || res.status===302){ showToast('Oturum yönlendirildi. Lütfen yeniden giriş yapın.','warning'); } showDebug(res.data); }catch(e){ showToast('Hata','danger'); }
+});
+document.getElementById('btnMasterRun')?.addEventListener('click', async ()=>{
+	try{
+		const fd = new FormData();
+		const CSRF = (document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'))||'';
+		fd.append('_csrf', CSRF);
+		const r = await fetch('/admin/tamsoft-stok/cron/monthly-master', { method:'POST', body: fd, headers:{ 'X-CSRF-Token': CSRF } });
+		const txt = await r.text(); let data=null; try{ data = JSON.parse(txt); }catch(_){ data = txt; }
+		showDebug(data);
+		const ok = (typeof data==='object' && data && data.success===true);
+		showToast(ok?'Master çekildi':'Çalıştırıldı','info');
+	}catch(e){ showToast('Hata','danger'); }
+});
+
+// Fiyat önizleme (4)
+document.getElementById('btnPricePreview')?.addEventListener('click', async ()=>{
+    try{ const res = await fetchJsonOrTextInfo('/admin/tamsoft-stok/stok/preview?limit=4'); if (res.redirected || res.status===302){ showToast('Oturum yönlendirildi. Lütfen yeniden giriş yapın.','warning'); } showDebug(res.data); }catch(e){ showToast('Hata','danger'); }
+});
+
+// E-ticaret stok: önizleme ve aktif depoları kuyrukla
+document.getElementById('btnEcomPreview')?.addEventListener('click', async ()=>{
+    try{ const res = await fetchJsonOrTextInfo('/admin/tamsoft-stok/ecommerce/preview'); if (res.redirected || res.status===302){ showToast('Oturum yönlendirildi. Lütfen yeniden giriş yapın.','warning'); } showDebug(res.data); }catch(e){ showToast('Hata','danger'); }
+});
+document.getElementById('btnEcomRun')?.addEventListener('click', async ()=>{
+	try{
+		const fd = new FormData();
+		const CSRF = (document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'))||'';
+		fd.append('_csrf', CSRF);
+		const r = await fetch('/admin/tamsoft-stok/depolar/refresh-parallel', { method:'POST', body: fd, headers:{ 'X-CSRF-Token': CSRF } });
+		const txt = await r.text(); let data=null; try{ data = JSON.parse(txt); }catch(_){ data = txt; }
+		showDebug(data);
+		const ok = (typeof data==='object' && data && data.success===true);
+		showToast(ok?'E-ticaret stok işleri kuyruklandı':'Çalıştırıldı','info');
+	}catch(e){ showToast('Hata','danger'); }
 });
 </script>
 

@@ -8,26 +8,26 @@ namespace app\Utils;
  */
 class RateLimiter
 {
-\tprivate int $intervalMs;
-\tprivate int $lastAtMs = 0;
+    private int $intervalMs;
+    private int $lastAtMs = 0;
 
-\tpublic function __construct(int $intervalMs)
-\t{
-\t\t$this->intervalMs = max(0, $intervalMs);
-\t}
+    public function __construct(int $intervalMs)
+    {
+        $this->intervalMs = max(0, $intervalMs);
+    }
 
-\tpublic function awaitNext(): void
-\t{
-\t\tif ($this->intervalMs <= 0) { return; }
-\t\t$now = (int)floor(microtime(true) * 1000);
-\t\t$next = $this->lastAtMs + $this->intervalMs;
-\t\tif ($next > $now) {
-\t\t\t$delay = $next - $now;
-\t\t\tusleep($delay * 1000);
-\t\t\t$now = (int)floor(microtime(true) * 1000);
-\t\t}
-\t\t$this->lastAtMs = $now;
-\t}
+    public function awaitNext(): void
+    {
+        if ($this->intervalMs <= 0) { return; }
+        $now = (int)floor(microtime(true) * 1000);
+        $next = $this->lastAtMs + $this->intervalMs;
+        if ($next > $now) {
+            $delay = $next - $now;
+            usleep($delay * 1000);
+            $now = (int)floor(microtime(true) * 1000);
+        }
+        $this->lastAtMs = $now;
+    }
 }
 
 

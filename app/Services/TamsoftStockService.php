@@ -70,11 +70,13 @@ class TamsoftStockService
 			'depoid' => $depoId,
 			'miktarsifirdanbuyukstoklarlistelensin' => !empty($cfg['default_only_positive']) ? 'True' : 'False',
 			'urununsonbarkodulistelensin' => !empty($cfg['default_last_barcode_only']) ? 'True' : 'False',
-			'sadeceeticaretstoklarigetir' => !empty($cfg['default_only_ecommerce']) ? 'True' : 'False',
+			// Master için e-ticaret filtresi kapalı tutulur
+			'sadeceeticaretstoklarigetir' => 'False',
 		];
 		while (true) {
 			$q = $paramsBase + ['offset'=>$offset, 'limit'=>$batch];
-			$url = $base . '/api/Integration/EticaretStokListesi?' . http_build_query($q);
+			// Master senkronu ana StokListesi üzerinden çekilir
+			$url = $base . '/api/Integration/StokListesi?' . http_build_query($q);
 			$meta = $this->httpGetMeta($url, $token);
 			$data = is_array($meta['json'] ?? null) ? $meta['json'] : [];
 			$cnt = is_array($data) ? count($data) : 0;

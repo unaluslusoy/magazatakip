@@ -138,7 +138,12 @@ class TamsoftStockRepo extends Model
 	{
 		$sql = "INSERT INTO tamsoft_urunler(ext_urun_id, barkod, urun_adi, kdv, birim, fiyat)
 			VALUES(:e,:b,:a,:k,:bi,:f)
-			ON DUPLICATE KEY UPDATE barkod=VALUES(barkod), urun_adi=VALUES(urun_adi), kdv=VALUES(kdv), birim=VALUES(birim), fiyat=VALUES(fiyat)";
+			ON DUPLICATE KEY UPDATE
+				barkod=COALESCE(VALUES(barkod), tamsoft_urunler.barkod),
+				urun_adi=COALESCE(VALUES(urun_adi), tamsoft_urunler.urun_adi),
+				kdv=COALESCE(VALUES(kdv), tamsoft_urunler.kdv),
+				birim=COALESCE(VALUES(birim), tamsoft_urunler.birim),
+				fiyat=COALESCE(VALUES(fiyat), tamsoft_urunler.fiyat)";
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute([':e'=>$extId, ':b'=>$barkod, ':a'=>$ad, ':k'=>$kdv, ':bi'=>$birim, ':f'=>$fiyat]);
 		// return id

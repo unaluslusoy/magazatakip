@@ -103,3 +103,9 @@ Tüm POST isteklerinde CSRF başlığı: `X-CSRF-Token` zorunludur.
 Bu doküman `docs/TAMSOFT_MODUL_KULLANIMI.md` konumunda tutulur. Güncel değişiklikleri buraya ekleyiniz.
 
 
+
+
+
+
+
+

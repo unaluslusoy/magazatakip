@@ -30,7 +30,9 @@ class QueueRepo extends Model
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME NULL,
             INDEX idx_status_available (status, available_at),
-            INDEX idx_type_status (job_type, status)
+            INDEX idx_type_status (job_type, status),
+            INDEX idx_worker_status (worker_id, status),
+            INDEX idx_reserved_at (reserved_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     }
 
@@ -65,6 +67,22 @@ class QueueRepo extends Model
         } catch (\Throwable $e) {
             return null;
         }
+    }
+
+    public function getPendingCount(?string $type = null): int
+    {
+        if ($type) {
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM job_queue WHERE status='pending' AND job_type=:t");
+            $stmt->execute([':t'=>$type]);
+            return (int)($stmt->fetchColumn() ?: 0);
+        }
+        $q = $this->db->query("SELECT COUNT(*) FROM job_queue WHERE status='pending'");
+        return (int)($q ? $q->fetchColumn() : 0);
+    }
+
+    public function isQueueOverloaded(int $threshold, ?string $type = null): bool
+    {
+        return $this->getPendingCount($type) >= $threshold;
     }
 
     public function markDone(int $id): void

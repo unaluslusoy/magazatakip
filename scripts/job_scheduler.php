@@ -6,10 +6,18 @@ require __DIR__ . '/../config/database.php';
 use app\Models\QueueRepo;
 use app\Services\TamsoftStockService;
 use app\Utils\CronHelper;
+use app\Models\TamsoftStockConfig;
 
 if (php_sapi_name() !== 'cli') { echo "CLI required\n"; exit(1); }
 
 $db = (new TamsoftStockService())->repoDb();
+
+// Çalıştırma izni kontrolü (veritabanına göre)
+try {
+    $cfg = new TamsoftStockConfig();
+    $c = $cfg->getConfig();
+    if (empty($c['sync_active'])) { echo json_encode(['ok'=>false,'reason'=>'sync_inactive'])."\n"; exit; }
+} catch (\Throwable $e) { /* geç */ }
 $qr = new QueueRepo();
 
 $now = date('Y-m-d H:i:00');
@@ -20,6 +28,12 @@ $due = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 $enq = 0; $updated = 0;
 foreach ($due as $row) {
     $key = (string)$row['job_key'];
+    // Backpressure: kuyruk doluysa (global veya tipe özel) enqueuing atla
+    $globalThreshold = 200; // önceki 1000 -> 200
+    if ($qr->isQueueOverloaded($globalThreshold)) { continue; }
+    // Tip bazlı eşik (bazı iş tipleri daha düşük eşikte kısıtlanabilir)
+    $typeThreshold = 60; // önceki 300 -> 60
+    if ($qr->isQueueOverloaded($typeThreshold, $key)) { continue; }
     $qr->enqueue($key, []);
     $enq++;
     try {

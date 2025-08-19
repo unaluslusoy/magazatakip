@@ -180,6 +180,10 @@ $apply("CREATE TABLE IF NOT EXISTS job_lock (
 	expires_at DATETIME NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", 'CREATE job_lock');
 
+// 8) job_queue ek indeksler (varsa hata verirse uyarı ile geçilir)
+$apply("ALTER TABLE job_queue ADD INDEX idx_worker_status (worker_id, status)", 'job_queue.idx_worker_status');
+$apply("ALTER TABLE job_queue ADD INDEX idx_reserved_at (reserved_at)", 'job_queue.idx_reserved_at');
+
 out('Bitti.');
 
 out('Kullanım:');

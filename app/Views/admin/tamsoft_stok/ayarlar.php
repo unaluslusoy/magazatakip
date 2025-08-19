@@ -117,11 +117,7 @@
 			<div class="card-footer">
 				<div class="col-12 d-flex gap-2 flex-wrap">
 					<button type="button" id="btnSave" class="btn btn-primary">Kaydet</button>
-					<button type="button" id="btnRefresh" class="btn btn-outline-primary">Stokları Çek</button>
-					<button type="button" id="btnPriceRefresh" class="btn btn-outline-success">Fiyatları Güncelle (manuel)</button>
-					<button type="button" id="btnDepoSync" class="btn btn-outline">Depoları Senkronize Et</button>
-					<button type="button" id="btnDepoPreview" class="btn btn-light">Depo Önizleme</button>
-					<button type="button" id="btnStokPreview" class="btn btn-light">Stok Önizleme</button>
+				
 				</div>
 			</div>
 			</form>
